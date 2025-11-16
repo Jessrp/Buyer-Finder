@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>BuyerFinder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Supabase client (global) -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2" defer></script>
+
+  <!-- App modules (order matters) -->
+  <script src="auth.js" defer></script>
+  <script src="posts.js" defer></script>
+  <script src="map.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="top-bar">
+    <h1>🔎 BuyerFinder</h1>
+    <div class="top-right">
+      <button class="btn small" id="login-btn">Sign In</button>
+      <button class="btn small" id="logout-btn" style="display:none;">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- Top tabs (Selling / Requests) -->
+  <div class="tabs-top">
+    <button id="tab-selling" class="active">Selling</button>
+    <button id="tab-requests">Requests</button>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <main class="content">
+    <!-- User card -->
+    <section class="user-card" id="user-card">
+      <div class="user-avatar" id="user-avatar"></div>
+      <div class="user-meta">
+        <div id="user-name">Guest</div>
+        <small id="user-email">Not signed in</small>
+        <div>
+          <span class="badge" id="user-plan">Free (guest)</span>
+        </div>
+      </div>
+      <button class="btn small outline" id="user-signin-shortcut">Sign In</button>
+    </section>
+
+    <!-- POSTS VIEW -->
+    <section id="view-posts" class="view active">
+      <div id="posts-status" class="hint" style="margin-bottom:6px;"></div>
+      <div class="posts" id="posts-grid"></div>
+    </section>
+
+    <!-- MAP VIEW -->
+    <section id="view-map" class="view">
+      <div class="map-wrapper">
+        <h3 style="margin-top:0;">Nearby map</h3>
+        <p class="hint" id="map-message"></p>
+        <div id="map-canvas"></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS VIEW -->
+    <section id="view-settings" class="view">
+      <div class="section">
+        <h3>Profile</h3>
+        <div class="field-row">
+          <label>Email</label>
+          <input type="email" id="profile-email" disabled />
+        </div>
+        <div class="field-row">
+          <label>Username</label>
+          <input type="text" id="profile-username" />
+          <button class="btn small" id="btn-save-username">Save</button>
+        </div>
+        <div class="field-row">
+          <label>Avatar</label>
+          <input type="file" id="profile-avatar-input" accept="image/*" />
+          <button class="btn small" id="btn-upload-avatar">Upload</button>
+        </div>
+        <p class="hint">Avatar upload uses the <code>post_images</code> storage bucket.</p>
+      </div>
+
+      <div class="section">
+        <h3>Theme</h3>
+        <div class="field-row">
+          <label>Mode</label>
+          <button class="btn small" id="btn-toggle-theme">Toggle Dark / Light</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Premium</h3>
+        <p id="premium-status-text" class="hint"></p>
+        <button class="btn small" id="btn-upgrade-premium">Upgrade (stub)</button>
+      </div>
+
+      <div class="section">
+        <h3>Danger zone</h3>
+        <p class="hint">
+          Real account deletion needs a secure backend with the service role key.
+          We are <b>not</b> doing that from the browser.
+        </p>
+        <button class="btn small danger" id="btn-delete-account">Fake delete (explain)</button>
+      </div>
+
+      <div class="section">
+        <h3>About</h3>
+        <p class="hint">
+          BuyerFinder: tiny marketplace for matching buyers and sellers.
+        </p>
+        <p class="hint">
+          Support:
+          <a href="mailto:jessrp13@gmail.com" style="color:var(--accent);">jessrp13@gmail.com</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom nav -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" id="nav-selling">
+      <span>🏷</span> Selling
+    </div>
+    <div class="nav-item" id="nav-requests">
+      <span>📥</span> Requests
+    </div>
+    <div class="nav-item" id="nav-map">
+      <span>🗺</span> Map
+    </div>
+    <div class="nav-item" id="nav-settings">
+      <span>⚙️</span> Settings
+    </div>
+  </nav>
+
+  <!-- FAB -->
+  <button class="fab" id="fab-add">+</button>
+
+  <!-- Add post modal -->
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal">
+      <h3>New post</h3>
+      <div class="field-row">
+        <label>Title</label>
+        <input type="text" id="post-title" />
+      </div>
+      <div class="field-row">
+        <label>Description</label>
+        <textarea id="post-description"></textarea>
+      </div>
+      <div class="field-row">
+        <label>Price (optional)</label>
+        <input type="text" id="post-price" />
+      </div>
+      <div class="field-row">
+        <label>Type</label>
+        <select id="post-type">
+          <option value="selling">Selling</option>
+          <option value="request">Request</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <label>Image</label>
+        <input type="file" id="post-image" accept="image/*" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn small outline" id="btn-cancel-post">Cancel</button>
+        <button class="btn small" id="btn-save-post">Save</button>
+      </div>
+      <p class="hint" id="post-modal-hint"></p>
+    </div>
+  </div>
+</body>
+</html>
