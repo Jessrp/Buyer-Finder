@@ -1,48 +1,32 @@
 // map.js
-window.BF = window.BF || {};
+(function () {
+  const mapMessage = document.getElementById("map-message");
+  const mapCanvas = document.getElementById("map-canvas");
+  const mapCloseBtn = document.getElementById("map-close-btn");
 
-(function (BF) {
-  BF.map = BF.map || {};
-  BF.map.initialized = false;
+  function initMap() {
+    if (mapMessage)
+      mapMessage.textContent =
+        "Map would show premium nearby posts here. (Stub for now.)";
+    if (mapCanvas)
+      mapCanvas.innerHTML =
+        "<div style='padding:15px;font-size:13px;color:#9ca3af;'>Map placeholder. In real version, this would be a real map with location pins.</div>";
+  }
 
-  BF.map.showMapView = function () {
-    const profile = BF.state.currentProfile;
-    const isPremium = !!(profile && profile.premium);
-    const ui = BF.ui;
+  function closeMap() {
+    const viewPosts = document.getElementById("view-posts");
+    const viewMap = document.getElementById("view-map");
+    if (viewPosts) viewPosts.classList.add("active");
+    if (viewMap) viewMap.classList.remove("active");
+    const navMap = document.getElementById("nav-map");
+    const navSelling = document.getElementById("nav-selling");
+    if (navMap) navMap.classList.remove("active");
+    if (navSelling) navSelling.classList.add("active");
+  }
 
-    if (!isPremium) {
-      ui.mapMessage.textContent =
-        "Map is a premium feature. Upgrade to see local buyer / seller hotspots.";
-      ui.mapCanvas.innerHTML = "";
-      ui.mapCanvas.style.opacity = "0.3";
-      return;
-    }
+  if (mapCloseBtn) mapCloseBtn.addEventListener("click", closeMap);
 
-    ui.mapMessage.textContent =
-      "Showing demo map dots. (Stub only, no real GPS yet.)";
-    ui.mapCanvas.style.opacity = "1";
-
-    if (!BF.map.initialized) {
-      BF.map.initialized = true;
-      BF.map.renderFakeDots();
-    }
+  window.BFMap = {
+    initMap,
   };
-
-  BF.map.renderFakeDots = function () {
-    const canvas = BF.ui.mapCanvas;
-    canvas.innerHTML = "";
-    canvas.style.position = "relative";
-
-    for (let i = 0; i < 10; i++) {
-      const dot = document.createElement("div");
-      dot.style.position = "absolute";
-      dot.style.width = "10px";
-      dot.style.height = "10px";
-      dot.style.borderRadius = "50%";
-      dot.style.background = i % 2 === 0 ? "#00eaff" : "#ff4b6a";
-      dot.style.left = Math.random() * 90 + "%";
-      dot.style.top = Math.random() * 80 + "%";
-      canvas.appendChild(dot);
-    }
-  };
-})(window.BF);
+})();
