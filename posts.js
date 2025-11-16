@@ -1,160 +1,106 @@
 // posts.js
-(function () {
-  const postsGrid = document.getElementById("posts-grid");
-  const postsStatus = document.getElementById("posts-status");
 
-  const fabAdd = document.getElementById("fab-add");
-  const modalBackdrop = document.getElementById("modal-backdrop");
-  const postTitle = document.getElementById("post-title");
-  const postDescription = document.getElementById("post-description");
-  const postPrice = document.getElementById("post-price");
-  const postType = document.getElementById("post-type");
-  const postImage = document.getElementById("post-image");
-  const btnCancelPost = document.getElementById("btn-cancel-post");
-  const btnSavePost = document.getElementById("btn-save-post");
-  const postModalHint = document.getElementById("post-modal-hint");
+import { supabase } from "./auth.js";
 
-  window.activePostType = window.activePostType || "selling";
+// Load posts on page load
+document.addEventListener("DOMContentLoaded", () => {
+    loadPosts();
+});
 
-  function openModal() {
-    if (!window.currentUser) {
-      alert("You must sign in to add a post.");
-      return;
-    }
-    postTitle.value = "";
-    postDescription.value = "";
-    postPrice.value = "";
-    postType.value = window.activePostType;
-    postImage.value = "";
-    postModalHint.textContent = "";
-    modalBackdrop.classList.add("active");
-  }
+// Submit post
+document.getElementById("submitPost").addEventListener("click", async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id;
 
-  function closeModal() {
-    modalBackdrop.classList.remove("active");
-  }
-
-  async function uploadPostImage(file) {
-    if (!file) return null;
-    const user = window.currentUser;
-    if (!user) return null;
-
-    const ext = file.name.split(".").pop() || "jpg";
-    const path = `posts/${user.id}-${Date.now()}.${ext}`;
-
-    const { error } = await window.supa.storage
-      .from("post_images")
-      .upload(path, file, { upsert: true });
-    if (error) {
-      console.log("Upload error:", error.message);
-      return null;
+    if (!userId) {
+        alert("You must be signed in to post.");
+        return;
     }
 
-    const { data } = window.supa.storage
-      .from("post_images")
-      .getPublicUrl(path);
-    return data.publicUrl;
-  }
+    const title = document.getElementById("title").value.trim();
+    const description = document.getElementById("description").value.trim();
+    const price = document.getElementById("price").value.trim();
+    const file = document.getElementById("image").files[0];
 
-  async function savePost() {
-    if (!window.currentUser) {
-      alert("You must sign in to add a post.");
-      return;
+    if (!title) {
+        alert("Title is required.");
+        return;
     }
-    const title = postTitle.value.trim();
-    if (!title) return alert("Title is required.");
-    const description = postDescription.value.trim();
-    const price = postPrice.value.trim();
-    const type = postType.value;
 
-    postModalHint.textContent = "Saving post...";
+    let image_url = null;
 
-    let imageUrl = null;
-    const file = postImage.files[0];
+    // Upload image if provided
     if (file) {
-      imageUrl = await uploadPostImage(file);
-    }
+        const filePath = `${userId}/${Date.now()}-${file.name}`;
 
-    const { error } = await window.supa.from("posts").insert({
-      title,
-      description,
-      price: price || null,
-      type,
-      image_url: imageUrl,
-      user_id: window.currentUser.id,
-    });
+        let { error: uploadError } = await supabase.storage
+            .from("post-images")
+            .upload(filePath, file, { upsert: true });
 
-    if (error) {
-      console.log("Insert error:", error.message);
-      postModalHint.textContent = "Error saving post.";
-    } else {
-      postModalHint.textContent = "Saved!";
-      setTimeout(() => {
-        closeModal();
-        window.Posts.loadPosts();
-      }, 400);
-    }
-  }
-
-  async function loadPosts() {
-    if (!postsStatus || !postsGrid) return;
-    postsStatus.textContent = "Loading posts...";
-    postsGrid.innerHTML = "";
-
-    let { data, error } = await window.supa
-      .from("posts")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.log("load posts error:", error.message);
-      data = [];
-      postsStatus.textContent =
-        "Error loading posts. Check console or Supabase.";
-    } else if (!data || !data.length) {
-      postsStatus.textContent = "No posts yet. Be the first to post!";
-    } else {
-      postsStatus.textContent = "";
-    }
-
-    const filtered = (data || []).filter((p) => {
-      const t =
-        (p.type || "").toString().toLowerCase() === "request"
-          ? "request"
-          : "selling";
-      return t === window.activePostType;
-    });
-
-    if (!filtered.length) {
-      postsGrid.innerHTML = "<p class='hint'>No posts in this category yet.</p>";
-      return;
-    }
-
-    postsGrid.innerHTML = filtered
-      .map((p) => {
-        let priceText = "";
-        if (p.price) priceText = "$" + p.price;
-        let imgHtml = "";
-        if (p.image_url) {
-          imgHtml = `<img src="${p.image_url}" alt="Post image" />`;
+        if (uploadError) {
+            console.error(uploadError);
+            alert("Image upload failed.");
+            return;
         }
-        return `
-          <article class="post">
-            ${imgHtml}
-            <h3>${p.title || "Untitled"}</h3>
-            <p>${p.description || ""}</p>
-            <small>${priceText}</small>
-          </article>
+
+        const { data: urlData } = supabase.storage
+            .from("post-images")
+            .getPublicUrl(filePath);
+
+        image_url = urlData.publicUrl;
+    }
+
+    // Insert post
+    let { error } = await supabase.from("posts").insert({
+        title,
+        description,
+        price,
+        image_url,
+        user_id: userId,
+    });
+
+    if (error) {
+        console.error(error);
+        alert("Error saving post.");
+        return;
+    }
+
+    alert("Post added!");
+    loadPosts();
+});
+
+// Load all posts
+async function loadPosts() {
+    const postsContainer = document.getElementById("postsList");
+    postsContainer.innerHTML = "";
+
+    let { data: posts, error } = await supabase
+        .from("posts")
+        .select("*")
+        .order("id", { ascending: false });
+
+    if (error) {
+        console.error(error);
+        return;
+    }
+
+    posts.forEach((post) => {
+        const item = document.createElement("div");
+        item.className = "post-item";
+
+        item.innerHTML = `
+            <h3>${post.title}</h3>
+            ${post.image_url ? `<img src="${post.image_url}" class="post-img">` : ""}
+            <p>${post.description || ""}</p>
+            <p><strong>$${post.price || ""}</strong></p>
         `;
-      })
-      .join("");
-  }
 
-  if (fabAdd) fabAdd.addEventListener("click", openModal);
-  if (btnCancelPost) btnCancelPost.addEventListener("click", closeModal);
-  if (btnSavePost) btnSavePost.addEventListener("click", savePost);
+        // When clicked → show post detail (future feature)
+        item.addEventListener("click", () => {
+            localStorage.setItem("selectedPost", post.id);
+            window.location.href = "post.html";
+        });
 
-  window.Posts = {
-    loadPosts,
-  };
-})();
+        postsContainer.appendChild(item);
+    });
+}
