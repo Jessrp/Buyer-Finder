@@ -2,195 +2,162 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BuyerFinder</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="styles.css" />
 
+  <!-- Google Maps -->
+  <script async
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_KEY">
+  </script>
+
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Google Maps -->
-  <script
-    src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API"
-    defer
-  ></script>
 </head>
+
 <body>
 
-<!-- HEADER -->
-<header>
-  <h1>🔎 BuyerFinder</h1>
-  <div class="right">
-    <button class="btn small" id="login-btn">Sign In</button>
-    <button class="btn small" id="logout-btn" style="display:none;">Sign Out</button>
-  </div>
-</header>
+  <!-- HEADER -->
+  <header id="bf-header">
+    <div id="header-left">
+      <span id="logo">🔎 BuyerFinder</span>
+    </div>
+    <div id="header-right">
+      <button id="btn-signin-header" class="btn-primary">Sign In</button>
+    </div>
+  </header>
 
-<!-- TAB SWITCHER -->
-<div class="tabs-top">
-  <button id="tab-selling" class="active">Selling</button>
-  <button id="tab-requests">Requests</button>
-</div>
-
-<!-- USER CARD -->
-<div class="user-card">
-  <div id="user-avatar"></div>
-  <div class="user-meta">
-    <div id="user-name">Guest</div>
-    <small id="user-email">Not signed in</small>
-    <span class="badge" id="user-plan">Free (guest)</span>
-  </div>
-  <button class="btn small outline" id="user-signin-shortcut">Sign In</button>
-</div>
-
-<!-- MAIN CONTENT -->
-<main class="content">
-
-  <!-- POSTS VIEW -->
-  <section id="view-posts" class="view active">
-    <div id="posts-status" class="hint"></div>
-    <div id="posts-grid" class="posts"></div>
+  <!-- SEARCH BAR -->
+  <section id="search-bar-section">
+    <input type="text" id="search-input" placeholder="Search posts..." />
+    <button id="search-btn">Search</button>
   </section>
 
-  <!-- MAP VIEW -->
-  <section id="view-map" class="view">
-    <h3>Nearby Map</h3>
-    <input id="map-search-query" placeholder="Search posts..." />
-    <button id="map-search-btn" class="btn small">Search</button>
+  <!-- TABS -->
+  <nav id="tabs">
+    <button id="tab-selling" class="tab active">Selling</button>
+    <button id="tab-requests" class="tab">Requests</button>
+  </nav>
 
-    <p class="hint" id="map-message"></p>
+  <!-- USER CARD -->
+  <section id="user-card">
+    <div id="user-info">
+      <strong id="user-name">Guest</strong><br />
+      <small id="user-status">Not signed in</small>
+    </div>
 
+    <button id="btn-signin-card" class="btn-secondary">Sign In</button>
+
+    <div id="user-plan-badge" class="badge free">Free (guest)</div>
+  </section>
+
+  <!-- POSTS -->
+  <main id="posts-container">
+    <p id="posts-status">Loading posts...</p>
+    <div id="posts-grid"></div>
+  </main>
+
+  <!-- FAB: ADD POST -->
+  <button id="fab-add">+</button>
+
+  <!-- BOTTOM NAV -->
+  <footer id="bottom-nav">
+    <button id="nav-selling" class="nav-btn active">🏷 Selling</button>
+    <button id="nav-requests" class="nav-btn">📦 Requests</button>
+    <button id="nav-map" class="nav-btn">🗺 Map</button>
+    <button id="nav-settings" class="nav-btn">⚙️ Settings</button>
+  </footer>
+
+  <!-- MAP OVERLAY -->
+  <div id="map-overlay">
+    <div id="map-header">
+      <input id="map-search-query" placeholder="Search on map…" />
+      <button id="map-search-btn">Go</button>
+      <button id="close-map-btn">Close</button>
+    </div>
+    <div id="map-message"></div>
     <div id="map-canvas"></div>
-
-    <button id="map-close-btn" class="btn small outline">Close map</button>
-  </section>
-
-  <!-- SETTINGS -->
-  <section id="view-settings" class="view">
-    <h3>Settings</h3>
-
-    <div class="section">
-      <label>Email</label>
-      <input id="profile-email" disabled />
-    </div>
-
-    <div class="section">
-      <label>Username</label>
-      <input id="profile-username" />
-      <button class="btn small" id="btn-save-username">Save</button>
-    </div>
-
-    <div class="section">
-      <label>Avatar</label>
-      <input type="file" id="profile-avatar-input" accept="image/*" />
-      <button class="btn small" id="btn-upload-avatar">Upload</button>
-    </div>
-
-    <div class="section">
-      <label>Theme</label>
-      <button class="btn small" id="btn-toggle-theme">Toggle Dark/Light</button>
-    </div>
-
-    <div class="section">
-      <h3>Premium</h3>
-      <p id="premium-status-text" class="hint"></p>
-      <button class="btn small" id="btn-upgrade-premium">Upgrade</button>
-    </div>
-
-    <div class="section">
-      <h3>Danger Zone</h3>
-      <button class="btn small danger" id="btn-delete-account">Fake Delete</button>
-    </div>
-  </section>
-</main>
-
-<!-- BOTTOM NAV -->
-<div class="bottom-nav">
-  <div class="nav-item active" id="nav-selling">🏷 Selling</div>
-  <div class="nav-item" id="nav-requests">📥 Requests</div>
-  <div class="nav-item" id="nav-map">🗺 Map</div>
-  <div class="nav-item" id="nav-settings">⚙️ Settings</div>
-</div>
-
-<!-- ADD POST FAB -->
-<button id="fab-add" class="fab">+</button>
-
-<!-- ADD POST MODAL -->
-<div id="modal-backdrop" class="modal-backdrop">
-  <div class="modal">
-    <h3>New Post</h3>
-
-    <label>Title</label>
-    <input id="post-title" />
-
-    <label>Description</label>
-    <textarea id="post-description"></textarea>
-
-    <label>Price</label>
-    <input id="post-price" />
-
-    <label>Category</label>
-    <input id="post-category" />
-
-    <label>Condition</label>
-    <input id="post-condition" />
-
-    <label>Location</label>
-    <input id="post-location" />
-
-    <label>Image</label>
-    <input type="file" id="post-image" accept="image/*" multiple />
-
-    <label>Type</label>
-    <select id="post-type">
-      <option value="selling">Selling</option>
-      <option value="request">Request</option>
-    </select>
-
-    <p id="post-modal-hint" class="hint"></p>
-
-    <div class="modal-actions">
-      <button id="btn-cancel-post" class="btn small outline">Cancel</button>
-      <button id="btn-save-post" class="btn small">Save Post</button>
-    </div>
   </div>
-</div>
 
-<!-- DETAIL PANEL -->
-<div id="detail-overlay" class="detail-overlay"></div>
+  <!-- POST MODAL -->
+  <div id="modal-backdrop">
+    <div id="modal">
+      <h2>Add Post</h2>
 
-<div id="detail-panel" class="detail-panel">
-  <button id="detail-close-btn" class="btn small outline close-detail">Close</button>
+      <label>Title</label>
+      <input type="text" id="post-title" />
 
-  <div id="detail-images" class="detail-images"></div>
+      <label>Description</label>
+      <textarea id="post-description"></textarea>
 
-  <h2 id="detail-title"></h2>
-  <p id="detail-price"></p>
-  <p id="detail-description"></p>
-  <p id="detail-meta" class="hint"></p>
+      <label>Price</label>
+      <input type="text" id="post-price" />
 
-  <h3>Seller</h3>
-  <div class="seller-box">
-    <div id="detail-seller-avatar"></div>
-    <div>
-      <strong id="detail-seller-name"></strong><br />
-      <small id="detail-seller-email"></small>
+      <label>Type</label>
+      <select id="post-type">
+        <option value="selling">Selling</option>
+        <option value="request">Request</option>
+      </select>
+
+      <label>Category</label>
+      <input type="text" id="post-category" />
+
+      <label>Condition</label>
+      <input type="text" id="post-condition" />
+
+      <label>Location</label>
+      <input type="text" id="post-location" />
+
+      <label>Images</label>
+      <input type="file" id="post-image" accept="image/*" multiple />
+
+      <p id="post-modal-hint" class="hint"></p>
+
+      <div class="modal-actions">
+        <button id="btn-cancel-post" class="btn-secondary">Cancel</button>
+        <button id="btn-save-post" class="btn-primary">Save Post</button>
+      </div>
     </div>
   </div>
 
-  <h3>Location</h3>
-  <p id="detail-location-text"></p>
-  <div id="detail-minimap-container">
-    <div id="detail-minimap" style="height:180px;"></div>
+  <!-- DETAIL PANEL -->
+  <div id="detail-overlay"></div>
+
+  <div id="detail-panel">
+    <button id="detail-close-btn">✕</button>
+
+    <div id="detail-images"></div>
+
+    <h2 id="detail-title"></h2>
+    <p id="detail-price"></p>
+    <p id="detail-description"></p>
+    <p id="detail-meta" class="hint"></p>
+
+    <div id="detail-seller">
+      <div id="detail-seller-avatar"></div>
+      <div>
+        <strong id="detail-seller-name"></strong><br />
+        <small id="detail-seller-email"></small>
+      </div>
+    </div>
+
+    <p id="detail-location-text" class="hint"></p>
+
+    <div id="detail-minimap-container">
+      <div id="detail-minimap"></div>
+    </div>
+
+    <button id="detail-message-btn" class="btn-primary">
+      Send message
+    </button>
   </div>
 
-  <button id="detail-message-btn" class="btn full">Send Message</button>
-</div>
-
-<script src="app.js"></script>
-<script src="posts.js"></script>
-<script src="map.js"></script>
+  <!-- JAVASCRIPT -->
+  <script src="auth.js"></script>
+  <script src="app.js"></script>
+  <script src="posts.js"></script>
+  <script src="map.js"></script>
 
 </body>
 </html>
