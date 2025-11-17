@@ -19,8 +19,27 @@
   const btnSavePost = document.getElementById("btn-save-post");
   const postModalHint = document.getElementById("post-modal-hint");
 
+  // Detail panel elements
+  const detailOverlay = document.getElementById("detail-overlay");
+  const detailPanel = document.getElementById("detail-panel");
+  const detailCloseBtn = document.getElementById("detail-close-btn");
+  const detailImages = document.getElementById("detail-images");
+  const detailTitle = document.getElementById("detail-title");
+  const detailPrice = document.getElementById("detail-price");
+  const detailDescription = document.getElementById("detail-description");
+  const detailMeta = document.getElementById("detail-meta");
+  const detailSellerAvatar = document.getElementById("detail-seller-avatar");
+  const detailSellerName = document.getElementById("detail-seller-name");
+  const detailSellerEmail = document.getElementById("detail-seller-email");
+  const detailLocationText = document.getElementById("detail-location-text");
+  const detailMinimapContainer = document.getElementById(
+    "detail-minimap-container"
+  );
+  const detailMessageBtn = document.getElementById("detail-message-btn");
+
   window.activePostType = window.activePostType || "selling";
 
+  // ---------- helpers ----------
   function openModal() {
     if (!window.currentUser) {
       alert("You must sign in to add a post.");
@@ -128,8 +147,10 @@
     const locationText =
       postLocation.value.trim() || (profile && profile.location_text) || null;
 
-    const lat = profile && typeof profile.lat === "number" ? profile.lat : null;
-    const lng = profile && typeof profile.lng === "number" ? profile.lng : null;
+    const lat =
+      profile && typeof profile.lat === "number" ? profile.lat : null;
+    const lng =
+      profile && typeof profile.lng === "number" ? profile.lng : null;
 
     postModalHint.textContent = "Saving post...";
 
@@ -177,7 +198,7 @@
 
     let { data, error } = await supa
       .from("posts")
-      .select("*")
+      .select("id,user_id,title,description,price,type,category,condition,location_text,image_urls,is_premium,created_at")
       .order("is_premium", { ascending: false })
       .order("created_at", { ascending: false });
 
@@ -226,8 +247,6 @@
           } catch (e) {
             console.log("image_urls parse error:", e);
           }
-        } else if (p.image_url) {
-          primaryImage = p.image_url;
         }
 
         const badge =
@@ -249,7 +268,7 @@
           : "";
 
         return `
-          <article class="post">
+          <article class="post" data-post-id="${p.id}">
             ${imgHtml}
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
               <h3>${p.title || "Untitled"}</h3>
@@ -262,13 +281,157 @@
         `;
       })
       .join("");
+
+    attachPostClickHandlers(filtered);
   }
 
+  function attachPostClickHandlers(posts) {
+    const cards = postsGrid.querySelectorAll(".post[data-post-id]");
+    cards.forEach((card) => {
+      const id = card.getAttribute("data-post-id");
+      const post = posts.find((p) => p.id === Number(id));
+      if (!post) return;
+      card.addEventListener("click", () => openDetailPanel(post.id));
+    });
+  }
+
+  function openDetailPanelUI() {
+    if (detailOverlay) detailOverlay.classList.add("active");
+    if (detailPanel) detailPanel.classList.add("active");
+  }
+
+  function closeDetailPanelUI() {
+    if (detailOverlay) detailOverlay.classList.remove("active");
+    if (detailPanel) detailPanel.classList.remove("active");
+  }
+
+  async function openDetailPanel(postId) {
+    if (!detailPanel) return;
+
+    // Fetch fresh post + seller profile
+    const { data: post, error } = await supa
+      .from("posts")
+      .select("*")
+      .eq("id", postId)
+      .maybeSingle();
+    if (error || !post) {
+      alert("Could not load post details.");
+      return;
+    }
+
+    const { data: profile } = await supa
+      .from("profiles")
+      .select("username,email,avatar_url,lat,lng,location_text,premium")
+      .eq("id", post.user_id)
+      .maybeSingle();
+
+    // Fill images
+    detailImages.innerHTML = "";
+    let imgs = [];
+    if (post.image_urls) {
+      try {
+        const arr = JSON.parse(post.image_urls);
+        if (Array.isArray(arr) && arr.length) imgs = arr;
+      } catch {}
+    }
+    if (!imgs.length && post.image_url) imgs = [post.image_url];
+
+    if (imgs.length) {
+      imgs.forEach((url, idx) => {
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = "Post image " + (idx + 1);
+        detailImages.appendChild(img);
+      });
+    }
+
+    // Text info
+    detailTitle.textContent = post.title || "Untitled";
+    detailPrice.textContent = post.price ? `$${post.price}` : "";
+    detailDescription.textContent = post.description || "";
+
+    const metaBits = [];
+    if (post.category) metaBits.push(post.category);
+    if (post.condition) metaBits.push(post.condition);
+    if (post.type) {
+      const t = post.type.toString().toLowerCase() === "request"
+        ? "Request"
+        : "Selling";
+      metaBits.push(t);
+    }
+    detailMeta.textContent = metaBits.join(" • ");
+
+    // Seller
+    detailSellerAvatar.innerHTML = "";
+    const avImg = document.createElement("img");
+    if (profile?.avatar_url) {
+      avImg.src = profile.avatar_url;
+    } else {
+      avImg.src =
+        "data:image/svg+xml;base64," +
+        btoa(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#111827"/><text x="50%" y="55%" fill="#9ca3af" font-size="28" text-anchor="middle">BF</text></svg>'
+        );
+    }
+    detailSellerAvatar.appendChild(avImg);
+
+    detailSellerName.textContent = profile?.username || "Seller";
+    detailSellerEmail.textContent = profile?.email || "";
+
+    // Location / mini-map
+    const locText = post.location_text || profile?.location_text || "";
+    detailLocationText.textContent = locText || "Location not specified.";
+
+    const viewerProfile = window.currentProfile;
+    const isViewerPremium = !!viewerProfile?.premium;
+    const showMiniPref =
+      localStorage.getItem("bf-show-minimap") !== "false";
+
+    const lat = post.lat ?? profile?.lat ?? null;
+    const lng = post.lng ?? profile?.lng ?? null;
+
+    if (
+      isViewerPremium &&
+      showMiniPref &&
+      typeof lat === "number" &&
+      typeof lng === "number"
+    ) {
+      if (detailMinimapContainer)
+        detailMinimapContainer.style.display = "block";
+      if (window.BFMap && typeof window.BFMap.renderMiniMap === "function") {
+        window.BFMap.renderMiniMap(lat, lng);
+      }
+    } else {
+      if (detailMinimapContainer)
+        detailMinimapContainer.style.display = "none";
+    }
+
+    // Message / Chat button (placeholder logic)
+    if (detailMessageBtn) {
+      // TODO: check if a conversation exists; for now always "Send message"
+      detailMessageBtn.textContent = "Send message";
+      detailMessageBtn.onclick = () => {
+        alert(
+          "Messaging not wired up yet, but this will open a chat with the seller in a future version."
+        );
+      };
+    }
+
+    openDetailPanelUI();
+  }
+
+  // ---------- events ----------
   if (fabAdd) fabAdd.addEventListener("click", openModal);
   if (btnCancelPost) btnCancelPost.addEventListener("click", closeModal);
   if (btnSavePost) btnSavePost.addEventListener("click", savePost);
 
+  if (detailCloseBtn) detailCloseBtn.addEventListener("click", closeDetailPanelUI);
+  if (detailOverlay) detailOverlay.addEventListener("click", closeDetailPanelUI);
+
   window.Posts = {
     loadPosts,
   };
+
+  // Initial load (Auth will call this again when user changes)
+  loadPosts();
 })();
