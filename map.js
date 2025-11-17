@@ -15,7 +15,7 @@
     markers = [];
   }
 
-  function ensureMap() {
+  function ensureMainMap() {
     if (!mapCanvas) return null;
 
     if (!window.google || !google.maps) {
@@ -37,7 +37,7 @@
   }
 
   async function loadPostsForMap(query) {
-    const m = ensureMap();
+    const m = ensureMainMap();
     if (!m) return;
 
     if (mapMessage) mapMessage.textContent = "Loading posts for map...";
@@ -137,9 +137,32 @@
     });
   }
 
+  // Mini-map for detail panel
+  function renderMiniMap(lat, lng) {
+    const container = document.getElementById("detail-minimap");
+    if (!container) return;
+    if (!window.google || !google.maps) {
+      console.log("Google Maps not loaded for mini map.");
+      return;
+    }
+
+    const center = { lat, lng };
+    const mini = new google.maps.Map(container, {
+      center,
+      zoom: 12,
+      disableDefaultUI: true,
+    });
+
+    new google.maps.Marker({
+      position: center,
+      map: mini,
+    });
+  }
+
   window.BFMap = {
     initMap() {
       loadPostsForMap(mapSearchInput ? mapSearchInput.value : "");
     },
+    renderMiniMap,
   };
 })();
