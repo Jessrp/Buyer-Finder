@@ -9,7 +9,6 @@ window.supa = supa;
 window.currentUser = null;
 window.currentProfile = null;
 
-// DOM refs used here
 let loginGoogleBtn,
   loginEmailBtn,
   logoutBtn,
@@ -21,8 +20,11 @@ let loginGoogleBtn,
   profileEmail,
   profileUsername,
   profileAvatarInput,
+  profileLocationText,
   btnSaveUsername,
   btnUploadAvatar,
+  btnSaveLocation,
+  btnUseGps,
   premiumStatusText;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -39,8 +41,12 @@ document.addEventListener("DOMContentLoaded", () => {
   profileEmail = document.getElementById("profile-email");
   profileUsername = document.getElementById("profile-username");
   profileAvatarInput = document.getElementById("profile-avatar-input");
+  profileLocationText = document.getElementById("profile-location-text");
+
   btnSaveUsername = document.getElementById("btn-save-username");
   btnUploadAvatar = document.getElementById("btn-upload-avatar");
+  btnSaveLocation = document.getElementById("btn-save-location");
+  btnUseGps = document.getElementById("btn-use-gps");
   premiumStatusText = document.getElementById("premium-status-text");
 
   if (loginGoogleBtn) loginGoogleBtn.addEventListener("click", loginWithGoogle);
@@ -50,6 +56,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (btnSaveUsername) btnSaveUsername.addEventListener("click", saveUsername);
   if (btnUploadAvatar) btnUploadAvatar.addEventListener("click", uploadAvatar);
+  if (btnSaveLocation) btnSaveLocation.addEventListener("click", saveLocation);
+  if (btnUseGps) btnUseGps.addEventListener("click", useGpsLocation);
 
   checkUser();
 
@@ -119,6 +127,7 @@ async function logout() {
 async function loadOrCreateProfile() {
   const user = window.currentUser;
   if (!user) return;
+
   let { data, error } = await supa
     .from("profiles")
     .select("*")
@@ -156,6 +165,7 @@ async function loadOrCreateProfile() {
 function renderUserCard() {
   const user = window.currentUser;
   const profile = window.currentProfile;
+
   if (!user) {
     if (userNameEl) userNameEl.textContent = "Guest";
     if (userEmailEl) userEmailEl.textContent = "Not signed in";
@@ -178,8 +188,7 @@ function renderUserCard() {
     return;
   }
 
-  if (userNameEl)
-    userNameEl.textContent = profile?.username || "User";
+  if (userNameEl) userNameEl.textContent = profile?.username || "User";
   if (userEmailEl) userEmailEl.textContent = user.email || "";
   const isPremium = !!profile?.premium;
   if (userPlanEl) {
@@ -212,18 +221,20 @@ function syncSettingsUI() {
   if (!user) {
     if (profileEmail) profileEmail.value = "";
     if (profileUsername) profileUsername.value = "";
+    if (profileLocationText) profileLocationText.value = "";
     if (premiumStatusText)
       premiumStatusText.textContent = "You’re not signed in.";
     return;
   }
   if (profileEmail) profileEmail.value = user.email || "";
-  if (profileUsername)
-    profileUsername.value = profile?.username || "";
+  if (profileUsername) profileUsername.value = profile?.username || "";
+  if (profileLocationText)
+    profileLocationText.value = profile?.location_text || "";
   const isPremium = !!profile?.premium;
   if (premiumStatusText)
     premiumStatusText.textContent = isPremium
-      ? "You are premium. Map is unlocked."
-      : "You are on the free plan. Map is locked.";
+      ? "You are premium. Map & unlimited posts unlocked."
+      : "You are on the free plan. Map is locked, posts limited.";
 }
 
 async function saveUsername() {
@@ -276,7 +287,54 @@ async function uploadAvatar() {
   alert("Avatar updated.");
 }
 
-// expose for other files if needed
+async function saveLocation() {
+  const user = window.currentUser;
+  if (!user) return alert("Sign in first.");
+  const text = profileLocationText.value.trim();
+  const { error } = await supa
+    .from("profiles")
+    .update({ location_text: text })
+    .eq("id", user.id);
+  if (error) alert("Failed to save location: " + error.message);
+  else alert("Location saved.");
+}
+
+async function useGpsLocation() {
+  const user = window.currentUser;
+  if (!user) return alert("Sign in first.");
+  if (!navigator.geolocation) {
+    alert("Geolocation not supported on this device.");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const rawLat = pos.coords.latitude;
+      const rawLng = pos.coords.longitude;
+      const lat = Math.round(rawLat * 10) / 10;
+      const lng = Math.round(rawLng * 10) / 10;
+
+      const { error } = await supa
+        .from("profiles")
+        .update({
+          lat,
+          lng,
+        })
+        .eq("id", user.id);
+      if (error) {
+        alert("Failed to save GPS location: " + error.message);
+        return;
+      }
+      if (!window.currentProfile) window.currentProfile = {};
+      window.currentProfile.lat = lat;
+      window.currentProfile.lng = lng;
+      alert("Approximate GPS location saved for map.");
+    },
+    (err) => {
+      alert("Could not get GPS location: " + err.message);
+    }
+  );
+}
+
 window.Auth = {
   checkUser,
 };
