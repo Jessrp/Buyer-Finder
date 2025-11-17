@@ -21,7 +21,6 @@
 
   window.activePostType = window.activePostType || "selling";
 
-  // ---------- helpers ----------
   function openModal() {
     if (!window.currentUser) {
       alert("You must sign in to add a post.");
@@ -48,10 +47,8 @@
     const profile = window.currentProfile;
     if (!user) return false;
 
-    // Premium = unlimited
     if (profile && profile.premium) return true;
 
-    // Free users = 5 posts max
     const { count, error } = await supa
       .from("posts")
       .select("id", { count: "exact", head: true })
@@ -59,7 +56,7 @@
 
     if (error) {
       console.log("post count error (ignoring):", error.message);
-      return true; // don't block them if count failed
+      return true;
     }
 
     if ((count || 0) >= 5) {
@@ -74,7 +71,6 @@
 
   async function uploadPostImages(files, userId) {
     if (!files || !files.length) return [];
-
     const urls = [];
 
     for (const file of files) {
@@ -105,6 +101,7 @@
 
   async function savePost() {
     const user = window.currentUser;
+    const profile = window.currentProfile;
     if (!user) {
       alert("You must sign in to add a post.");
       return;
@@ -128,7 +125,11 @@
     const type = postType.value;
     const category = postCategory.value.trim();
     const condition = postCondition.value.trim();
-    const locationText = postLocation.value.trim();
+    const locationText =
+      postLocation.value.trim() || (profile && profile.location_text) || null;
+
+    const lat = profile && typeof profile.lat === "number" ? profile.lat : null;
+    const lng = profile && typeof profile.lng === "number" ? profile.lng : null;
 
     postModalHint.textContent = "Saving post...";
 
@@ -138,8 +139,7 @@
       imageUrls = await uploadPostImages(fileList, user.id);
     }
 
-    const isPremiumUser =
-      !!(window.currentProfile && window.currentProfile.premium);
+    const isPremiumUser = !!(profile && profile.premium);
 
     const { error } = await supa.from("posts").insert({
       user_id: user.id,
@@ -149,7 +149,9 @@
       type,
       category: category || null,
       condition: condition || null,
-      location_text: locationText || null,
+      location_text: locationText,
+      lat,
+      lng,
       image_urls: imageUrls.length ? JSON.stringify(imageUrls) : null,
       is_premium: isPremiumUser,
     });
@@ -167,7 +169,6 @@
     }, 400);
   }
 
-  // --------- load posts ----------
   async function loadPosts() {
     if (!postsGrid || !postsStatus) return;
 
@@ -263,7 +264,6 @@
       .join("");
   }
 
-  // ---------- events ----------
   if (fabAdd) fabAdd.addEventListener("click", openModal);
   if (btnCancelPost) btnCancelPost.addEventListener("click", closeModal);
   if (btnSavePost) btnSavePost.addEventListener("click", savePost);
