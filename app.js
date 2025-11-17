@@ -1,26 +1,15 @@
-// app.js
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("app.js loaded");
+(function () {
+  const SUPA_URL = "YOUR_SUPABASE_URL";
+  const SUPA_ANON = "YOUR_SUPABASE_ANON_KEY";
 
-  const SUPABASE_URL = "https://hcgwldsslzkppzgfhwws.supabase.co";
-  const SUPABASE_ANON =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3dsZHNzbHprcHB6Z2Zod3dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MzE1MTYsImV4cCI6MjA3NjEwNzUxNn0.fCKpSI2UYHBlgAbus18srgkJ3FuOTAzDCgtw_lH3Yc4";
+  const supa = window.supabase.createClient(SUPA_URL, SUPA_ANON);
+  window.supa = supa;
 
-  window.supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  let currentUser = null;
+  let currentProfile = null;
 
-  // Global app state
-  window.currentUser = null;
-  window.currentProfile = null;
-  window.activePostType = "selling";
-
-  // DOM
-  const loginGoogleBtn = document.getElementById("login-google-btn");
-  const loginEmailBtn = document.getElementById("login-email-btn");
-  const logoutBtn = document.getElementById("logout-btn");
-  const userSigninShortcut = document.getElementById("user-signin-shortcut");
-
-  const tabSelling = document.getElementById("tab-selling");
-  const tabRequests = document.getElementById("tab-requests");
+  window.currentUser = currentUser;
+  window.currentProfile = currentProfile;
 
   const viewPosts = document.getElementById("view-posts");
   const viewMap = document.getElementById("view-map");
@@ -31,6 +20,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const navMap = document.getElementById("nav-map");
   const navSettings = document.getElementById("nav-settings");
 
+  const tabSelling = document.getElementById("tab-selling");
+  const tabRequests = document.getElementById("tab-requests");
+
+  const loginBtn = document.getElementById("login-btn");
+  const logoutBtn = document.getElementById("logout-btn");
+  const userCardSignin = document.getElementById("user-signin-shortcut");
+
   const userNameEl = document.getElementById("user-name");
   const userEmailEl = document.getElementById("user-email");
   const userPlanEl = document.getElementById("user-plan");
@@ -39,20 +35,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const profileEmail = document.getElementById("profile-email");
   const profileUsername = document.getElementById("profile-username");
   const profileAvatarInput = document.getElementById("profile-avatar-input");
-  const profileLocationText = document.getElementById("profile-location-text");
   const btnSaveUsername = document.getElementById("btn-save-username");
   const btnUploadAvatar = document.getElementById("btn-upload-avatar");
-  const btnSaveLocation = document.getElementById("btn-save-location");
-  const btnUseGPS = document.getElementById("btn-use-gps");
   const btnToggleTheme = document.getElementById("btn-toggle-theme");
+
   const premiumStatusText = document.getElementById("premium-status-text");
   const btnUpgradePremium = document.getElementById("btn-upgrade-premium");
+  const btnDeleteAccount = document.getElementById("btn-delete-account");
 
-  const minimapToggle = document.getElementById("setting-minimap-toggle");
+  const mapCloseBtn = document.getElementById("map-close-btn");
 
-  // ------------------------------------------
+  window.activePostType = "selling";
+
   // THEME
-  // ------------------------------------------
   function applyTheme() {
     const theme = localStorage.getItem("bf-theme") || "dark";
     if (theme === "light") document.body.classList.add("light");
@@ -60,382 +55,227 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   applyTheme();
 
-  btnToggleTheme?.addEventListener("click", () => {
+  btnToggleTheme.addEventListener("click", () => {
     const current = localStorage.getItem("bf-theme") || "dark";
     const next = current === "dark" ? "light" : "dark";
     localStorage.setItem("bf-theme", next);
     applyTheme();
   });
 
-  // ------------------------------------------
-  // MINIMAP SETTING (the one you requested)
-  // ------------------------------------------
-  if (minimapToggle) {
-    const pref = localStorage.getItem("bf-show-minimap");
-    minimapToggle.checked = pref !== "false";
-
-    minimapToggle.addEventListener("change", () => {
-      localStorage.setItem(
-        "bf-show-minimap",
-        minimapToggle.checked ? "true" : "false"
-      );
-    });
-  }
-
-  // ------------------------------------------
   // AUTH
-  // ------------------------------------------
-  loginGoogleBtn?.addEventListener("click", async () => {
-    const { data, error } = await window.supa.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: "https://buyerfinder.vercel.app"
-      }
-    });
-    if (error) alert(error.message);
-  });
+  async function checkUser() {
+    const { data } = await supa.auth.getUser();
+    currentUser = data.user || null;
+    window.currentUser = currentUser;
 
-  loginEmailBtn?.addEventListener("click", async () => {
-    const email = prompt("Enter your email for a login link:");
-    if (!email) return;
-    const { error } = await window.supa.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: "https://buyerfinder.vercel.app"
-      }
-    });
-    if (error) alert(error.message);
-    else alert("Check your email.");
-  });
+    loginBtn.style.display = currentUser ? "none" : "inline-block";
+    logoutBtn.style.display = currentUser ? "inline-block" : "none";
+    userCardSignin.style.display = currentUser ? "none" : "inline-block";
 
-  userSigninShortcut?.addEventListener("click", () => {
-    loginEmailBtn.click();
-  });
-
-  logoutBtn?.addEventListener("click", async () => {
-    await window.supa.auth.signOut();
-    alert("Signed out.");
-    loadAuthState();
-  });
-
-  async function loadAuthState() {
-    const { data } = await window.supa.auth.getUser();
-    window.currentUser = data.user || null;
-
-    if (!window.currentUser) {
-      loginGoogleBtn.style.display = "inline-block";
-      loginEmailBtn.style.display = "inline-block";
-      logoutBtn.style.display = "none";
-      userSigninShortcut.style.display = "inline-block";
+    if (currentUser) {
+      await loadOrCreateProfile();
+    } else {
+      currentProfile = null;
       window.currentProfile = null;
       renderUserCard();
-      Posts.loadPosts();
-      return;
     }
-
-    loginGoogleBtn.style.display = "none";
-    loginEmailBtn.style.display = "none";
-    logoutBtn.style.display = "inline-block";
-    userSigninShortcut.style.display = "none";
-
-    await loadProfile();
-    renderUserCard();
-    Posts.loadPosts();
   }
 
-  // ------------------------------------------
-  // PROFILE
-  // ------------------------------------------
-  async function loadProfile() {
-    const user = window.currentUser;
-    if (!user) return;
+  async function login() {
+    const email = prompt("Enter your email:");
+    if (!email) return;
 
-    const { data: profile, error } = await window.supa
+    await supa.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin },
+    });
+
+    alert("Check your email for login link.");
+  }
+
+  async function logout() {
+    await supa.auth.signOut();
+    alert("Signed out.");
+    checkUser();
+  }
+
+  loginBtn.addEventListener("click", login);
+  logoutBtn.addEventListener("click", logout);
+  userCardSignin.addEventListener("click", login);
+
+  // PROFILE
+  async function loadOrCreateProfile() {
+    let { data } = await supa
       .from("profiles")
       .select("*")
-      .eq("id", user.id)
+      .eq("id", currentUser.id)
       .maybeSingle();
 
-    if (error) console.log("Profile fetch error:", error);
-
-    if (!profile) {
-      // create default
-      const username = (user.email || "user")
-        .split("@")[0]
-        .slice(0, 20);
-
-      const { data: newProfile } = await window.supa
+    if (!data) {
+      const username = (currentUser.email || "user").split("@")[0];
+      const { data: inserted } = await supa
         .from("profiles")
         .insert({
-          id: user.id,
-          email: user.email,
+          id: currentUser.id,
+          email: currentUser.email,
           username,
           premium: false,
           created_at: new Date().toISOString(),
         })
         .select()
         .maybeSingle();
-
-      window.currentProfile = newProfile;
-    } else {
-      window.currentProfile = profile;
+      data = inserted;
     }
 
+    currentProfile = data;
+    window.currentProfile = data;
+
+    renderUserCard();
     syncSettingsUI();
   }
 
-  function syncSettingsUI() {
-    const user = window.currentUser;
-    const profile = window.currentProfile;
-
-    if (!user) {
-      profileEmail.value = "";
-      profileUsername.value = "";
-      premiumStatusText.textContent = "You’re not signed in.";
-      return;
-    }
-
-    profileEmail.value = user.email || "";
-    profileUsername.value = profile?.username || "";
-    profileLocationText.value = profile?.location_text || "";
-
-    premiumStatusText.textContent = profile?.premium
-      ? "You are a premium user."
-      : "Free plan: Premium features locked.";
-  }
-
   function renderUserCard() {
-    const user = window.currentUser;
-    const profile = window.currentProfile;
-
-    if (!user) {
+    if (!currentUser) {
       userNameEl.textContent = "Guest";
       userEmailEl.textContent = "Not signed in";
       userPlanEl.textContent = "Free (guest)";
-      userPlanEl.className = "badge";
       userAvatarEl.innerHTML = "";
-      userAvatarEl.style.background =
-        "linear-gradient(135deg, #333, #555)";
       return;
     }
 
-    userNameEl.textContent = profile?.username || "User";
-    userEmailEl.textContent = user.email || "";
-
-    if (profile?.premium) {
-      userPlanEl.textContent = "Premium";
-      userPlanEl.className = "badge premium";
-    } else {
-      userPlanEl.textContent = "Free";
-      userPlanEl.className = "badge";
-    }
-
+    userNameEl.textContent = currentProfile.username;
+    userEmailEl.textContent = currentUser.email;
+    userPlanEl.textContent = currentProfile.premium ? "Premium" : "Free";
     userAvatarEl.innerHTML = "";
+
     const img = document.createElement("img");
     img.src =
-      profile?.avatar_url ||
+      currentProfile.avatar_url ||
       "data:image/svg+xml;base64," +
         btoa(
-          '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#333"/><text x="50%" y="55%" fill="#999" font-size="28" text-anchor="middle">BF</text></svg>'
+          '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#333"/><text x="50%" y="55%" fill="#ccc" font-size="28" text-anchor="middle">BF</text></svg>'
         );
     userAvatarEl.appendChild(img);
   }
 
-  // Save username
-  btnSaveUsername?.addEventListener("click", async () => {
-    const user = window.currentUser;
-    if (!user) return alert("Sign in first.");
+  function syncSettingsUI() {
+    profileEmail.value = currentUser?.email || "";
+    profileUsername.value = currentProfile?.username || "";
+    premiumStatusText.textContent = currentProfile?.premium
+      ? "Premium active"
+      : "Free plan";
+  }
 
+  btnSaveUsername.addEventListener("click", async () => {
     const newName = profileUsername.value.trim();
-    if (!newName) return;
-
-    await window.supa
+    await supa
       .from("profiles")
       .update({ username: newName })
-      .eq("id", user.id);
-
-    if (window.currentProfile)
-      window.currentProfile.username = newName;
-
+      .eq("id", currentUser.id);
+    currentProfile.username = newName;
     renderUserCard();
-    alert("Username updated.");
   });
 
-  // Upload avatar
-  btnUploadAvatar?.addEventListener("click", async () => {
-    const user = window.currentUser;
-    if (!user) return alert("Sign in first.");
-
+  btnUploadAvatar.addEventListener("click", async () => {
     const file = profileAvatarInput.files[0];
-    if (!file) return alert("Choose a file.");
+    if (!file) return;
+    const ext = file.name.split(".").pop();
+    const path = `avatars/${currentUser.id}.${ext}`;
 
-    const ext = file.name.split(".").pop() || "jpg";
-    const path = `avatars/${user.id}-${Date.now()}.${ext}`;
+    await supa.storage.from("post_images").upload(path, file, {
+      upsert: true,
+    });
 
-    const { error: uploadError } = await window.supa.storage
-      .from("post_images")
-      .upload(path, file, { upsert: true });
-
-    if (uploadError) {
-      alert("Upload failed: " + uploadError.message);
-      return;
-    }
-
-    const { data: urlData } = window.supa.storage
+    const { data } = supa.storage
       .from("post_images")
       .getPublicUrl(path);
 
-    const publicUrl = urlData?.publicUrl;
-
-    await window.supa
+    await supa
       .from("profiles")
-      .update({ avatar_url: publicUrl })
-      .eq("id", user.id);
+      .update({ avatar_url: data.publicUrl })
+      .eq("id", currentUser.id);
 
-    if (window.currentProfile)
-      window.currentProfile.avatar_url = publicUrl;
-
+    currentProfile.avatar_url = data.publicUrl;
     renderUserCard();
-    alert("Avatar updated.");
   });
 
-  // Save manual location text
-  btnSaveLocation?.addEventListener("click", async () => {
-    const user = window.currentUser;
-    const profile = window.currentProfile;
-    if (!user || !profile) return alert("Sign in first.");
-
-    const text = profileLocationText.value.trim();
-    await window.supa
-      .from("profiles")
-      .update({ location_text: text })
-      .eq("id", user.id);
-
-    window.currentProfile.location_text = text;
-    alert("Location updated.");
+  btnUpgradePremium.addEventListener("click", () => {
+    alert("Premium payment flow to be added later.");
   });
 
-  // Use GPS
-  btnUseGPS?.addEventListener("click", () => {
-    const user = window.currentUser;
-    const profile = window.currentProfile;
-    if (!user || !profile) return alert("Sign in first.");
-
-    if (!navigator.geolocation) {
-      alert("GPS not supported on this device.");
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = Number(pos.coords.latitude.toFixed(5));
-        const lng = Number(pos.coords.longitude.toFixed(5));
-
-        await window.supa
-          .from("profiles")
-          .update({ lat, lng })
-          .eq("id", user.id);
-
-        window.currentProfile.lat = lat;
-        window.currentProfile.lng = lng;
-
-        alert("GPS location saved.");
-      },
-      () => {
-        alert("Failed to get GPS location.");
-      }
-    );
+  btnDeleteAccount.addEventListener("click", () => {
+    alert("Cannot delete account without admin backend.");
   });
 
-  // Fake premium upgrade
-  btnUpgradePremium?.addEventListener("click", async () => {
-    const user = window.currentUser;
-    if (!user) return alert("Sign in first.");
-
-    await window.supa
-      .from("profiles")
-      .update({ premium: true })
-      .eq("id", user.id);
-
-    window.currentProfile.premium = true;
-    syncSettingsUI();
-    renderUserCard();
-    alert("Premium activated (dev mode).");
-  });
-
-  // ------------------------------------------
   // NAVIGATION
-  // ------------------------------------------
-  function switchView(target) {
+  function hideAllViews() {
     viewPosts.classList.remove("active");
     viewMap.classList.remove("active");
     viewSettings.classList.remove("active");
+  }
 
-    navSelling.classList.remove("active");
+  navSelling.addEventListener("click", () => {
+    window.activePostType = "selling";
+    hideAllViews();
+    viewPosts.classList.add("active");
+    navSelling.classList.add("active");
     navRequests.classList.remove("active");
     navMap.classList.remove("active");
     navSettings.classList.remove("active");
+    window.Posts.loadPosts();
+  });
 
-    if (target === "posts") {
-      viewPosts.classList.add("active");
+  navRequests.addEventListener("click", () => {
+    window.activePostType = "request";
+    hideAllViews();
+    viewPosts.classList.add("active");
+    navRequests.classList.add("active");
+    navSelling.classList.remove("active");
+    navMap.classList.remove("active");
+    navSettings.classList.remove("active");
+    window.Posts.loadPosts();
+  });
+
+  navMap.addEventListener("click", () => {
+    hideAllViews();
+    viewMap.classList.add("active");
+    navMap.classList.add("active");
+    navSelling.classList.remove("active");
+    navRequests.classList.remove("active");
+    navSettings.classList.remove("active");
+
+    if (window.BFMap) window.BFMap.initMap();
+  });
+
+  navSettings.addEventListener("click", () => {
+    hideAllViews();
+    viewSettings.classList.add("active");
+    navSettings.classList.add("active");
+    navSelling.classList.remove("active");
+    navRequests.classList.remove("active");
+    navMap.classList.remove("active");
+  });
+
+  // MAP CLOSE BUTTON — FIXED
+  function closeMapView() {
+    viewMap.classList.remove("active");
+    navMap.classList.remove("active");
+
+    viewPosts.classList.add("active");
+    if (window.activePostType === "selling") {
       navSelling.classList.add("active");
-      Posts.loadPosts();
-    }
-
-    if (target === "requests") {
-      viewPosts.classList.add("active");
+      navRequests.classList.remove("active");
+    } else {
       navRequests.classList.add("active");
-      window.activePostType = "request";
-      Posts.loadPosts();
+      navSelling.classList.remove("active");
     }
-
-    if (target === "map") {
-      viewMap.classList.add("active");
-      navMap.classList.add("active");
-      if (window.BFMap && BFMap.initMap) BFMap.initMap();
-    }
-
-    if (target === "settings") {
-      viewSettings.classList.add("active");
-      navSettings.classList.add("active");
-    }
+    window.Posts.loadPosts();
   }
 
-  navSelling?.addEventListener("click", () => {
-    window.activePostType = "selling";
-    switchView("posts");
-  });
+  if (mapCloseBtn) {
+    mapCloseBtn.addEventListener("click", closeMapView);
+  }
 
-  navRequests?.addEventListener("click", () => {
-    window.activePostType = "request";
-    switchView("requests");
-  });
-
-  navMap?.addEventListener("click", () => {
-    switchView("map");
-  });
-
-  navSettings?.addEventListener("click", () => {
-    switchView("settings");
-  });
-
-  // Top tabs
-  tabSelling?.addEventListener("click", () => {
-    window.activePostType = "selling";
-    tabSelling.classList.add("active");
-    tabRequests.classList.remove("active");
-    Posts.loadPosts();
-  });
-
-  tabRequests?.addEventListener("click", () => {
-    window.activePostType = "request";
-    tabRequests.classList.add("active");
-    tabSelling.classList.remove("active");
-    Posts.loadPosts();
-  });
-
-  // ------------------------------------------
-  // INIT
-  // ------------------------------------------
-  loadAuthState();
-});
+  // Start-up
+  checkUser();
+})();
