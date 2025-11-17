@@ -1,4 +1,3 @@
-/* Global ----------------------------------------------------- */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -9,10 +8,10 @@ body {
   background: #0f1115;
   color: #e5e7eb;
   font-family: system-ui, sans-serif;
-  padding-bottom: 85px;
+  padding-bottom: 80px;
 }
 
-/* Header ----------------------------------------------------- */
+/* HEADER */
 .header {
   display: flex;
   justify-content: space-between;
@@ -25,58 +24,55 @@ body {
 .logo {
   font-size: 22px;
   font-weight: 700;
-  color: #f0f0f0;
 }
 
-/* Search Bar -------------------------------------------------- */
+/* SEARCH BAR */
 .search-bar {
   display: flex;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+  padding: 12px 14px;
   background: #111317;
   border-bottom: 1px solid #1f242d;
 }
 
 .search-bar input {
   flex: 1;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: #1c1f26;
   border: 1px solid #2a303c;
   border-radius: 8px;
-  color: #fff;
+  color: #e5e7eb;
 }
 
-#search-btn {
-  padding: 10px 14px;
-}
-
-/* Buttons ----------------------------------------------------- */
+/* BUTTONS */
 button {
   cursor: pointer;
 }
 
 .btn-primary {
   background: #2563eb;
-  color: white;
+  color: #fff;
   border: none;
-  padding: 10px 16px;
+  padding: 8px 14px;
   border-radius: 8px;
   font-weight: 600;
+  font-size: 14px;
 }
 
 .btn-secondary {
   background: #1c1f26;
   color: #e5e7eb;
   border: 1px solid #2a303c;
-  padding: 10px 16px;
+  padding: 8px 14px;
   border-radius: 8px;
+  font-size: 14px;
 }
 
 .small {
   padding: 6px 10px !important;
 }
 
-/* Tabs -------------------------------------------------------- */
+/* TABS */
 .tabs {
   display: flex;
   background: #111317;
@@ -85,23 +81,23 @@ button {
 
 .tab {
   flex: 1;
-  padding: 14px 0;
+  padding: 12px 0;
   text-align: center;
-  font-size: 16px;
+  font-size: 15px;
   border-bottom: 3px solid transparent;
   color: #9ca3af;
 }
 
 .tab.active {
-  border-bottom-color: #2563eb;
   color: #fff;
+  border-bottom-color: #2563eb;
 }
 
-/* User Card --------------------------------------------------- */
+/* USER CARD */
 #user-card {
   display: flex;
   justify-content: space-between;
-  padding: 15px;
+  padding: 14px;
   background: #111317;
   border-bottom: 1px solid #1f242d;
 }
@@ -120,8 +116,8 @@ button {
 
 .badge {
   font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
 }
 
 .badge.free {
@@ -130,12 +126,20 @@ button {
 
 .badge.premium {
   background: #b45309;
-  color: #fff;
 }
 
-/* Posts ------------------------------------------------------- */
+/* VIEWS */
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
+/* POSTS */
 #posts-container {
-  padding: 10px;
+  padding: 12px;
 }
 
 #posts-grid {
@@ -146,9 +150,9 @@ button {
 
 .post {
   background: #1a1d24;
-  border: 1px solid #2a303c;
-  padding: 15px;
   border-radius: 14px;
+  border: 1px solid #2a303c;
+  padding: 14px;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -162,43 +166,65 @@ button {
   height: 180px;
   object-fit: cover;
   border-radius: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
-.post h3 {
-  font-size: 18px;
+/* SETTINGS */
+.settings-section {
+  padding: 14px;
+  border-bottom: 1px solid #1f242d;
+}
+
+.settings-section h2 {
+  margin-bottom: 8px;
+}
+
+.settings-section label {
+  display: block;
+  font-size: 13px;
+  margin-top: 6px;
   margin-bottom: 4px;
 }
 
-.post p {
-  margin: 4px 0;
+.settings-section input {
+  width: 100%;
+  padding: 8px;
+  background: #111317;
+  border: 1px solid #2a303c;
+  border-radius: 8px;
+  color: #e5e7eb;
 }
 
-/* FAB Button -------------------------------------------------- */
+.settings-section .row {
+  display: flex;
+  gap: 8px;
+}
+
+/* FAB */
 .fab {
   position: fixed;
-  bottom: 95px;
+  bottom: 80px;
   right: 20px;
-  width: 58px;
-  height: 58px;
-  background: #3b82f6;
-  color: white;
-  border: none;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
   font-size: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
 
-/* Bottom Nav -------------------------------------------------- */
+/* BOTTOM NAV */
 .bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
-  width: 100%;
-  height: 65px;
+  right: 0;
+  height: 60px;
   background: #111317;
   border-top: 1px solid #1f242d;
   display: flex;
@@ -209,21 +235,21 @@ button {
   background: none;
   border: none;
   color: #9ca3af;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .nav-btn.active {
   color: #fff;
 }
 
-/* Modal ------------------------------------------------------- */
+/* MODAL */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.55);
   display: none;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 }
 
 .modal-backdrop.active {
@@ -231,43 +257,51 @@ button {
 }
 
 .modal {
-  background: #1a1d24;
-  padding: 22px;
   width: 90%;
   max-width: 450px;
+  background: #1a1d24;
+  padding: 18px;
   border-radius: 14px;
   border: 1px solid #2a303c;
 }
 
+.modal h2 {
+  margin-bottom: 6px;
+}
+
 .modal label {
   display: block;
-  margin-top: 14px;
-  font-size: 14px;
+  font-size: 13px;
+  margin-top: 10px;
+  margin-bottom: 4px;
 }
 
 .modal input,
 .modal textarea,
 .modal select {
   width: 100%;
-  margin-top: 4px;
-  padding: 10px;
+  padding: 8px;
   background: #111317;
   border: 1px solid #2a303c;
   border-radius: 8px;
-  color: #fff;
+  color: #e5e7eb;
+}
+
+.modal textarea {
+  min-height: 70px;
 }
 
 .modal-actions {
   display: flex;
   justify-content: space-between;
-  margin-top: 18px;
+  margin-top: 14px;
 }
 
-/* Detail Panel ------------------------------------------------ */
+/* OVERLAYS: DETAIL & MAP */
 .detail-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.45);
   display: none;
 }
 
@@ -275,53 +309,59 @@ button {
   display: block;
 }
 
-.detail-panel {
+/* SLIDE-UP PANELS */
+.detail-panel,
+.map-panel {
   position: fixed;
-  bottom: -100%;
   left: 0;
-  width: 100%;
-  height: 85%;
+  right: 0;
+  bottom: -100%;
   background: #1a1d24;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  padding: 15px;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
   border-top: 1px solid #2a303c;
-  transition: bottom 0.3s ease;
+  padding: 16px;
+  max-height: 80%;
   overflow-y: auto;
+  transition: bottom 0.3s ease-out;
 }
 
-.detail-panel.active {
+.detail-panel.active,
+.map-panel.active {
   bottom: 0;
 }
 
+/* DETAIL PANEL CONTENT */
 .close-btn {
   position: absolute;
   top: 12px;
   right: 12px;
-  background: #2a303c;
-  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
   border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  font-size: 18px;
+  background: #2a303c;
+  color: #e5e7eb;
 }
 
-/* Detail Images */
 .detail-images img {
   width: 100%;
   height: 200px;
   object-fit: cover;
   border-radius: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
-/* Seller Info */
+.big-price {
+  font-size: 20px;
+  margin: 4px 0;
+}
+
 .seller-info {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 10px;
+  margin: 10px 0;
 }
 
 .avatar img {
@@ -330,9 +370,9 @@ button {
   border-radius: 50%;
 }
 
-/* Mini-map */
+/* MINIMAP */
 #detail-minimap-container {
-  margin-top: 10px;
+  margin-top: 8px;
   display: none;
 }
 
@@ -343,29 +383,39 @@ button {
   overflow: hidden;
 }
 
-/* Map Overlay -------------------------------------------------- */
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: #0f1115;
-  display: none;
-  flex-direction: column;
-}
-
-#map-canvas {
-  flex: 1;
+/* MAP PANEL */
+.map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
 .map-controls {
-  padding: 12px;
-  background: #111317;
-  border-bottom: 1px solid #1f242d;
   display: flex;
   gap: 8px;
+  margin-bottom: 8px;
 }
 
-#map-message {
-  padding: 10px;
-  font-size: 13px;
+#map-search-query {
+  flex: 1;
+  padding: 8px;
+  background: #111317;
+  border: 1px solid #2a303c;
+  border-radius: 8px;
+  color: #e5e7eb;
+}
+
+#map-canvas {
+  width: 100%;
+  height: 320px;
+  background: #000;
+  border-radius: 12px;
+  border: 1px solid #2a303c;
+}
+
+.hint {
+  font-size: 12px;
   color: #9ca3af;
+  margin-top: 4px;
 }
