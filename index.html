@@ -7,12 +7,11 @@
 
   <link rel="stylesheet" href="styles.css">
 
-  <!-- GOOGLE MAPS (TEMP DISABLED TO PREVENT JS CRASH)
-  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_KEY"></script>
-  -->
-
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Google Maps (safe: map.js checks for google before using it) -->
+  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_KEY"></script>
 </head>
 
 <body>
@@ -26,7 +25,7 @@
   <!-- SEARCH BAR -->
   <div class="search-bar">
     <input type="text" id="search-input" placeholder="Search posts…">
-    <button id="search-btn" class="btn-secondary">Search</button>
+    <button id="search-btn" class="btn-secondary small">Search</button>
   </div>
 
   <!-- TABS -->
@@ -48,10 +47,54 @@
     </div>
   </section>
 
-  <!-- POSTS -->
-  <main id="posts-container">
-    <p id="posts-status">Loading posts...</p>
-    <div id="posts-grid"></div>
+  <!-- MAIN VIEWS WRAPPER -->
+  <main id="main-views">
+
+    <!-- POSTS VIEW -->
+    <section id="view-posts" class="view active">
+      <div id="posts-container">
+        <p id="posts-status">Loading posts...</p>
+        <div id="posts-grid"></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS VIEW -->
+    <section id="view-settings" class="view">
+      <div class="settings-section">
+        <h2>Account</h2>
+        <label>Email</label>
+        <input id="profile-email" disabled>
+
+        <label>Username</label>
+        <div class="row">
+          <input id="profile-username">
+          <button id="btn-save-username" class="btn-secondary small">Save</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h2>Avatar</h2>
+        <input type="file" id="profile-avatar-input" accept="image/*">
+        <button id="btn-upload-avatar" class="btn-secondary small">Upload</button>
+      </div>
+
+      <div class="settings-section">
+        <h2>Theme</h2>
+        <button id="btn-toggle-theme" class="btn-secondary small">Toggle dark / light</button>
+      </div>
+
+      <div class="settings-section">
+        <h2>Premium</h2>
+        <p id="premium-status-text" class="hint"></p>
+        <button id="btn-upgrade-premium" class="btn-primary small">Upgrade (stub)</button>
+      </div>
+
+      <div class="settings-section">
+        <h2>Session</h2>
+        <button id="btn-logout" class="btn-secondary small">Sign Out</button>
+      </div>
+    </section>
+
   </main>
 
   <!-- ADD POST BUTTON -->
@@ -65,15 +108,18 @@
     <button id="nav-settings" class="nav-btn">⚙️ Settings</button>
   </footer>
 
-  <!-- MAP OVERLAY -->
-  <div id="map-overlay" class="overlay">
+  <!-- MAP SLIDE-UP PANEL -->
+  <div id="map-overlay" class="detail-overlay"></div>
+  <div id="map-panel" class="map-panel">
+    <div class="map-header">
+      <h2>Nearby activity</h2>
+      <button id="map-close-btn" class="btn-secondary small">Close</button>
+    </div>
     <div class="map-controls">
       <input id="map-search-query" placeholder="Search on map…">
       <button id="map-search-btn" class="btn-secondary small">Go</button>
-      <button id="close-map-btn" class="btn-secondary small">Close</button>
     </div>
-
-    <div id="map-message"></div>
+    <div id="map-message" class="hint"></div>
     <div id="map-canvas"></div>
   </div>
 
@@ -120,7 +166,6 @@
 
   <!-- DETAIL PANEL -->
   <div id="detail-overlay" class="detail-overlay"></div>
-
   <div id="detail-panel" class="detail-panel">
     <button id="detail-close-btn" class="close-btn">✕</button>
 
@@ -148,9 +193,9 @@
     <button id="detail-message-btn" class="btn-primary full">Send message</button>
   </div>
 
-  <!-- JAVASCRIPT (CORRECT ORDER) -->
-  <script src="app.js"></script>
+  <!-- JS (order matters) -->
   <script src="auth.js"></script>
+  <script src="app.js"></script>
   <script src="posts.js"></script>
   <script src="map.js"></script>
 
