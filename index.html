@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <div class="debug-bar">DEBUG: BuyerFinder multi-file build (posts + premium + map)</div>
+  <div class="debug-bar">DEBUG: BuyerFinder multi-file build (posts + premium + map + detail panel)</div>
 
   <header>
     <h1>🔎 BuyerFinder</h1>
@@ -88,7 +88,7 @@
 
         <div class="field-row">
           <label>Location</label>
-          <input type="text" id="profile-location-text" placeholder="e.g. Columbus, OH" />
+          <input type="text" id="profile-location-text" placeholder="e.g. Lexington, SC" />
           <button class="btn small" id="btn-save-location">Save</button>
           <button class="btn small outline" id="btn-use-gps">Use GPS</button>
         </div>
@@ -110,6 +110,16 @@
         <h3>Premium</h3>
         <p id="premium-status-text" class="hint"></p>
         <button class="btn small" id="btn-upgrade-premium">Upgrade (dev-mode)</button>
+      </div>
+
+      <div class="section">
+        <h3>Post view options</h3>
+        <div class="field-row">
+          <label>
+            <input type="checkbox" id="setting-minimap-toggle" checked />
+            Show mini map on post details when available (premium only)
+          </label>
+        </div>
       </div>
 
       <div class="section">
@@ -207,6 +217,41 @@
         <button class="btn small" id="btn-save-post">Save</button>
       </div>
       <p class="hint" id="post-modal-hint"></p>
+    </div>
+  </div>
+
+  <!-- DETAIL OVERLAY + SLIDE-UP PANEL -->
+  <div id="detail-overlay" class="detail-overlay"></div>
+
+  <div id="detail-panel" class="detail-panel">
+    <div class="detail-header">
+      <div class="detail-handle"></div>
+      <button class="detail-close" id="detail-close-btn">✕</button>
+    </div>
+    <div class="detail-content">
+      <div class="detail-images" id="detail-images"></div>
+
+      <h2 id="detail-title"></h2>
+      <p id="detail-price" class="detail-price"></p>
+      <p id="detail-description"></p>
+      <p id="detail-meta" class="hint"></p>
+
+      <div class="detail-seller">
+        <div class="detail-seller-avatar" id="detail-seller-avatar"></div>
+        <div class="detail-seller-meta">
+          <div id="detail-seller-name"></div>
+          <small id="detail-seller-email" class="hint"></small>
+        </div>
+      </div>
+
+      <div class="detail-location">
+        <div id="detail-location-text" class="hint"></div>
+        <div id="detail-minimap-container">
+          <div id="detail-minimap"></div>
+        </div>
+      </div>
+
+      <button class="btn full" id="detail-message-btn">Send message</button>
     </div>
   </div>
 
