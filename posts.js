@@ -19,7 +19,7 @@
   const btnSavePost = document.getElementById("btn-save-post");
   const postModalHint = document.getElementById("post-modal-hint");
 
-  // Detail panel elements
+  // detail panel
   const detailOverlay = document.getElementById("detail-overlay");
   const detailPanel = document.getElementById("detail-panel");
   const detailCloseBtn = document.getElementById("detail-close-btn");
@@ -37,9 +37,27 @@
   );
   const detailMessageBtn = document.getElementById("detail-message-btn");
 
-  window.activePostType = window.activePostType || "selling";
+  let currentSearch = "";
 
-  // ---------- helpers ----------
+  // helpers
+  function normalizeImageUrls(field) {
+    if (!field) return [];
+    if (Array.isArray(field)) {
+      return field.filter((u) => typeof u === "string" && u.length > 0);
+    }
+    if (typeof field === "string") {
+      try {
+        const arr = JSON.parse(field);
+        if (Array.isArray(arr)) {
+          return arr.filter((u) => typeof u === "string" && u.length > 0);
+        }
+      } catch {
+        if (field.startsWith("http")) return [field];
+      }
+    }
+    return [];
+  }
+
   function openModal() {
     if (!window.currentUser) {
       alert("You must sign in to add a post.");
@@ -61,37 +79,9 @@
     modalBackdrop.classList.remove("active");
   }
 
-  async function enforcePostLimitForFree() {
-    const user = window.currentUser;
-    const profile = window.currentProfile;
-    if (!user) return false;
-
-    if (profile && profile.premium) return true;
-
-    const { count, error } = await supa
-      .from("posts")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id);
-
-    if (error) {
-      console.log("post count error (ignoring):", error.message);
-      return true;
-    }
-
-    if ((count || 0) >= 5) {
-      alert(
-        "You reached the free plan limit of 5 posts.\nUpgrade to premium to post unlimited."
-      );
-      return false;
-    }
-
-    return true;
-  }
-
   async function uploadPostImages(files, userId) {
     if (!files || !files.length) return [];
     const urls = [];
-
     for (const file of files) {
       const ext = file.name.split(".").pop() || "jpg";
       const path = `posts/${userId}-${Date.now()}-${Math.random()
@@ -104,73 +94,27 @@
 
       if (uploadError) {
         console.log("Upload error:", uploadError.message);
-        // surface the error so you actually see it
         postModalHint.textContent =
           "Image upload error: " + uploadError.message;
         continue;
       }
 
-      const { data: urlData, error: urlErr } = supa.storage
+      const { data: urlData } = supa.storage
         .from("post_images")
         .getPublicUrl(path);
-
-      if (urlErr) {
-        console.log("public URL error:", urlErr.message);
-        postModalHint.textContent =
-          "Image URL error: " + urlErr.message;
-        continue;
-      }
 
       if (urlData && urlData.publicUrl) {
         urls.push(urlData.publicUrl);
       }
     }
-
     return urls;
-  }
-
-  // normalize whatever the DB gives us into a JS array of URLs
-  function normalizeImageUrls(field) {
-    if (!field) return [];
-
-    // If already an array (e.g. text[] from Supabase)
-    if (Array.isArray(field)) {
-      return field.filter((u) => typeof u === "string" && u.length > 0);
-    }
-
-    // If it's a plain string
-    if (typeof field === "string") {
-      // Try to parse as JSON array first
-      try {
-        const parsed = JSON.parse(field);
-        if (Array.isArray(parsed)) {
-          return parsed.filter(
-            (u) => typeof u === "string" && u.length > 0
-          );
-        }
-      } catch {
-        // Not JSON, treat as single URL
-        if (field.startsWith("http")) {
-          return [field];
-        }
-      }
-    }
-
-    return [];
   }
 
   async function savePost() {
     const user = window.currentUser;
     const profile = window.currentProfile;
     if (!user) {
-      alert("You must sign in to add a post.");
-      return;
-    }
-
-    const ok = await enforcePostLimitForFree();
-    if (!ok) {
-      postModalHint.textContent =
-        "Free plan: post limit reached. Upgrade to premium for unlimited posts.";
+      alert("Sign in first.");
       return;
     }
 
@@ -214,28 +158,23 @@
       location_text: locationText,
       lat,
       lng,
-      is_premium: isPremiumUser,
+      is_premium: isPremiumUser
     };
 
     if (imageUrls.length) {
-      // Store as JSON string in TEXT column
       payload.image_urls = JSON.stringify(imageUrls);
     } else {
       payload.image_urls = null;
     }
 
     const { error } = await supa.from("posts").insert(payload);
-
     if (error) {
       console.log("Insert error:", error.message);
       postModalHint.textContent = "Error saving post: " + error.message;
       return;
     }
 
-    postModalHint.textContent = imageUrls.length
-      ? `Saved! (${imageUrls.length} image${imageUrls.length > 1 ? "s" : ""})`
-      : "Saved! (no images attached)";
-
+    postModalHint.textContent = "Saved!";
     setTimeout(() => {
       closeModal();
       loadPosts();
@@ -258,8 +197,7 @@
 
     if (error) {
       console.log("load posts error:", error.message);
-      postsStatus.textContent =
-        "Error loading posts. Check console / Supabase.";
+      postsStatus.textContent = "Error loading posts.";
       return;
     }
 
@@ -270,18 +208,35 @@
       return;
     }
 
+    const typeFilter = (window.activePostType || "selling").toLowerCase();
+    const search = currentSearch.toLowerCase();
+
     const filtered = data.filter((p) => {
       const t =
         (p.type || "").toString().toLowerCase() === "request"
           ? "request"
           : "selling";
-      return t === window.activePostType;
+      if (t !== typeFilter) return false;
+
+      if (search) {
+        const haystack = (
+          (p.title || "") +
+          " " +
+          (p.description || "") +
+          " " +
+          (p.category || "") +
+          " " +
+          (p.location_text || "")
+        ).toLowerCase();
+        if (!haystack.includes(search)) return false;
+      }
+      return true;
     });
 
     if (!filtered.length) {
-      postsGrid.innerHTML =
-        "<p class='hint'>No posts in this category yet.</p>";
       postsStatus.textContent = "";
+      postsGrid.innerHTML =
+        "<p class='hint'>No posts match this filter yet.</p>";
       return;
     }
 
@@ -292,7 +247,6 @@
         const imgs = normalizeImageUrls(p.image_urls);
         const primaryImage = imgs.length ? imgs[0] : null;
 
-        let priceText = p.price ? `$${p.price}` : "";
         const badge =
           p.is_premium && p.is_premium === true
             ? `<span class="badge premium">Premium</span>`
@@ -307,6 +261,8 @@
           ? `<small class="hint">${metaBits.join(" • ")}</small>`
           : "";
 
+        const priceText = p.price ? `$${p.price}` : "";
+
         const imgHtml = primaryImage
           ? `<img src="${primaryImage}" alt="Post image" />`
           : "";
@@ -314,7 +270,7 @@
         return `
           <article class="post" data-post-id="${p.id}">
             ${imgHtml}
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
               <h3>${p.title || "Untitled"}</h3>
               ${badge}
             </div>
@@ -333,25 +289,23 @@
     const cards = postsGrid.querySelectorAll(".post[data-post-id]");
     cards.forEach((card) => {
       const id = card.getAttribute("data-post-id");
-      const post = posts.find((p) => p.id === Number(id));
+      const post = posts.find((p) => String(p.id) === String(id));
       if (!post) return;
       card.addEventListener("click", () => openDetailPanel(post.id));
     });
   }
 
-  function openDetailPanelUI() {
+  function openDetailUI() {
     if (detailOverlay) detailOverlay.classList.add("active");
     if (detailPanel) detailPanel.classList.add("active");
   }
 
-  function closeDetailPanelUI() {
+  function closeDetailUI() {
     if (detailOverlay) detailOverlay.classList.remove("active");
     if (detailPanel) detailPanel.classList.remove("active");
   }
 
   async function openDetailPanel(postId) {
-    if (!detailPanel) return;
-
     const { data: post, error } = await supa
       .from("posts")
       .select("*")
@@ -380,7 +334,6 @@
       });
     }
 
-    // Text info
     detailTitle.textContent = post.title || "Untitled";
     detailPrice.textContent = post.price ? `$${post.price}` : "";
     detailDescription.textContent = post.description || "";
@@ -397,7 +350,7 @@
     }
     detailMeta.textContent = metaBits.join(" • ");
 
-    // Seller
+    // seller
     detailSellerAvatar.innerHTML = "";
     const avImg = document.createElement("img");
     if (profile?.avatar_url) {
@@ -410,11 +363,9 @@
         );
     }
     detailSellerAvatar.appendChild(avImg);
-
     detailSellerName.textContent = profile?.username || "Seller";
     detailSellerEmail.textContent = profile?.email || "";
 
-    // Location / mini-map
     const locText = post.location_text || profile?.location_text || "";
     detailLocationText.textContent = locText || "Location not specified.";
 
@@ -430,45 +381,43 @@
       isViewerPremium &&
       showMiniPref &&
       typeof lat === "number" &&
-      typeof lng === "number"
+      typeof lng === "number" &&
+      window.BFMap &&
+      typeof window.BFMap.renderMiniMap === "function"
     ) {
-      if (detailMinimapContainer)
-        detailMinimapContainer.style.display = "block";
-      if (window.BFMap && typeof window.BFMap.renderMiniMap === "function") {
-        window.BFMap.renderMiniMap(lat, lng);
-      }
+      detailMinimapContainer.style.display = "block";
+      window.BFMap.renderMiniMap(lat, lng);
     } else {
-      if (detailMinimapContainer)
-        detailMinimapContainer.style.display = "none";
+      detailMinimapContainer.style.display = "none";
     }
 
-    // Message / Chat button (placeholder)
     if (detailMessageBtn) {
       detailMessageBtn.textContent = "Send message";
       detailMessageBtn.onclick = () => {
-        alert(
-          "Messaging not wired up yet, but this will open a chat with the seller in a future version."
-        );
+        alert("Messaging not wired up yet.");
       };
     }
 
-    openDetailPanelUI();
+    openDetailUI();
   }
 
-  // ---------- events ----------
+  // events
   if (fabAdd) fabAdd.addEventListener("click", openModal);
   if (btnCancelPost) btnCancelPost.addEventListener("click", closeModal);
   if (btnSavePost) btnSavePost.addEventListener("click", savePost);
 
   if (detailCloseBtn)
-    detailCloseBtn.addEventListener("click", closeDetailPanelUI);
+    detailCloseBtn.addEventListener("click", closeDetailUI);
   if (detailOverlay)
-    detailOverlay.addEventListener("click", closeDetailPanelUI);
+    detailOverlay.addEventListener("click", closeDetailUI);
 
   window.Posts = {
     loadPosts,
+    setSearchQuery(q) {
+      currentSearch = (q || "").trim();
+    }
   };
 
-  // Initial load
+  // initial load
   loadPosts();
 })();
