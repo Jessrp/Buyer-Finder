@@ -1,16 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BuyerFinder</title>
 
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css">
 
   <!-- Google Maps -->
-  <script async
-    src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_KEY">
-  </script>
+  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_KEY"></script>
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -19,37 +17,34 @@
 <body>
 
   <!-- HEADER -->
-  <header id="bf-header">
-    <div id="header-left">
-      <span id="logo">🔎 BuyerFinder</span>
-    </div>
-    <div id="header-right">
-      <button id="btn-signin-header" class="btn-primary">Sign In</button>
-    </div>
+  <header class="header">
+    <h1 class="logo">🔎 BuyerFinder</h1>
+    <button id="btn-signin-header" class="btn-primary small">Sign In</button>
   </header>
 
   <!-- SEARCH BAR -->
-  <section id="search-bar-section">
-    <input type="text" id="search-input" placeholder="Search posts..." />
-    <button id="search-btn">Search</button>
-  </section>
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="Search posts…">
+    <button id="search-btn" class="btn-secondary">Search</button>
+  </div>
 
   <!-- TABS -->
-  <nav id="tabs">
+  <div class="tabs">
     <button id="tab-selling" class="tab active">Selling</button>
     <button id="tab-requests" class="tab">Requests</button>
-  </nav>
+  </div>
 
   <!-- USER CARD -->
   <section id="user-card">
-    <div id="user-info">
-      <strong id="user-name">Guest</strong><br />
+    <div class="user-meta">
+      <div id="user-name">Guest</div>
       <small id="user-status">Not signed in</small>
     </div>
 
-    <button id="btn-signin-card" class="btn-secondary">Sign In</button>
-
-    <div id="user-plan-badge" class="badge free">Free (guest)</div>
+    <div class="user-right">
+      <button id="btn-signin-card" class="btn-secondary small">Sign In</button>
+      <div id="user-plan-badge" class="badge free">Free (guest)</div>
+    </div>
   </section>
 
   <!-- POSTS -->
@@ -58,11 +53,11 @@
     <div id="posts-grid"></div>
   </main>
 
-  <!-- FAB: ADD POST -->
-  <button id="fab-add">+</button>
+  <!-- ADD POST BUTTON -->
+  <button id="fab-add" class="fab">+</button>
 
   <!-- BOTTOM NAV -->
-  <footer id="bottom-nav">
+  <footer class="bottom-nav">
     <button id="nav-selling" class="nav-btn active">🏷 Selling</button>
     <button id="nav-requests" class="nav-btn">📦 Requests</button>
     <button id="nav-map" class="nav-btn">🗺 Map</button>
@@ -70,29 +65,30 @@
   </footer>
 
   <!-- MAP OVERLAY -->
-  <div id="map-overlay">
-    <div id="map-header">
-      <input id="map-search-query" placeholder="Search on map…" />
-      <button id="map-search-btn">Go</button>
-      <button id="close-map-btn">Close</button>
+  <div id="map-overlay" class="overlay">
+    <div class="map-controls">
+      <input id="map-search-query" placeholder="Search on map…">
+      <button id="map-search-btn" class="btn-secondary small">Go</button>
+      <button id="close-map-btn" class="btn-secondary small">Close</button>
     </div>
+
     <div id="map-message"></div>
     <div id="map-canvas"></div>
   </div>
 
   <!-- POST MODAL -->
-  <div id="modal-backdrop">
-    <div id="modal">
+  <div id="modal-backdrop" class="modal-backdrop">
+    <div id="modal" class="modal">
       <h2>Add Post</h2>
 
       <label>Title</label>
-      <input type="text" id="post-title" />
+      <input id="post-title">
 
       <label>Description</label>
       <textarea id="post-description"></textarea>
 
       <label>Price</label>
-      <input type="text" id="post-price" />
+      <input id="post-price">
 
       <label>Type</label>
       <select id="post-type">
@@ -101,18 +97,18 @@
       </select>
 
       <label>Category</label>
-      <input type="text" id="post-category" />
+      <input id="post-category">
 
       <label>Condition</label>
-      <input type="text" id="post-condition" />
+      <input id="post-condition">
 
       <label>Location</label>
-      <input type="text" id="post-location" />
+      <input id="post-location">
 
       <label>Images</label>
-      <input type="file" id="post-image" accept="image/*" multiple />
+      <input type="file" id="post-image" multiple>
 
-      <p id="post-modal-hint" class="hint"></p>
+      <div id="post-modal-hint" class="hint"></div>
 
       <div class="modal-actions">
         <button id="btn-cancel-post" class="btn-secondary">Cancel</button>
@@ -122,22 +118,22 @@
   </div>
 
   <!-- DETAIL PANEL -->
-  <div id="detail-overlay"></div>
+  <div id="detail-overlay" class="detail-overlay"></div>
 
-  <div id="detail-panel">
-    <button id="detail-close-btn">✕</button>
+  <div id="detail-panel" class="detail-panel">
+    <button id="detail-close-btn" class="close-btn">✕</button>
 
-    <div id="detail-images"></div>
+    <div id="detail-images" class="detail-images"></div>
 
     <h2 id="detail-title"></h2>
-    <p id="detail-price"></p>
+    <p id="detail-price" class="big-price"></p>
     <p id="detail-description"></p>
     <p id="detail-meta" class="hint"></p>
 
-    <div id="detail-seller">
-      <div id="detail-seller-avatar"></div>
+    <div id="detail-seller" class="seller-info">
+      <div id="detail-seller-avatar" class="avatar"></div>
       <div>
-        <strong id="detail-seller-name"></strong><br />
+        <strong id="detail-seller-name"></strong><br>
         <small id="detail-seller-email"></small>
       </div>
     </div>
@@ -148,12 +144,10 @@
       <div id="detail-minimap"></div>
     </div>
 
-    <button id="detail-message-btn" class="btn-primary">
-      Send message
-    </button>
+    <button id="detail-message-btn" class="btn-primary full">Send message</button>
   </div>
 
-  <!-- JAVASCRIPT -->
+  <!-- JS -->
   <script src="auth.js"></script>
   <script src="app.js"></script>
   <script src="posts.js"></script>
