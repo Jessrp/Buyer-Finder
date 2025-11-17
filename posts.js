@@ -104,18 +104,59 @@
 
       if (uploadError) {
         console.log("Upload error:", uploadError.message);
+        // surface the error so you actually see it
+        postModalHint.textContent =
+          "Image upload error: " + uploadError.message;
         continue;
       }
 
-      const { data: urlData } = supa.storage
+      const { data: urlData, error: urlErr } = supa.storage
         .from("post_images")
         .getPublicUrl(path);
+
+      if (urlErr) {
+        console.log("public URL error:", urlErr.message);
+        postModalHint.textContent =
+          "Image URL error: " + urlErr.message;
+        continue;
+      }
+
       if (urlData && urlData.publicUrl) {
         urls.push(urlData.publicUrl);
       }
     }
 
     return urls;
+  }
+
+  // normalize whatever the DB gives us into a JS array of URLs
+  function normalizeImageUrls(field) {
+    if (!field) return [];
+
+    // If already an array (e.g. text[] from Supabase)
+    if (Array.isArray(field)) {
+      return field.filter((u) => typeof u === "string" && u.length > 0);
+    }
+
+    // If it's a plain string
+    if (typeof field === "string") {
+      // Try to parse as JSON array first
+      try {
+        const parsed = JSON.parse(field);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(
+            (u) => typeof u === "string" && u.length > 0
+          );
+        }
+      } catch {
+        // Not JSON, treat as single URL
+        if (field.startsWith("http")) {
+          return [field];
+        }
+      }
+    }
+
+    return [];
   }
 
   async function savePost() {
@@ -162,7 +203,7 @@
 
     const isPremiumUser = !!(profile && profile.premium);
 
-    const { error } = await supa.from("posts").insert({
+    const payload = {
       user_id: user.id,
       title,
       description,
@@ -173,9 +214,17 @@
       location_text: locationText,
       lat,
       lng,
-      image_urls: imageUrls.length ? JSON.stringify(imageUrls) : null,
       is_premium: isPremiumUser,
-    });
+    };
+
+    if (imageUrls.length) {
+      // Store as JSON string in TEXT column
+      payload.image_urls = JSON.stringify(imageUrls);
+    } else {
+      payload.image_urls = null;
+    }
+
+    const { error } = await supa.from("posts").insert(payload);
 
     if (error) {
       console.log("Insert error:", error.message);
@@ -183,7 +232,10 @@
       return;
     }
 
-    postModalHint.textContent = "Saved!";
+    postModalHint.textContent = imageUrls.length
+      ? `Saved! (${imageUrls.length} image${imageUrls.length > 1 ? "s" : ""})`
+      : "Saved! (no images attached)";
+
     setTimeout(() => {
       closeModal();
       loadPosts();
@@ -198,7 +250,9 @@
 
     let { data, error } = await supa
       .from("posts")
-      .select("id,user_id,title,description,price,type,category,condition,location_text,image_urls,is_premium,created_at")
+      .select(
+        "id,user_id,title,description,price,type,category,condition,location_text,image_urls,is_premium,created_at"
+      )
       .order("is_premium", { ascending: false })
       .order("created_at", { ascending: false });
 
@@ -235,20 +289,10 @@
 
     postsGrid.innerHTML = filtered
       .map((p) => {
+        const imgs = normalizeImageUrls(p.image_urls);
+        const primaryImage = imgs.length ? imgs[0] : null;
+
         let priceText = p.price ? `$${p.price}` : "";
-        let primaryImage = null;
-
-        if (p.image_urls) {
-          try {
-            const arr = JSON.parse(p.image_urls);
-            if (Array.isArray(arr) && arr.length) {
-              primaryImage = arr[0];
-            }
-          } catch (e) {
-            console.log("image_urls parse error:", e);
-          }
-        }
-
         const badge =
           p.is_premium && p.is_premium === true
             ? `<span class="badge premium">Premium</span>`
@@ -308,7 +352,6 @@
   async function openDetailPanel(postId) {
     if (!detailPanel) return;
 
-    // Fetch fresh post + seller profile
     const { data: post, error } = await supa
       .from("posts")
       .select("*")
@@ -325,17 +368,9 @@
       .eq("id", post.user_id)
       .maybeSingle();
 
-    // Fill images
+    // images
     detailImages.innerHTML = "";
-    let imgs = [];
-    if (post.image_urls) {
-      try {
-        const arr = JSON.parse(post.image_urls);
-        if (Array.isArray(arr) && arr.length) imgs = arr;
-      } catch {}
-    }
-    if (!imgs.length && post.image_url) imgs = [post.image_url];
-
+    const imgs = normalizeImageUrls(post.image_urls);
     if (imgs.length) {
       imgs.forEach((url, idx) => {
         const img = document.createElement("img");
@@ -354,9 +389,10 @@
     if (post.category) metaBits.push(post.category);
     if (post.condition) metaBits.push(post.condition);
     if (post.type) {
-      const t = post.type.toString().toLowerCase() === "request"
-        ? "Request"
-        : "Selling";
+      const t =
+        post.type.toString().toLowerCase() === "request"
+          ? "Request"
+          : "Selling";
       metaBits.push(t);
     }
     detailMeta.textContent = metaBits.join(" • ");
@@ -406,9 +442,8 @@
         detailMinimapContainer.style.display = "none";
     }
 
-    // Message / Chat button (placeholder logic)
+    // Message / Chat button (placeholder)
     if (detailMessageBtn) {
-      // TODO: check if a conversation exists; for now always "Send message"
       detailMessageBtn.textContent = "Send message";
       detailMessageBtn.onclick = () => {
         alert(
@@ -425,13 +460,15 @@
   if (btnCancelPost) btnCancelPost.addEventListener("click", closeModal);
   if (btnSavePost) btnSavePost.addEventListener("click", savePost);
 
-  if (detailCloseBtn) detailCloseBtn.addEventListener("click", closeDetailPanelUI);
-  if (detailOverlay) detailOverlay.addEventListener("click", closeDetailPanelUI);
+  if (detailCloseBtn)
+    detailCloseBtn.addEventListener("click", closeDetailPanelUI);
+  if (detailOverlay)
+    detailOverlay.addEventListener("click", closeDetailPanelUI);
 
   window.Posts = {
     loadPosts,
   };
 
-  // Initial load (Auth will call this again when user changes)
+  // Initial load
   loadPosts();
 })();
