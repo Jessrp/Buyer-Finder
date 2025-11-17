@@ -2,7 +2,7 @@
 // Glue code: tabs, nav, search, map overlay, initial load.
 
 (function () {
-  const supa = window.supa; // not actually used here yet, but whatever
+  const supa = window.supa;
 
   // Elements
   const tabSelling = document.getElementById("tab-selling");
@@ -61,14 +61,14 @@
     tabSelling.addEventListener("click", () => setActiveTab("selling"));
   }
   if (tabRequests) {
-    tabRequests.addEventListener("click", () => setActiveTab("request"));
+    tabRequests.addEventListener("click", () => setActiveTab("requests")); // FIXED
   }
 
   if (navSelling) {
     navSelling.addEventListener("click", () => setActiveTab("selling"));
   }
   if (navRequests) {
-    navRequests.addEventListener("click", () => setActiveTab("request"));
+    navRequests.addEventListener("click", () => setActiveTab("requests")); // FIXED
   }
 
   // -------- SEARCH --------
@@ -100,7 +100,6 @@
     if (!mapOverlay) return;
     mapOverlay.classList.add("active");
 
-    // Sync search query into map search box
     if (mapSearchInput && searchInput) {
       mapSearchInput.value = searchInput.value.trim();
     }
@@ -122,7 +121,7 @@
     closeMapBtn.addEventListener("click", closeMapOverlay);
   }
 
-  // -------- SETTINGS (placeholder) --------
+  // -------- SETTINGS --------
 
   if (navSettings) {
     navSettings.addEventListener("click", () => {
@@ -135,16 +134,13 @@
   // -------- INITIAL BOOTSTRAP --------
 
   function boot() {
-    // Auth init
     if (window.AuthUI && typeof window.AuthUI.init === "function") {
       window.AuthUI.init();
     }
 
-    // Default tab
     setActiveTab(window.activePostType || "selling");
   }
 
-  // Run after DOM is ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
   } else {
