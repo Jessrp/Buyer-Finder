@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <div class="debug-bar">DEBUG: BuyerFinder multi-file build active</div>
+  <div class="debug-bar">DEBUG: BuyerFinder multi-file build (posts + premium + map)</div>
 
   <header>
     <h1>🔎 BuyerFinder</h1>
@@ -45,11 +45,20 @@
       <div class="posts" id="posts-grid"></div>
     </section>
 
-    <!-- MAP VIEW -->
+    <!-- MAP VIEW (premium) -->
     <section id="view-map" class="view">
       <div class="map-wrapper">
-        <h3 style="margin-top:0;">Nearby map</h3>
-        <p class="hint" id="map-message"></p>
+        <h3 style="margin-top:0;">BuyerFinder Radar</h3>
+        <p class="hint" id="map-message">
+          Map shows posts near you. Use search to filter by product keywords.
+        </p>
+
+        <div class="field-row">
+          <label>Search</label>
+          <input type="text" id="map-search-query" placeholder="e.g. guitar, bike, lawn mower" />
+          <button class="btn small" id="map-search-btn">Go</button>
+        </div>
+
         <div id="map-canvas"></div>
         <button class="btn small outline" id="map-close-btn">Close map</button>
       </div>
@@ -59,21 +68,34 @@
     <section id="view-settings" class="view">
       <div class="section">
         <h3>Profile</h3>
+
         <div class="field-row">
           <label>Email</label>
           <input type="email" id="profile-email" disabled />
         </div>
+
         <div class="field-row">
           <label>Username</label>
           <input type="text" id="profile-username" />
           <button class="btn small" id="btn-save-username">Save</button>
         </div>
+
         <div class="field-row">
           <label>Avatar</label>
           <input type="file" id="profile-avatar-input" accept="image/*" />
           <button class="btn small" id="btn-upload-avatar">Upload</button>
         </div>
-        <p class="hint">Avatar uses the same <code>post_images</code> bucket.</p>
+
+        <div class="field-row">
+          <label>Location</label>
+          <input type="text" id="profile-location-text" placeholder="e.g. Columbus, OH" />
+          <button class="btn small" id="btn-save-location">Save</button>
+          <button class="btn small outline" id="btn-use-gps">Use GPS</button>
+        </div>
+
+        <p class="hint">
+          Location is stored as an approximate coordinate for map features (rounded, not exact).
+        </p>
       </div>
 
       <div class="section">
@@ -87,14 +109,14 @@
       <div class="section">
         <h3>Premium</h3>
         <p id="premium-status-text" class="hint"></p>
-        <button class="btn small" id="btn-upgrade-premium">Upgrade (stub)</button>
+        <button class="btn small" id="btn-upgrade-premium">Upgrade (dev-mode)</button>
       </div>
 
       <div class="section">
         <h3>Danger zone</h3>
         <p class="hint">
-          Real account deletion needs a secure backend with the service role key.
-          We’re not doing that from the browser with the anon key.
+          Real account deletion must be done on a secure backend with the service role key.
+          This app does not delete auth users from the browser.
         </p>
         <button class="btn small danger" id="btn-delete-account">Fake delete (explain)</button>
       </div>
@@ -103,7 +125,7 @@
         <h3>About</h3>
         <p class="hint">
           BuyerFinder is your tiny marketplace for matching buyers and sellers,
-          with public listings, requests, and premium map features.
+          with public listings, requests, and premium map radar features.
         </p>
         <p class="hint">
           Contact support:
@@ -123,8 +145,7 @@
       <span>📥</span> Requests
     </div>
     <div class="nav-item" id="nav-map">
-      <span>🗺</span> Map
-    </div>
+      <span>🗺</span> Map</div>
     <div class="nav-item" id="nav-settings">
       <span>⚙️</span> Settings
     </div>
@@ -137,18 +158,22 @@
   <div class="modal-backdrop" id="modal-backdrop">
     <div class="modal">
       <h3>New post</h3>
+
       <div class="field-row">
         <label>Title</label>
         <input type="text" id="post-title" />
       </div>
+
       <div class="field-row">
         <label>Description</label>
         <textarea id="post-description"></textarea>
       </div>
+
       <div class="field-row">
         <label>Price (optional)</label>
         <input type="text" id="post-price" />
       </div>
+
       <div class="field-row">
         <label>Type</label>
         <select id="post-type">
@@ -156,10 +181,27 @@
           <option value="request">Request</option>
         </select>
       </div>
+
       <div class="field-row">
-        <label>Image</label>
-        <input type="file" id="post-image" accept="image/*" />
+        <label>Category</label>
+        <input type="text" id="post-category" placeholder="e.g. Electronics" />
       </div>
+
+      <div class="field-row">
+        <label>Condition</label>
+        <input type="text" id="post-condition" placeholder="e.g. New, Used, Fair" />
+      </div>
+
+      <div class="field-row">
+        <label>Location</label>
+        <input type="text" id="post-location" placeholder="Uses profile location if blank" />
+      </div>
+
+      <div class="field-row">
+        <label>Images</label>
+        <input type="file" id="post-image" accept="image/*" multiple />
+      </div>
+
       <div class="modal-actions">
         <button class="btn small outline" id="btn-cancel-post">Cancel</button>
         <button class="btn small" id="btn-save-post">Save</button>
@@ -168,11 +210,18 @@
     </div>
   </div>
 
-  <!-- Supabase + JS -->
+  <!-- Supabase + app scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
   <script src="auth.js"></script>
   <script src="posts.js"></script>
   <script src="map.js"></script>
   <script src="app.js"></script>
+
+  <!-- Google Maps API (replace YOUR_KEY_HERE) -->
+  <script
+    async
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY">
+  </script>
+
 </body>
 </html>
