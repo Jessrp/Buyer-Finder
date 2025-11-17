@@ -5,7 +5,7 @@
   // ================== CONFIG ==================
   // USE YOUR REAL VALUES HERE
   const SUPABASE_URL = "https://hcgwldsslzkppzgfhwws.supabase.co";
-  const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY_HERE"; // <-- paste your anon key
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3dsZHNzbHprcHB6Z2Zod3dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MzE1MTYsImV4cCI6MjA3NjEwNzUxNn0.fCKpSI2UYHBlgAbus18srgkJ3FuOTAzDCgtw_lH3Yc4"; // <-- paste your anon key
 
   if (!SUPABASE_KEY || SUPABASE_KEY.indexOf("YOUR_") === 0) {
     console.warn(
