@@ -1,6 +1,6 @@
 // app.js
 document.addEventListener("DOMContentLoaded", () => {
-  let activeView = "posts"; // posts | map | settings
+  let activeView = "posts";
   window.activePostType = window.activePostType || "selling";
 
   const tabSelling = document.getElementById("tab-selling");
@@ -26,16 +26,26 @@ document.addEventListener("DOMContentLoaded", () => {
     if (viewSettings)
       viewSettings.classList.toggle("active", view === "settings");
 
-    if (navSelling) navSelling.classList.toggle("active", view === "posts" && window.activePostType === "selling");
-    if (navRequests) navRequests.classList.toggle("active", view === "posts" && window.activePostType === "request");
+    if (navSelling)
+      navSelling.classList.toggle(
+        "active",
+        view === "posts" && window.activePostType === "selling"
+      );
+    if (navRequests)
+      navRequests.classList.toggle(
+        "active",
+        view === "posts" && window.activePostType === "request"
+      );
     if (navMap) navMap.classList.toggle("active", view === "map");
-    if (navSettings) navSettings.classList.toggle("active", view === "settings");
+    if (navSettings)
+      navSettings.classList.toggle("active", view === "settings");
   }
 
   function setActivePostType(type) {
     window.activePostType = type;
     if (tabSelling) tabSelling.classList.toggle("active", type === "selling");
-    if (tabRequests) tabRequests.classList.toggle("active", type === "request");
+    if (tabRequests)
+      tabRequests.classList.toggle("active", type === "request");
     if (window.Posts && typeof window.Posts.loadPosts === "function") {
       window.Posts.loadPosts();
     }
@@ -60,7 +70,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       if (!profile || !profile.premium) {
-        alert("Map is a premium feature. (Stub: upgrade flow not implemented.)");
+        alert(
+          "Map is a premium feature.\nUse the Upgrade button in Settings (dev-mode) to mark your account premium for now."
+        );
         return;
       }
       if (window.BFMap && typeof window.BFMap.initMap === "function") {
@@ -72,7 +84,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (navSettings)
     navSettings.addEventListener("click", () => setActiveView("settings"));
 
-  // theme
   function applyTheme() {
     const theme = localStorage.getItem("buyerfinder-theme") || "dark";
     if (theme === "light") document.body.classList.add("light");
@@ -89,20 +100,45 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
   if (btnUpgradePremium)
-    btnUpgradePremium.addEventListener("click", () => {
-      alert(
-        "Premium upgrade would normally go to a payment flow.\nFor now this is just a placeholder."
+    btnUpgradePremium.addEventListener("click", async () => {
+      if (!window.currentUser) {
+        alert("Sign in first to upgrade.");
+        return;
+      }
+
+      const ok = confirm(
+        "In a real app this would open Stripe Checkout.\nFor now, press OK to mark your account as PREMIUM for testing."
       );
+      if (!ok) return;
+
+      const { error } = await window.supa
+        .from("profiles")
+        .update({ premium: true })
+        .eq("id", window.currentUser.id);
+
+      if (error) {
+        alert("Failed to upgrade: " + error.message);
+        return;
+      }
+
+      if (window.currentProfile) {
+        window.currentProfile.premium = true;
+      }
+
+      if (window.Auth && typeof window.Auth.checkUser === "function") {
+        window.Auth.checkUser();
+      }
+
+      alert("You are now PREMIUM. Map & unlimited posts unlocked.");
     });
 
   if (btnDeleteAccount)
     btnDeleteAccount.addEventListener("click", () => {
       alert(
-        "Real account deletion must be done on a secure backend with the service role key.\nThis button just explains that, nothing is actually deleted."
+        "Real account deletion must be done on a secure backend using the service role key.\nThis button just explains that; nothing is deleted."
       );
     });
 
-  // initial load
   if (window.Posts && typeof window.Posts.loadPosts === "function") {
     window.Posts.loadPosts();
   }
