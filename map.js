@@ -1,32 +1,145 @@
 // map.js
 (function () {
-  const mapMessage = document.getElementById("map-message");
+  const supa = window.supa;
+
+  let map;
+  let markers = [];
+
   const mapCanvas = document.getElementById("map-canvas");
-  const mapCloseBtn = document.getElementById("map-close-btn");
+  const mapMessage = document.getElementById("map-message");
+  const mapSearchInput = document.getElementById("map-search-query");
+  const mapSearchBtn = document.getElementById("map-search-btn");
 
-  function initMap() {
-    if (mapMessage)
+  function clearMarkers() {
+    markers.forEach((m) => m.setMap(null));
+    markers = [];
+  }
+
+  function ensureMap() {
+    if (!mapCanvas) return null;
+
+    if (!window.google || !google.maps) {
+      if (mapMessage) {
+        mapMessage.textContent =
+          "Google Maps API not loaded or key invalid.";
+      }
+      return null;
+    }
+
+    if (!map) {
+      map = new google.maps.Map(mapCanvas, {
+        center: { lat: 39.8283, lng: -98.5795 }, // center-ish US
+        zoom: 4,
+        disableDefaultUI: false,
+      });
+    }
+    return map;
+  }
+
+  async function loadPostsForMap(query) {
+    const m = ensureMap();
+    if (!m) return;
+
+    if (mapMessage) mapMessage.textContent = "Loading posts for map...";
+
+    let req = supa
+      .from("posts")
+      .select("id,title,description,price,type,lat,lng,category,location_text")
+      .not("lat", "is", null)
+      .not("lng", "is", null);
+
+    if (query && query.trim()) {
+      const q = query.trim();
+      req = req.or(
+        `title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`
+      );
+    }
+
+    const { data, error } = await req;
+
+    if (error) {
+      console.log("map posts error:", error.message);
+      if (mapMessage)
+        mapMessage.textContent = "Error loading map posts.";
+      return;
+    }
+
+    clearMarkers();
+
+    if (!data || !data.length) {
+      if (mapMessage)
+        mapMessage.textContent = "No posts match this search on the map.";
+      return;
+    }
+
+    const bounds = new google.maps.LatLngBounds();
+
+    data.forEach((p) => {
+      if (typeof p.lat !== "number" || typeof p.lng !== "number") return;
+
+      const pos = { lat: p.lat, lng: p.lng };
+      const isRequest =
+        (p.type || "").toString().toLowerCase() === "request";
+
+      const marker = new google.maps.Marker({
+        position: pos,
+        map: m,
+        title: p.title || "",
+        icon: isRequest
+          ? "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
+          : "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+      });
+
+      const info = new google.maps.InfoWindow({
+        content: `
+          <div style="font-size:13px;max-width:220px;">
+            <strong>${p.title || "Untitled"}</strong><br/>
+            ${p.description ? `<span>${p.description}</span><br/>` : ""}
+            ${
+              p.price
+                ? `<span style="color:#22c55e;">$${p.price}</span><br/>`
+                : ""
+            }
+            ${
+              p.category
+                ? `<span class="hint">${p.category}</span><br/>`
+                : ""
+            }
+            ${
+              p.location_text
+                ? `<span class="hint">${p.location_text}</span>`
+                : ""
+            }
+          </div>
+        `,
+      });
+
+      marker.addListener("click", () => {
+        info.open(m, marker);
+      });
+
+      markers.push(marker);
+      bounds.extend(pos);
+    });
+
+    m.fitBounds(bounds);
+
+    if (mapMessage) {
       mapMessage.textContent =
-        "Map would show premium nearby posts here. (Stub for now.)";
-    if (mapCanvas)
-      mapCanvas.innerHTML =
-        "<div style='padding:15px;font-size:13px;color:#9ca3af;'>Map placeholder. In real version, this would be a real map with location pins.</div>";
+        "Blue = selling, Red = requests. Use search to filter.";
+    }
   }
 
-  function closeMap() {
-    const viewPosts = document.getElementById("view-posts");
-    const viewMap = document.getElementById("view-map");
-    if (viewPosts) viewPosts.classList.add("active");
-    if (viewMap) viewMap.classList.remove("active");
-    const navMap = document.getElementById("nav-map");
-    const navSelling = document.getElementById("nav-selling");
-    if (navMap) navMap.classList.remove("active");
-    if (navSelling) navSelling.classList.add("active");
+  if (mapSearchBtn && mapSearchInput) {
+    mapSearchBtn.addEventListener("click", () => {
+      const q = mapSearchInput.value;
+      loadPostsForMap(q);
+    });
   }
-
-  if (mapCloseBtn) mapCloseBtn.addEventListener("click", closeMap);
 
   window.BFMap = {
-    initMap,
+    initMap() {
+      loadPostsForMap(mapSearchInput ? mapSearchInput.value : "");
+    },
   };
 })();
