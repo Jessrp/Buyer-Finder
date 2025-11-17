@@ -1,281 +1,348 @@
+// app.js
 (function () {
-  const SUPA_URL = "YOUR_SUPABASE_URL";
-  const SUPA_ANON = "YOUR_SUPABASE_ANON_KEY";
+  const SUPABASE_URL = "YOUR_SUPABASE_URL";
+  const SUPABASE_ANON = "YOUR_SUPABASE_ANON_KEY";
 
-  const supa = window.supabase.createClient(SUPA_URL, SUPA_ANON);
+  const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
   window.supa = supa;
 
   let currentUser = null;
   let currentProfile = null;
+  let activePostType = "selling";
+  let currentSearch = "";
 
   window.currentUser = currentUser;
   window.currentProfile = currentProfile;
+  window.activePostType = activePostType;
 
-  const viewPosts = document.getElementById("view-posts");
-  const viewMap = document.getElementById("view-map");
-  const viewSettings = document.getElementById("view-settings");
+  document.addEventListener("DOMContentLoaded", () => {
+    // DOM refs
+    const headerLoginBtn = document.getElementById("btn-signin-header");
+    const cardLoginBtn = document.getElementById("btn-signin-card");
+    const btnLogout = document.getElementById("btn-logout");
 
-  const navSelling = document.getElementById("nav-selling");
-  const navRequests = document.getElementById("nav-requests");
-  const navMap = document.getElementById("nav-map");
-  const navSettings = document.getElementById("nav-settings");
+    const tabSelling = document.getElementById("tab-selling");
+    const tabRequests = document.getElementById("tab-requests");
 
-  const tabSelling = document.getElementById("tab-selling");
-  const tabRequests = document.getElementById("tab-requests");
+    const navSelling = document.getElementById("nav-selling");
+    const navRequests = document.getElementById("nav-requests");
+    const navMap = document.getElementById("nav-map");
+    const navSettings = document.getElementById("nav-settings");
 
-  const loginBtn = document.getElementById("login-btn");
-  const logoutBtn = document.getElementById("logout-btn");
-  const userCardSignin = document.getElementById("user-signin-shortcut");
+    const viewPosts = document.getElementById("view-posts");
+    const viewSettings = document.getElementById("view-settings");
 
-  const userNameEl = document.getElementById("user-name");
-  const userEmailEl = document.getElementById("user-email");
-  const userPlanEl = document.getElementById("user-plan");
-  const userAvatarEl = document.getElementById("user-avatar");
+    const userNameEl = document.getElementById("user-name");
+    const userStatusEl = document.getElementById("user-status");
+    const userPlanBadge = document.getElementById("user-plan-badge");
 
-  const profileEmail = document.getElementById("profile-email");
-  const profileUsername = document.getElementById("profile-username");
-  const profileAvatarInput = document.getElementById("profile-avatar-input");
-  const btnSaveUsername = document.getElementById("btn-save-username");
-  const btnUploadAvatar = document.getElementById("btn-upload-avatar");
-  const btnToggleTheme = document.getElementById("btn-toggle-theme");
+    const profileEmail = document.getElementById("profile-email");
+    const profileUsername = document.getElementById("profile-username");
+    const btnSaveUsername = document.getElementById("btn-save-username");
+    const profileAvatarInput = document.getElementById("profile-avatar-input");
+    const btnUploadAvatar = document.getElementById("btn-upload-avatar");
+    const btnToggleTheme = document.getElementById("btn-toggle-theme");
+    const premiumStatusText = document.getElementById("premium-status-text");
+    const btnUpgradePremium = document.getElementById("btn-upgrade-premium");
 
-  const premiumStatusText = document.getElementById("premium-status-text");
-  const btnUpgradePremium = document.getElementById("btn-upgrade-premium");
-  const btnDeleteAccount = document.getElementById("btn-delete-account");
+    const searchInput = document.getElementById("search-input");
+    const searchBtn = document.getElementById("search-btn");
 
-  const mapCloseBtn = document.getElementById("map-close-btn");
+    // Map panel
+    const mapOverlay = document.getElementById("map-overlay");
+    const mapPanel = document.getElementById("map-panel");
+    const mapCloseBtn = document.getElementById("map-close-btn");
 
-  window.activePostType = "selling";
-
-  // THEME
-  function applyTheme() {
-    const theme = localStorage.getItem("bf-theme") || "dark";
-    if (theme === "light") document.body.classList.add("light");
-    else document.body.classList.remove("light");
-  }
-  applyTheme();
-
-  btnToggleTheme.addEventListener("click", () => {
-    const current = localStorage.getItem("bf-theme") || "dark";
-    const next = current === "dark" ? "light" : "dark";
-    localStorage.setItem("bf-theme", next);
+    // THEME
+    function applyTheme() {
+      const t = localStorage.getItem("bf-theme") || "dark";
+      if (t === "light") {
+        document.body.classList.add("light");
+      } else {
+        document.body.classList.remove("light");
+      }
+    }
     applyTheme();
-  });
 
-  // AUTH
-  async function checkUser() {
-    const { data } = await supa.auth.getUser();
-    currentUser = data.user || null;
-    window.currentUser = currentUser;
-
-    loginBtn.style.display = currentUser ? "none" : "inline-block";
-    logoutBtn.style.display = currentUser ? "inline-block" : "none";
-    userCardSignin.style.display = currentUser ? "none" : "inline-block";
-
-    if (currentUser) {
-      await loadOrCreateProfile();
-    } else {
-      currentProfile = null;
-      window.currentProfile = null;
-      renderUserCard();
+    if (btnToggleTheme) {
+      btnToggleTheme.addEventListener("click", () => {
+        const t = localStorage.getItem("bf-theme") || "dark";
+        const next = t === "dark" ? "light" : "dark";
+        localStorage.setItem("bf-theme", next);
+        applyTheme();
+      });
     }
-  }
 
-  async function login() {
-    const email = prompt("Enter your email:");
-    if (!email) return;
+    // AUTH
+    async function checkUser() {
+      const { data } = await supa.auth.getUser();
+      currentUser = data.user || null;
+      window.currentUser = currentUser;
 
-    await supa.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin },
-    });
+      if (currentUser) {
+        await loadOrCreateProfile();
+      } else {
+        currentProfile = null;
+        window.currentProfile = null;
+        renderUserCard();
+      }
 
-    alert("Check your email for login link.");
-  }
+      if (window.Posts && typeof window.Posts.loadPosts === "function") {
+        window.Posts.loadPosts();
+      }
+    }
 
-  async function logout() {
-    await supa.auth.signOut();
-    alert("Signed out.");
-    checkUser();
-  }
+    async function loginWithEmail() {
+      const email = prompt("Enter your email for a login link:");
+      if (!email) return;
+      const { error } = await supa.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.origin }
+      });
+      if (error) alert(error.message);
+      else alert("Check your email for the login link.");
+    }
 
-  loginBtn.addEventListener("click", login);
-  logoutBtn.addEventListener("click", logout);
-  userCardSignin.addEventListener("click", login);
+    async function logout() {
+      await supa.auth.signOut();
+      alert("Signed out.");
+      await checkUser();
+    }
 
-  // PROFILE
-  async function loadOrCreateProfile() {
-    let { data } = await supa
-      .from("profiles")
-      .select("*")
-      .eq("id", currentUser.id)
-      .maybeSingle();
+    if (headerLoginBtn) headerLoginBtn.addEventListener("click", loginWithEmail);
+    if (cardLoginBtn) cardLoginBtn.addEventListener("click", loginWithEmail);
+    if (btnLogout) btnLogout.addEventListener("click", logout);
 
-    if (!data) {
-      const username = (currentUser.email || "user").split("@")[0];
-      const { data: inserted } = await supa
+    async function loadOrCreateProfile() {
+      if (!currentUser) return;
+      let { data, error } = await supa
         .from("profiles")
-        .insert({
-          id: currentUser.id,
-          email: currentUser.email,
-          username,
-          premium: false,
-          created_at: new Date().toISOString(),
-        })
-        .select()
+        .select("*")
+        .eq("id", currentUser.id)
         .maybeSingle();
-      data = inserted;
+
+      if (!data) {
+        const username = (currentUser.email || "user").split("@")[0];
+        const { data: inserted } = await supa
+          .from("profiles")
+          .insert({
+            id: currentUser.id,
+            email: currentUser.email,
+            username,
+            premium: false,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .maybeSingle();
+        data = inserted;
+      }
+
+      if (error) console.log("profile error:", error.message);
+
+      currentProfile = data || null;
+      window.currentProfile = currentProfile;
+      renderUserCard();
+      syncSettingsUI();
     }
 
-    currentProfile = data;
-    window.currentProfile = data;
+    function renderUserCard() {
+      if (!userNameEl || !userStatusEl || !userPlanBadge) return;
 
-    renderUserCard();
-    syncSettingsUI();
-  }
-
-  function renderUserCard() {
-    if (!currentUser) {
-      userNameEl.textContent = "Guest";
-      userEmailEl.textContent = "Not signed in";
-      userPlanEl.textContent = "Free (guest)";
-      userAvatarEl.innerHTML = "";
-      return;
+      if (!currentUser) {
+        userNameEl.textContent = "Guest";
+        userStatusEl.textContent = "Not signed in";
+        userPlanBadge.textContent = "Free (guest)";
+        userPlanBadge.className = "badge free";
+      } else {
+        userNameEl.textContent =
+          (currentProfile && currentProfile.username) || "User";
+        userStatusEl.textContent = currentUser.email || "";
+        const isPremium = !!(currentProfile && currentProfile.premium);
+        userPlanBadge.textContent = isPremium ? "Premium" : "Free";
+        userPlanBadge.className = "badge " + (isPremium ? "premium" : "free");
+      }
     }
 
-    userNameEl.textContent = currentProfile.username;
-    userEmailEl.textContent = currentUser.email;
-    userPlanEl.textContent = currentProfile.premium ? "Premium" : "Free";
-    userAvatarEl.innerHTML = "";
+    function syncSettingsUI() {
+      if (!currentUser) {
+        if (profileEmail) profileEmail.value = "";
+        if (profileUsername) profileUsername.value = "";
+        if (premiumStatusText)
+          premiumStatusText.textContent = "Not signed in.";
+        return;
+      }
+      if (profileEmail) profileEmail.value = currentUser.email || "";
+      if (profileUsername)
+        profileUsername.value =
+          (currentProfile && currentProfile.username) || "";
+      const isPremium = !!(currentProfile && currentProfile.premium);
+      if (premiumStatusText)
+        premiumStatusText.textContent = isPremium
+          ? "You are a premium user."
+          : "Free plan.";
+    }
 
-    const img = document.createElement("img");
-    img.src =
-      currentProfile.avatar_url ||
-      "data:image/svg+xml;base64," +
-        btoa(
-          '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#333"/><text x="50%" y="55%" fill="#ccc" font-size="28" text-anchor="middle">BF</text></svg>'
+    if (btnSaveUsername) {
+      btnSaveUsername.addEventListener("click", async () => {
+        if (!currentUser) return alert("Sign in first.");
+        const newName = profileUsername.value.trim();
+        if (!newName) return;
+        const { error } = await supa
+          .from("profiles")
+          .update({ username: newName })
+          .eq("id", currentUser.id);
+        if (error) alert(error.message);
+        else {
+          if (currentProfile) currentProfile.username = newName;
+          renderUserCard();
+          alert("Username updated.");
+        }
+      });
+    }
+
+    if (btnUploadAvatar) {
+      btnUploadAvatar.addEventListener("click", async () => {
+        if (!currentUser) return alert("Sign in first.");
+        const file = profileAvatarInput.files[0];
+        if (!file) return alert("Choose a file.");
+
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `avatars/${currentUser.id}.${ext}`;
+
+        const { error: uploadError } = await supa.storage
+          .from("post_images")
+          .upload(path, file, { upsert: true });
+        if (uploadError) {
+          alert("Upload failed: " + uploadError.message);
+          return;
+        }
+
+        const { data: urlData } = supa.storage
+          .from("post_images")
+          .getPublicUrl(path);
+
+        const publicUrl = urlData.publicUrl;
+        await supa
+          .from("profiles")
+          .update({ avatar_url: publicUrl })
+          .eq("id", currentUser.id)
+          .catch(() => {});
+        if (currentProfile) currentProfile.avatar_url = publicUrl;
+        alert("Avatar updated.");
+      });
+    }
+
+    // NAV & TABS
+    function setActiveNav(target) {
+      [navSelling, navRequests, navMap, navSettings].forEach((btn) => {
+        if (!btn) return;
+        if (btn === target) btn.classList.add("active");
+        else btn.classList.remove("active");
+      });
+    }
+
+    function showView(view) {
+      [viewPosts, viewSettings].forEach((v) => {
+        if (!v) return;
+        v.classList.remove("active");
+      });
+      if (view) view.classList.add("active");
+    }
+
+    if (tabSelling) {
+      tabSelling.addEventListener("click", () => {
+        activePostType = "selling";
+        window.activePostType = "selling";
+        tabSelling.classList.add("active");
+        tabRequests.classList.remove("active");
+        if (window.Posts) window.Posts.loadPosts();
+      });
+    }
+
+    if (tabRequests) {
+      tabRequests.addEventListener("click", () => {
+        activePostType = "request";
+        window.activePostType = "request";
+        tabRequests.classList.add("active");
+        tabSelling.classList.remove("active");
+        if (window.Posts) window.Posts.loadPosts();
+      });
+    }
+
+    if (navSelling) {
+      navSelling.addEventListener("click", () => {
+        activePostType = "selling";
+        window.activePostType = "selling";
+        tabSelling?.classList.add("active");
+        tabRequests?.classList.remove("active");
+        showView(viewPosts);
+        setActiveNav(navSelling);
+        if (window.Posts) window.Posts.loadPosts();
+      });
+    }
+
+    if (navRequests) {
+      navRequests.addEventListener("click", () => {
+        activePostType = "request";
+        window.activePostType = "request";
+        tabRequests?.classList.add("active");
+        tabSelling?.classList.remove("active");
+        showView(viewPosts);
+        setActiveNav(navRequests);
+        if (window.Posts) window.Posts.loadPosts();
+      });
+    }
+
+    if (navSettings) {
+      navSettings.addEventListener("click", () => {
+        showView(viewSettings);
+        setActiveNav(navSettings);
+      });
+    }
+
+    if (navMap) {
+      navMap.addEventListener("click", () => {
+        // open map slide-up
+        if (mapOverlay) mapOverlay.classList.add("active");
+        if (mapPanel) mapPanel.classList.add("active");
+        setActiveNav(navMap);
+        if (window.BFMap && typeof window.BFMap.initMap === "function") {
+          window.BFMap.initMap();
+        }
+      });
+    }
+
+    if (mapCloseBtn) {
+      mapCloseBtn.addEventListener("click", () => {
+        if (mapOverlay) mapOverlay.classList.remove("active");
+        if (mapPanel) mapPanel.classList.remove("active");
+        // go back to posts
+        showView(viewPosts);
+        setActiveNav(
+          activePostType === "request" ? navRequests : navSelling
         );
-    userAvatarEl.appendChild(img);
-  }
-
-  function syncSettingsUI() {
-    profileEmail.value = currentUser?.email || "";
-    profileUsername.value = currentProfile?.username || "";
-    premiumStatusText.textContent = currentProfile?.premium
-      ? "Premium active"
-      : "Free plan";
-  }
-
-  btnSaveUsername.addEventListener("click", async () => {
-    const newName = profileUsername.value.trim();
-    await supa
-      .from("profiles")
-      .update({ username: newName })
-      .eq("id", currentUser.id);
-    currentProfile.username = newName;
-    renderUserCard();
-  });
-
-  btnUploadAvatar.addEventListener("click", async () => {
-    const file = profileAvatarInput.files[0];
-    if (!file) return;
-    const ext = file.name.split(".").pop();
-    const path = `avatars/${currentUser.id}.${ext}`;
-
-    await supa.storage.from("post_images").upload(path, file, {
-      upsert: true,
-    });
-
-    const { data } = supa.storage
-      .from("post_images")
-      .getPublicUrl(path);
-
-    await supa
-      .from("profiles")
-      .update({ avatar_url: data.publicUrl })
-      .eq("id", currentUser.id);
-
-    currentProfile.avatar_url = data.publicUrl;
-    renderUserCard();
-  });
-
-  btnUpgradePremium.addEventListener("click", () => {
-    alert("Premium payment flow to be added later.");
-  });
-
-  btnDeleteAccount.addEventListener("click", () => {
-    alert("Cannot delete account without admin backend.");
-  });
-
-  // NAVIGATION
-  function hideAllViews() {
-    viewPosts.classList.remove("active");
-    viewMap.classList.remove("active");
-    viewSettings.classList.remove("active");
-  }
-
-  navSelling.addEventListener("click", () => {
-    window.activePostType = "selling";
-    hideAllViews();
-    viewPosts.classList.add("active");
-    navSelling.classList.add("active");
-    navRequests.classList.remove("active");
-    navMap.classList.remove("active");
-    navSettings.classList.remove("active");
-    window.Posts.loadPosts();
-  });
-
-  navRequests.addEventListener("click", () => {
-    window.activePostType = "request";
-    hideAllViews();
-    viewPosts.classList.add("active");
-    navRequests.classList.add("active");
-    navSelling.classList.remove("active");
-    navMap.classList.remove("active");
-    navSettings.classList.remove("active");
-    window.Posts.loadPosts();
-  });
-
-  navMap.addEventListener("click", () => {
-    hideAllViews();
-    viewMap.classList.add("active");
-    navMap.classList.add("active");
-    navSelling.classList.remove("active");
-    navRequests.classList.remove("active");
-    navSettings.classList.remove("active");
-
-    if (window.BFMap) window.BFMap.initMap();
-  });
-
-  navSettings.addEventListener("click", () => {
-    hideAllViews();
-    viewSettings.classList.add("active");
-    navSettings.classList.add("active");
-    navSelling.classList.remove("active");
-    navRequests.classList.remove("active");
-    navMap.classList.remove("active");
-  });
-
-  // MAP CLOSE BUTTON — FIXED
-  function closeMapView() {
-    viewMap.classList.remove("active");
-    navMap.classList.remove("active");
-
-    viewPosts.classList.add("active");
-    if (window.activePostType === "selling") {
-      navSelling.classList.add("active");
-      navRequests.classList.remove("active");
-    } else {
-      navRequests.classList.add("active");
-      navSelling.classList.remove("active");
+      });
     }
-    window.Posts.loadPosts();
-  }
 
-  if (mapCloseBtn) {
-    mapCloseBtn.addEventListener("click", closeMapView);
-  }
+    // SEARCH
+    function applySearch() {
+      currentSearch = (searchInput?.value || "").trim();
+      if (window.Posts && typeof window.Posts.setSearchQuery === "function") {
+        window.Posts.setSearchQuery(currentSearch);
+      }
+      if (window.Posts && typeof window.Posts.loadPosts === "function") {
+        window.Posts.loadPosts();
+      }
+    }
 
-  // Start-up
-  checkUser();
+    if (searchBtn) searchBtn.addEventListener("click", applySearch);
+    if (searchInput) {
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") applySearch();
+      });
+    }
+
+    // initial
+    checkUser();
+  });
 })();
