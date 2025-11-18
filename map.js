@@ -1,24 +1,14 @@
 // map.js
-// Handles main map overlay AND mini-map inside the detail panel.
-
 (function () {
   const supa = window.supa;
 
-  let map = null;
+  let map;
   let markers = [];
-  let mapReady = false;
-  let mapInitTimer = null;
 
-  // DOM
-  const mapOverlay = document.getElementById("map-overlay");
   const mapCanvas = document.getElementById("map-canvas");
   const mapMessage = document.getElementById("map-message");
   const mapSearchInput = document.getElementById("map-search-query");
   const mapSearchBtn = document.getElementById("map-search-btn");
-
-  // ============================
-  // Helpers
-  // ============================
 
   function clearMarkers() {
     markers.forEach((m) => m.setMap(null));
@@ -29,30 +19,28 @@
     if (!mapCanvas) return null;
 
     if (!window.google || !google.maps) {
-      mapMessage.textContent = "Google Maps failed to load.";
+      if (mapMessage) {
+        mapMessage.textContent =
+          "Google Maps API not loaded or key invalid.";
+      }
       return null;
     }
 
     if (!map) {
       map = new google.maps.Map(mapCanvas, {
-        center: { lat: 39.8283, lng: -98.5795 },
+        center: { lat: 39.8283, lng: -98.5795 }, // center-ish US
         zoom: 4,
         disableDefaultUI: false,
       });
     }
-
     return map;
   }
 
-  // ============================
-  // Load posts onto map
-  // ============================
-
-  async function loadPosts(query = "") {
+  async function loadPostsForMap(query) {
     const m = ensureMap();
     if (!m) return;
 
-    mapMessage.textContent = "Loading posts…";
+    if (mapMessage) mapMessage.textContent = "Loading posts for map...";
 
     let req = supa
       .from("posts")
@@ -60,7 +48,7 @@
       .not("lat", "is", null)
       .not("lng", "is", null);
 
-    if (query.trim()) {
+    if (query && query.trim()) {
       const q = query.trim();
       req = req.or(
         `title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`
@@ -70,118 +58,88 @@
     const { data, error } = await req;
 
     if (error) {
-      mapMessage.textContent = "Error loading map posts.";
-      console.log(error.message);
+      console.log("map posts error:", error.message);
+      if (mapMessage)
+        mapMessage.textContent = "Error loading map posts.";
       return;
     }
 
     clearMarkers();
-    if (!data.length) {
-      mapMessage.textContent = "No posts match this search.";
+
+    if (!data || !data.length) {
+      if (mapMessage)
+        mapMessage.textContent = "No posts match this search on the map.";
       return;
     }
 
     const bounds = new google.maps.LatLngBounds();
 
     data.forEach((p) => {
+      if (typeof p.lat !== "number" || typeof p.lng !== "number") return;
+
       const pos = { lat: p.lat, lng: p.lng };
-      const isReq = (p.type || "").toLowerCase() === "request";
+      const isRequest =
+        (p.type || "").toString().toLowerCase() === "request";
 
       const marker = new google.maps.Marker({
         position: pos,
         map: m,
-        icon: isReq
+        title: p.title || "",
+        icon: isRequest
           ? "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
           : "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-        title: p.title || "",
       });
 
       const info = new google.maps.InfoWindow({
         content: `
           <div style="font-size:13px;max-width:220px;">
-            <strong>${p.title || ""}</strong><br>
-            ${p.description || ""}
-            ${p.price ? `<br><span style="color:#22c55e;">$${p.price}</span>` : ""}
-            ${p.category ? `<br><small>${p.category}</small>` : ""}
+            <strong>${p.title || "Untitled"}</strong><br/>
+            ${p.description ? `<span>${p.description}</span><br/>` : ""}
+            ${
+              p.price
+                ? `<span style="color:#22c55e;">$${p.price}</span><br/>`
+                : ""
+            }
+            ${
+              p.category
+                ? `<span class="hint">${p.category}</span><br/>`
+                : ""
+            }
             ${
               p.location_text
-                ? `<br><small>${p.location_text}</small>`
+                ? `<span class="hint">${p.location_text}</span>`
                 : ""
             }
           </div>
         `,
       });
 
-      marker.addListener("click", () => info.open(m, marker));
+      marker.addListener("click", () => {
+        info.open(m, marker);
+      });
 
       markers.push(marker);
       bounds.extend(pos);
     });
 
     m.fitBounds(bounds);
-    mapMessage.textContent = "Blue = selling • Red = requests";
-  }
 
-  // ============================
-  // MAIN MAP INIT
-  // ============================
-
-  function initMap() {
-    if (mapReady) return;
-    mapReady = true;
-
-    mapInitTimer = setTimeout(() => {
-      if (!window.google || !google.maps) {
-        mapMessage.textContent = "Google Maps did not load.";
-        return;
-      }
-      loadPosts(mapSearchInput.value.trim());
-    }, 300);
-  }
-
-  // ============================
-  // MINI-MAP (DETAIL PANEL)
-  // ============================
-
-  function renderMiniMap(lat, lng) {
-    const container = document.getElementById("detail-minimap");
-    if (!container) return;
-
-    if (!window.google || !google.maps) {
-      console.log("Mini map failed to load – Google Maps missing.");
-      return;
+    if (mapMessage) {
+      mapMessage.textContent =
+        "Blue = selling, Red = requests. Use search to filter.";
     }
+  }
 
-    const center = { lat, lng };
-
-    const mini = new google.maps.Map(container, {
-      center,
-      zoom: 12,
-      disableDefaultUI: true,
-    });
-
-    new google.maps.Marker({
-      position: center,
-      map: mini,
+  if (mapSearchBtn && mapSearchInput) {
+    mapSearchBtn.addEventListener("click", () => {
+      const q = mapSearchInput.value;
+      loadPostsForMap(q);
     });
   }
 
-  // ============================
-  // EVENTS
-  // ============================
-
-  mapSearchBtn?.addEventListener("click", () => {
-    loadPosts(mapSearchInput.value.trim());
-  });
-
-  // Attempt search on Enter
-  mapSearchInput?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") loadPosts(mapSearchInput.value.trim());
-  });
-
-  // Expose API
   window.BFMap = {
-    initMap,
-    renderMiniMap,
+    initMap() {
+      loadPostsForMap(mapSearchInput ? mapSearchInput.value : "");
+    },
   };
 })();
