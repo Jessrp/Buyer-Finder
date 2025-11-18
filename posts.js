@@ -1,12 +1,16 @@
 // posts.js
+// Loads posts, saves posts, displays them, and handles the detail panel.
+
 (function () {
   const supa = window.supa;
 
+  // DOM
   const postsGrid = document.getElementById("posts-grid");
   const postsStatus = document.getElementById("posts-status");
 
   const fabAdd = document.getElementById("fab-add");
   const modalBackdrop = document.getElementById("modal-backdrop");
+
   const postTitle = document.getElementById("post-title");
   const postDescription = document.getElementById("post-description");
   const postPrice = document.getElementById("post-price");
@@ -15,54 +19,43 @@
   const postCondition = document.getElementById("post-condition");
   const postLocation = document.getElementById("post-location");
   const postImage = document.getElementById("post-image");
+
   const btnCancelPost = document.getElementById("btn-cancel-post");
   const btnSavePost = document.getElementById("btn-save-post");
   const postModalHint = document.getElementById("post-modal-hint");
 
-  // detail panel
+  // Detail panel
   const detailOverlay = document.getElementById("detail-overlay");
   const detailPanel = document.getElementById("detail-panel");
   const detailCloseBtn = document.getElementById("detail-close-btn");
+
   const detailImages = document.getElementById("detail-images");
   const detailTitle = document.getElementById("detail-title");
   const detailPrice = document.getElementById("detail-price");
   const detailDescription = document.getElementById("detail-description");
   const detailMeta = document.getElementById("detail-meta");
+
   const detailSellerAvatar = document.getElementById("detail-seller-avatar");
   const detailSellerName = document.getElementById("detail-seller-name");
   const detailSellerEmail = document.getElementById("detail-seller-email");
+
   const detailLocationText = document.getElementById("detail-location-text");
   const detailMinimapContainer = document.getElementById(
     "detail-minimap-container"
   );
   const detailMessageBtn = document.getElementById("detail-message-btn");
 
-  let currentSearch = "";
+  window.activePostType = window.activePostType || "selling";
 
-  // helpers
-  function normalizeImageUrls(field) {
-    if (!field) return [];
-    if (Array.isArray(field)) {
-      return field.filter((u) => typeof u === "string" && u.length > 0);
-    }
-    if (typeof field === "string") {
-      try {
-        const arr = JSON.parse(field);
-        if (Array.isArray(arr)) {
-          return arr.filter((u) => typeof u === "string" && u.length > 0);
-        }
-      } catch {
-        if (field.startsWith("http")) return [field];
-      }
-    }
-    return [];
-  }
-
+  // ============================
+  // OPEN/CLOSE MODAL
+  // ============================
   function openModal() {
     if (!window.currentUser) {
       alert("You must sign in to add a post.");
       return;
     }
+
     postTitle.value = "";
     postDescription.value = "";
     postPrice.value = "";
@@ -72,6 +65,7 @@
     postLocation.value = "";
     postImage.value = "";
     postModalHint.textContent = "";
+
     modalBackdrop.classList.add("active");
   }
 
@@ -79,23 +73,34 @@
     modalBackdrop.classList.remove("active");
   }
 
-  async function uploadPostImages(files, userId) {
-    if (!files || !files.length) return [];
+  fabAdd?.addEventListener("click", openModal);
+  btnCancelPost?.addEventListener("click", closeModal);
+
+  // ============================
+  // IMAGE UPLOAD
+  // ============================
+  async function uploadImages(files, userId) {
+    if (!files?.length) return [];
     const urls = [];
+
     for (const file of files) {
       const ext = file.name.split(".").pop() || "jpg";
-      const path = `posts/${userId}-${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}.${ext}`;
+      const path =
+        "posts/" +
+        userId +
+        "-" +
+        Date.now() +
+        "-" +
+        Math.random().toString(36).slice(2) +
+        "." +
+        ext;
 
-      const { error: uploadError } = await supa.storage
+      const { error: upErr } = await supa.storage
         .from("post_images")
-        .upload(path, file, { upsert: true });
+        .upload(path, file);
 
-      if (uploadError) {
-        console.log("Upload error:", uploadError.message);
-        postModalHint.textContent =
-          "Image upload error: " + uploadError.message;
+      if (upErr) {
+        console.log("Upload error:", upErr.message);
         continue;
       }
 
@@ -103,74 +108,42 @@
         .from("post_images")
         .getPublicUrl(path);
 
-      if (urlData && urlData.publicUrl) {
-        urls.push(urlData.publicUrl);
-      }
+      if (urlData?.publicUrl) urls.push(urlData.publicUrl);
     }
+
     return urls;
   }
 
+  // ============================
+  // SAVE POST
+  // ============================
   async function savePost() {
-    const user = window.currentUser;
-    const profile = window.currentProfile;
-    if (!user) {
-      alert("Sign in first.");
-      return;
-    }
+    if (!window.currentUser) return alert("Sign in first.");
 
     const title = postTitle.value.trim();
-    if (!title) {
-      alert("Title is required.");
-      return;
-    }
+    if (!title) return alert("Title is required.");
 
-    const description = postDescription.value.trim();
-    const price = postPrice.value.trim();
-    const type = postType.value;
-    const category = postCategory.value.trim();
-    const condition = postCondition.value.trim();
-    const locationText =
-      postLocation.value.trim() || (profile && profile.location_text) || null;
+    const files = postImage.files;
+    postModalHint.textContent = "Saving...";
 
-    const lat =
-      profile && typeof profile.lat === "number" ? profile.lat : null;
-    const lng =
-      profile && typeof profile.lng === "number" ? profile.lng : null;
+    const imageUrls = await uploadImages(files, window.currentUser.id);
 
-    postModalHint.textContent = "Saving post...";
-
-    const fileList = postImage.files;
-    let imageUrls = [];
-    if (fileList && fileList.length) {
-      imageUrls = await uploadPostImages(fileList, user.id);
-    }
-
-    const isPremiumUser = !!(profile && profile.premium);
-
-    const payload = {
-      user_id: user.id,
+    const { error } = await supa.from("posts").insert({
+      user_id: window.currentUser.id,
       title,
-      description,
-      price: price || null,
-      type,
-      category: category || null,
-      condition: condition || null,
-      location_text: locationText,
-      lat,
-      lng,
-      is_premium: isPremiumUser
-    };
+      description: postDescription.value.trim(),
+      price: postPrice.value.trim() || null,
+      type: postType.value,
+      category: postCategory.value.trim(),
+      condition: postCondition.value.trim(),
+      location_text: postLocation.value.trim(),
+      image_urls: imageUrls.length ? JSON.stringify(imageUrls) : null,
+      created_at: new Date().toISOString(),
+    });
 
-    if (imageUrls.length) {
-      payload.image_urls = JSON.stringify(imageUrls);
-    } else {
-      payload.image_urls = null;
-    }
-
-    const { error } = await supa.from("posts").insert(payload);
     if (error) {
-      console.log("Insert error:", error.message);
-      postModalHint.textContent = "Error saving post: " + error.message;
+      console.log(error.message);
+      postModalHint.textContent = "Error saving post.";
       return;
     }
 
@@ -181,243 +154,185 @@
     }, 400);
   }
 
-  async function loadPosts() {
+  btnSavePost?.addEventListener("click", savePost);
+
+  // ============================
+  // LOAD POSTS
+  // ============================
+  async function loadPosts(searchText = "") {
     if (!postsGrid || !postsStatus) return;
 
-    postsStatus.textContent = "Loading posts...";
     postsGrid.innerHTML = "";
+    postsStatus.textContent = "Loading posts…";
 
-    let { data, error } = await supa
+    let query = supa
       .from("posts")
-      .select(
-        "id,user_id,title,description,price,type,category,condition,location_text,image_urls,is_premium,created_at"
-      )
-      .order("is_premium", { ascending: false })
+      .select("*")
       .order("created_at", { ascending: false });
 
+    if (searchText) {
+      const q = searchText.toLowerCase();
+      query = query.or(
+        `title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`
+      );
+    }
+
+    const { data, error } = await query;
+
     if (error) {
-      console.log("load posts error:", error.message);
       postsStatus.textContent = "Error loading posts.";
+      console.log(error.message);
       return;
     }
 
-    if (!data || !data.length) {
-      postsStatus.textContent = "No posts yet. Be the first to post!";
-      postsGrid.innerHTML =
-        "<p class='hint'>No posts yet in this category.</p>";
+    if (!data?.length) {
+      postsStatus.textContent = "No posts found.";
       return;
     }
-
-    const typeFilter = (window.activePostType || "selling").toLowerCase();
-    const search = currentSearch.toLowerCase();
 
     const filtered = data.filter((p) => {
       const t =
-        (p.type || "").toString().toLowerCase() === "request"
-          ? "request"
-          : "selling";
-      if (t !== typeFilter) return false;
-
-      if (search) {
-        const haystack = (
-          (p.title || "") +
-          " " +
-          (p.description || "") +
-          " " +
-          (p.category || "") +
-          " " +
-          (p.location_text || "")
-        ).toLowerCase();
-        if (!haystack.includes(search)) return false;
-      }
-      return true;
+        p.type?.toLowerCase() === "request" ? "request" : "selling";
+      return t === window.activePostType;
     });
-
-    if (!filtered.length) {
-      postsStatus.textContent = "";
-      postsGrid.innerHTML =
-        "<p class='hint'>No posts match this filter yet.</p>";
-      return;
-    }
 
     postsStatus.textContent = "";
 
     postsGrid.innerHTML = filtered
       .map((p) => {
-        const imgs = normalizeImageUrls(p.image_urls);
-        const primaryImage = imgs.length ? imgs[0] : null;
+        let firstImg = "";
 
-        const badge =
-          p.is_premium && p.is_premium === true
-            ? `<span class="badge premium">Premium</span>`
-            : "";
-
-        const metaBits = [];
-        if (p.category) metaBits.push(p.category);
-        if (p.condition) metaBits.push(p.condition);
-        if (p.location_text) metaBits.push(p.location_text);
-
-        const metaLine = metaBits.length
-          ? `<small class="hint">${metaBits.join(" • ")}</small>`
-          : "";
-
-        const priceText = p.price ? `$${p.price}` : "";
-
-        const imgHtml = primaryImage
-          ? `<img src="${primaryImage}" alt="Post image" />`
-          : "";
+        if (p.image_urls) {
+          try {
+            const arr = JSON.parse(p.image_urls);
+            if (arr.length) firstImg = arr[0];
+          } catch {}
+        }
 
         return `
-          <article class="post" data-post-id="${p.id}">
-            ${imgHtml}
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-              <h3>${p.title || "Untitled"}</h3>
-              ${badge}
-            </div>
+          <article class="post" data-id="${p.id}">
+            ${firstImg ? `<img src="${firstImg}">` : ""}
+            <h3>${p.title}</h3>
             <p>${p.description || ""}</p>
-            ${metaLine}
-            <small>${priceText}</small>
+            ${
+              p.price
+                ? `<small style="color:#22c55e;">$${p.price}</small>`
+                : ""
+            }
           </article>
         `;
       })
       .join("");
 
-    attachPostClickHandlers(filtered);
+    attachDetailHandlers(filtered);
   }
 
-  function attachPostClickHandlers(posts) {
-    const cards = postsGrid.querySelectorAll(".post[data-post-id]");
-    cards.forEach((card) => {
-      const id = card.getAttribute("data-post-id");
-      const post = posts.find((p) => String(p.id) === String(id));
-      if (!post) return;
-      card.addEventListener("click", () => openDetailPanel(post.id));
-    });
-  }
-
+  // ============================
+  // DETAIL PANEL
+  // ============================
   function openDetailUI() {
-    if (detailOverlay) detailOverlay.classList.add("active");
-    if (detailPanel) detailPanel.classList.add("active");
+    detailOverlay?.classList.add("active");
+    detailPanel?.classList.add("active");
   }
 
   function closeDetailUI() {
-    if (detailOverlay) detailOverlay.classList.remove("active");
-    if (detailPanel) detailPanel.classList.remove("active");
+    detailOverlay?.classList.remove("active");
+    detailPanel?.classList.remove("active");
   }
 
-  async function openDetailPanel(postId) {
-    const { data: post, error } = await supa
-      .from("posts")
-      .select("*")
-      .eq("id", postId)
-      .maybeSingle();
-    if (error || !post) {
-      alert("Could not load post details.");
-      return;
-    }
+  detailCloseBtn?.addEventListener("click", closeDetailUI);
+  detailOverlay?.addEventListener("click", closeDetailUI);
 
+  // Load full post when clicked
+  function attachDetailHandlers(posts) {
+    const cards = document.querySelectorAll(".post[data-id]");
+    cards.forEach((card) => {
+      card.addEventListener("click", () => {
+        const id = Number(card.getAttribute("data-id"));
+        const post = posts.find((p) => p.id === id);
+        if (post) openDetail(post);
+      });
+    });
+  }
+
+  async function openDetail(post) {
+    // Seller info
     const { data: profile } = await supa
       .from("profiles")
-      .select("username,email,avatar_url,lat,lng,location_text,premium")
+      .select("*")
       .eq("id", post.user_id)
       .maybeSingle();
 
-    // images
+    // Images
     detailImages.innerHTML = "";
-    const imgs = normalizeImageUrls(post.image_urls);
-    if (imgs.length) {
-      imgs.forEach((url, idx) => {
+    let urls = [];
+    try {
+      if (post.image_urls) urls = JSON.parse(post.image_urls);
+    } catch {}
+
+    if (urls.length) {
+      urls.forEach((u) => {
         const img = document.createElement("img");
-        img.src = url;
-        img.alt = "Post image " + (idx + 1);
+        img.src = u;
         detailImages.appendChild(img);
       });
     }
 
     detailTitle.textContent = post.title || "Untitled";
-    detailPrice.textContent = post.price ? `$${post.price}` : "";
     detailDescription.textContent = post.description || "";
+    detailPrice.textContent = post.price ? "$" + post.price : "";
 
-    const metaBits = [];
-    if (post.category) metaBits.push(post.category);
-    if (post.condition) metaBits.push(post.condition);
-    if (post.type) {
-      const t =
-        post.type.toString().toLowerCase() === "request"
-          ? "Request"
-          : "Selling";
-      metaBits.push(t);
-    }
-    detailMeta.textContent = metaBits.join(" • ");
+    detailMeta.textContent = [
+      post.category,
+      post.condition,
+      post.type === "request" ? "Request" : "Selling",
+    ]
+      .filter(Boolean)
+      .join(" • ");
 
-    // seller
-    detailSellerAvatar.innerHTML = "";
-    const avImg = document.createElement("img");
-    if (profile?.avatar_url) {
-      avImg.src = profile.avatar_url;
-    } else {
-      avImg.src =
-        "data:image/svg+xml;base64," +
-        btoa(
-          '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#111827"/><text x="50%" y="55%" fill="#9ca3af" font-size="28" text-anchor="middle">BF</text></svg>'
-        );
-    }
-    detailSellerAvatar.appendChild(avImg);
     detailSellerName.textContent = profile?.username || "Seller";
     detailSellerEmail.textContent = profile?.email || "";
 
-    const locText = post.location_text || profile?.location_text || "";
-    detailLocationText.textContent = locText || "Location not specified.";
+    // Avatar
+    detailSellerAvatar.innerHTML = "";
+    const av = document.createElement("img");
+    av.src =
+      profile?.avatar_url ||
+      "data:image/svg+xml;base64," +
+        btoa(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#111"/><text x="50%" y="55%" fill="#999" font-size="28" text-anchor="middle">BF</text></svg>'
+        );
+    detailSellerAvatar.appendChild(av);
 
-    const viewerProfile = window.currentProfile;
-    const isViewerPremium = !!viewerProfile?.premium;
-    const showMiniPref =
-      localStorage.getItem("bf-show-minimap") !== "false";
+    detailLocationText.textContent =
+      post.location_text || "Location not specified";
 
-    const lat = post.lat ?? profile?.lat ?? null;
-    const lng = post.lng ?? profile?.lng ?? null;
+    // Mini-map (premium only)
+    const isPremium = window.currentProfile?.premium;
+    const lat = post.lat;
+    const lng = post.lng;
 
-    if (
-      isViewerPremium &&
-      showMiniPref &&
-      typeof lat === "number" &&
-      typeof lng === "number" &&
-      window.BFMap &&
-      typeof window.BFMap.renderMiniMap === "function"
-    ) {
+    if (lat && lng && isPremium) {
       detailMinimapContainer.style.display = "block";
-      window.BFMap.renderMiniMap(lat, lng);
+      if (window.BFMap?.renderMiniMap)
+        window.BFMap.renderMiniMap(lat, lng);
     } else {
       detailMinimapContainer.style.display = "none";
     }
 
-    if (detailMessageBtn) {
-      detailMessageBtn.textContent = "Send message";
-      detailMessageBtn.onclick = () => {
-        alert("Messaging not wired up yet.");
-      };
-    }
+    detailMessageBtn.onclick = () => {
+      alert("Messaging coming soon.");
+    };
 
     openDetailUI();
   }
 
-  // events
-  if (fabAdd) fabAdd.addEventListener("click", openModal);
-  if (btnCancelPost) btnCancelPost.addEventListener("click", closeModal);
-  if (btnSavePost) btnSavePost.addEventListener("click", savePost);
-
-  if (detailCloseBtn)
-    detailCloseBtn.addEventListener("click", closeDetailUI);
-  if (detailOverlay)
-    detailOverlay.addEventListener("click", closeDetailUI);
-
+  // ============================
+  // EXPORT
+  // ============================
   window.Posts = {
     loadPosts,
-    setSearchQuery(q) {
-      currentSearch = (q || "").trim();
-    }
   };
 
-  // initial load
   loadPosts();
 })();
