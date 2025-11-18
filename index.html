@@ -1,100 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BuyerFinder</title>
 
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Google Maps -->
+  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_KEY"></script>
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Google Maps (safe: map.js checks for google before using it) -->
-  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_KEY"></script>
 </head>
 
-<body>
+<body class="dark">
 
   <!-- HEADER -->
   <header class="header">
     <h1 class="logo">🔎 BuyerFinder</h1>
-    <button id="btn-signin-header" class="btn-primary small">Sign In</button>
+    <button id="btn-signin-header" class="btn small">Sign In</button>
   </header>
 
   <!-- SEARCH BAR -->
   <div class="search-bar">
-    <input type="text" id="search-input" placeholder="Search posts…">
-    <button id="search-btn" class="btn-secondary small">Search</button>
+    <input id="search-input" placeholder="Search posts…" />
+    <button id="search-btn" class="btn small">Search</button>
   </div>
 
-  <!-- TABS -->
-  <div class="tabs">
+  <!-- TABS (Selling / Requests) -->
+  <div class="tabs-top">
     <button id="tab-selling" class="tab active">Selling</button>
     <button id="tab-requests" class="tab">Requests</button>
   </div>
 
   <!-- USER CARD -->
   <section id="user-card">
-    <div class="user-meta">
+    <div class="user-left">
       <div id="user-name">Guest</div>
       <small id="user-status">Not signed in</small>
     </div>
 
     <div class="user-right">
-      <button id="btn-signin-card" class="btn-secondary small">Sign In</button>
-      <div id="user-plan-badge" class="badge free">Free (guest)</div>
+      <div id="user-plan-badge" class="badge free">Free</div>
     </div>
   </section>
 
-  <!-- MAIN VIEWS WRAPPER -->
-  <main id="main-views">
-
-    <!-- POSTS VIEW -->
-    <section id="view-posts" class="view active">
-      <div id="posts-container">
-        <p id="posts-status">Loading posts...</p>
-        <div id="posts-grid"></div>
-      </div>
-    </section>
-
-    <!-- SETTINGS VIEW -->
-    <section id="view-settings" class="view">
-      <div class="settings-section">
-        <h2>Account</h2>
-        <label>Email</label>
-        <input id="profile-email" disabled>
-
-        <label>Username</label>
-        <div class="row">
-          <input id="profile-username">
-          <button id="btn-save-username" class="btn-secondary small">Save</button>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <h2>Avatar</h2>
-        <input type="file" id="profile-avatar-input" accept="image/*">
-        <button id="btn-upload-avatar" class="btn-secondary small">Upload</button>
-      </div>
-
-      <div class="settings-section">
-        <h2>Theme</h2>
-        <button id="btn-toggle-theme" class="btn-secondary small">Toggle dark / light</button>
-      </div>
-
-      <div class="settings-section">
-        <h2>Premium</h2>
-        <p id="premium-status-text" class="hint"></p>
-        <button id="btn-upgrade-premium" class="btn-primary small">Upgrade (stub)</button>
-      </div>
-
-      <div class="settings-section">
-        <h2>Session</h2>
-        <button id="btn-logout" class="btn-secondary small">Sign Out</button>
-      </div>
-    </section>
-
+  <!-- POSTS -->
+  <main id="posts-container">
+    <p id="posts-status" class="hint">Loading posts…</p>
+    <div id="posts-grid"></div>
   </main>
 
   <!-- ADD POST BUTTON -->
@@ -103,22 +58,19 @@
   <!-- BOTTOM NAV -->
   <footer class="bottom-nav">
     <button id="nav-selling" class="nav-btn active">🏷 Selling</button>
-    <button id="nav-requests" class="nav-btn">📦 Requests</button>
+    <button id="nav-requests" class="nav-btn">📥 Requests</button>
     <button id="nav-map" class="nav-btn">🗺 Map</button>
     <button id="nav-settings" class="nav-btn">⚙️ Settings</button>
   </footer>
 
-  <!-- MAP SLIDE-UP PANEL -->
-  <div id="map-overlay" class="detail-overlay"></div>
-  <div id="map-panel" class="map-panel">
-    <div class="map-header">
-      <h2>Nearby activity</h2>
-      <button id="map-close-btn" class="btn-secondary small">Close</button>
-    </div>
+  <!-- MAP OVERLAY -->
+  <div id="map-overlay" class="overlay">
     <div class="map-controls">
-      <input id="map-search-query" placeholder="Search on map…">
-      <button id="map-search-btn" class="btn-secondary small">Go</button>
+      <input id="map-search-query" placeholder="Search map…" />
+      <button id="map-search-btn" class="btn small">Go</button>
+      <button id="close-map-btn" class="btn small">Close</button>
     </div>
+
     <div id="map-message" class="hint"></div>
     <div id="map-canvas"></div>
   </div>
@@ -126,16 +78,16 @@
   <!-- POST MODAL -->
   <div id="modal-backdrop" class="modal-backdrop">
     <div id="modal" class="modal">
-      <h2>Add Post</h2>
+      <h2>New Post</h2>
 
       <label>Title</label>
-      <input id="post-title">
+      <input id="post-title" />
 
       <label>Description</label>
       <textarea id="post-description"></textarea>
 
       <label>Price</label>
-      <input id="post-price">
+      <input id="post-price" />
 
       <label>Type</label>
       <select id="post-type">
@@ -144,28 +96,29 @@
       </select>
 
       <label>Category</label>
-      <input id="post-category">
+      <input id="post-category" />
 
       <label>Condition</label>
-      <input id="post-condition">
+      <input id="post-condition" />
 
       <label>Location</label>
-      <input id="post-location">
+      <input id="post-location" />
 
       <label>Images</label>
-      <input type="file" id="post-image" multiple>
+      <input id="post-image" type="file" multiple />
 
-      <div id="post-modal-hint" class="hint"></div>
+      <p id="post-modal-hint" class="hint"></p>
 
       <div class="modal-actions">
-        <button id="btn-cancel-post" class="btn-secondary">Cancel</button>
-        <button id="btn-save-post" class="btn-primary">Save Post</button>
+        <button id="btn-cancel-post" class="btn outline small">Cancel</button>
+        <button id="btn-save-post" class="btn small">Save</button>
       </div>
     </div>
   </div>
 
   <!-- DETAIL PANEL -->
   <div id="detail-overlay" class="detail-overlay"></div>
+
   <div id="detail-panel" class="detail-panel">
     <button id="detail-close-btn" class="close-btn">✕</button>
 
@@ -179,7 +132,7 @@
     <div id="detail-seller" class="seller-info">
       <div id="detail-seller-avatar" class="avatar"></div>
       <div>
-        <strong id="detail-seller-name"></strong><br>
+        <strong id="detail-seller-name"></strong><br />
         <small id="detail-seller-email"></small>
       </div>
     </div>
@@ -190,14 +143,13 @@
       <div id="detail-minimap"></div>
     </div>
 
-    <button id="detail-message-btn" class="btn-primary full">Send message</button>
+    <button id="detail-message-btn" class="btn full">Send message</button>
   </div>
 
-  <!-- JS (order matters) -->
+  <!-- JS -->
   <script src="auth.js"></script>
   <script src="app.js"></script>
   <script src="posts.js"></script>
   <script src="map.js"></script>
-
 </body>
 </html>
