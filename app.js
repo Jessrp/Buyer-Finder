@@ -1,126 +1,145 @@
 // app.js
-// Handles: tabs, nav bar, search, map overlay, boot logic.
+document.addEventListener("DOMContentLoaded", () => {
+  let activeView = "posts";
+  window.activePostType = window.activePostType || "selling";
 
-(function () {
-  const supa = window.supa;
-
-  // ===== DOM HOOKS =====
   const tabSelling = document.getElementById("tab-selling");
   const tabRequests = document.getElementById("tab-requests");
+
+  const viewPosts = document.getElementById("view-posts");
+  const viewMap = document.getElementById("view-map");
+  const viewSettings = document.getElementById("view-settings");
 
   const navSelling = document.getElementById("nav-selling");
   const navRequests = document.getElementById("nav-requests");
   const navMap = document.getElementById("nav-map");
   const navSettings = document.getElementById("nav-settings");
 
-  const searchInput = document.getElementById("search-input");
-  const searchBtn = document.getElementById("search-btn");
+  const btnToggleTheme = document.getElementById("btn-toggle-theme");
+  const btnUpgradePremium = document.getElementById("btn-upgrade-premium");
+  const btnDeleteAccount = document.getElementById("btn-delete-account");
 
-  const mapOverlay = document.getElementById("map-overlay");
-  const closeMapBtn = document.getElementById("close-map-btn");
-  const mapSearchBox = document.getElementById("map-search-query");
+  function setActiveView(view) {
+    activeView = view;
+    if (viewPosts) viewPosts.classList.toggle("active", view === "posts");
+    if (viewMap) viewMap.classList.toggle("active", view === "map");
+    if (viewSettings)
+      viewSettings.classList.toggle("active", view === "settings");
 
-  window.activePostType = window.activePostType || "selling";
+    if (navSelling)
+      navSelling.classList.toggle(
+        "active",
+        view === "posts" && window.activePostType === "selling"
+      );
+    if (navRequests)
+      navRequests.classList.toggle(
+        "active",
+        view === "posts" && window.activePostType === "request"
+      );
+    if (navMap) navMap.classList.toggle("active", view === "map");
+    if (navSettings)
+      navSettings.classList.toggle("active", view === "settings");
+  }
 
-  // ==========================
-  // TAB HANDLING
-  // ==========================
-  function setActiveTab(type) {
+  function setActivePostType(type) {
     window.activePostType = type;
-
-    // Top tabs
-    if (type === "selling") {
-      tabSelling?.classList.add("active");
-      tabRequests?.classList.remove("active");
-    } else {
-      tabRequests?.classList.add("active");
-      tabSelling?.classList.remove("active");
-    }
-
-    // Bottom nav
-    if (type === "selling") {
-      navSelling?.classList.add("active");
-      navRequests?.classList.remove("active");
-    } else {
-      navRequests?.classList.add("active");
-      navSelling?.classList.remove("active");
-    }
-
-    triggerSearchOrReload();
-  }
-
-  tabSelling?.addEventListener("click", () => setActiveTab("selling"));
-  tabRequests?.addEventListener("click", () => setActiveTab("request"));
-
-  navSelling?.addEventListener("click", () => setActiveTab("selling"));
-  navRequests?.addEventListener("click", () => setActiveTab("request"));
-
-  // ==========================
-  // SEARCH
-  // ==========================
-  function triggerSearchOrReload() {
-    const q = searchInput?.value.trim() || "";
+    if (tabSelling) tabSelling.classList.toggle("active", type === "selling");
+    if (tabRequests)
+      tabRequests.classList.toggle("active", type === "request");
     if (window.Posts && typeof window.Posts.loadPosts === "function") {
-      window.Posts.loadPosts(q);
+      window.Posts.loadPosts();
     }
+    setActiveView("posts");
   }
 
-  searchBtn?.addEventListener("click", triggerSearchOrReload);
+  if (tabSelling)
+    tabSelling.addEventListener("click", () => setActivePostType("selling"));
+  if (tabRequests)
+    tabRequests.addEventListener("click", () => setActivePostType("request"));
 
-  searchInput?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") triggerSearchOrReload();
-  });
+  if (navSelling)
+    navSelling.addEventListener("click", () => setActivePostType("selling"));
+  if (navRequests)
+    navRequests.addEventListener("click", () => setActivePostType("request"));
 
-  // ==========================
-  // MAP OVERLAY
-  // ==========================
-  function openMap() {
-    if (!mapOverlay) return;
-    mapOverlay.classList.add("active");
+  if (navMap)
+    navMap.addEventListener("click", () => {
+      const profile = window.currentProfile;
+      if (!window.currentUser) {
+        alert("Map is for signed-in premium users.");
+        return;
+      }
+      if (!profile || !profile.premium) {
+        alert(
+          "Map is a premium feature.\nUse the Upgrade button in Settings (dev-mode) to mark your account premium for now."
+        );
+        return;
+      }
+      if (window.BFMap && typeof window.BFMap.initMap === "function") {
+        window.BFMap.initMap();
+      }
+      setActiveView("map");
+    });
 
-    // Sync search into map search box
-    if (mapSearchBox && searchInput) {
-      mapSearchBox.value = searchInput.value.trim();
-    }
+  if (navSettings)
+    navSettings.addEventListener("click", () => setActiveView("settings"));
 
-    // Initialize map
-    if (window.BFMap && typeof window.BFMap.initMap === "function") {
-      window.BFMap.initMap();
-    }
+  function applyTheme() {
+    const theme = localStorage.getItem("buyerfinder-theme") || "dark";
+    if (theme === "light") document.body.classList.add("light");
+    else document.body.classList.remove("light");
   }
+  applyTheme();
 
-  function closeMap() {
-    if (!mapOverlay) return;
-    mapOverlay.classList.remove("active");
+  if (btnToggleTheme)
+    btnToggleTheme.addEventListener("click", () => {
+      const cur = localStorage.getItem("buyerfinder-theme") || "dark";
+      const next = cur === "dark" ? "light" : "dark";
+      localStorage.setItem("buyerfinder-theme", next);
+      applyTheme();
+    });
+
+  if (btnUpgradePremium)
+    btnUpgradePremium.addEventListener("click", async () => {
+      if (!window.currentUser) {
+        alert("Sign in first to upgrade.");
+        return;
+      }
+
+      const ok = confirm(
+        "In a real app this would open Stripe Checkout.\nFor now, press OK to mark your account as PREMIUM for testing."
+      );
+      if (!ok) return;
+
+      const { error } = await window.supa
+        .from("profiles")
+        .update({ premium: true })
+        .eq("id", window.currentUser.id);
+
+      if (error) {
+        alert("Failed to upgrade: " + error.message);
+        return;
+      }
+
+      if (window.currentProfile) {
+        window.currentProfile.premium = true;
+      }
+
+      if (window.Auth && typeof window.Auth.checkUser === "function") {
+        window.Auth.checkUser();
+      }
+
+      alert("You are now PREMIUM. Map & unlimited posts unlocked.");
+    });
+
+  if (btnDeleteAccount)
+    btnDeleteAccount.addEventListener("click", () => {
+      alert(
+        "Real account deletion must be done on a secure backend using the service role key.\nThis button just explains that; nothing is deleted."
+      );
+    });
+
+  if (window.Posts && typeof window.Posts.loadPosts === "function") {
+    window.Posts.loadPosts();
   }
-
-  navMap?.addEventListener("click", openMap);
-  closeMapBtn?.addEventListener("click", closeMap);
-
-  // ==========================
-  // SETTINGS (placeholder)
-  // ==========================
-  navSettings?.addEventListener("click", () => {
-    alert("Settings is not fully implemented yet.");
-  });
-
-  // ==========================
-  // BOOTSTRAP
-  // ==========================
-  function boot() {
-    // Initialize Auth
-    if (window.AuthUI && typeof window.AuthUI.init === "function") {
-      window.AuthUI.init();
-    }
-
-    // Set initial tab
-    setActiveTab(window.activePostType || "selling");
-  }
-
-  // Run when DOM ready
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
-})();
+});
