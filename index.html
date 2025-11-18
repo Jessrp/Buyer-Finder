@@ -2,154 +2,226 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BuyerFinder</title>
-
   <link rel="stylesheet" href="styles.css" />
-
-  <!-- Google Maps -->
-  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_KEY"></script>
-
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+<body>
 
-<body class="dark">
+  <div class="debug-bar">DEBUG: BuyerFinder multi-file build (posts + premium + map)</div>
 
-  <!-- HEADER -->
-  <header class="header">
-    <h1 class="logo">🔎 BuyerFinder</h1>
-    <button id="btn-signin-header" class="btn small">Sign In</button>
+  <header>
+    <h1>🔎 BuyerFinder</h1>
+    <div class="right">
+      <button class="btn small" id="login-google-btn">Sign in with Google</button>
+      <button class="btn small" id="login-email-btn">Sign in with Email</button>
+      <button class="btn small" id="logout-btn" style="display:none;">Sign out</button>
+    </div>
   </header>
 
-  <!-- SEARCH BAR -->
-  <div class="search-bar">
-    <input id="search-input" placeholder="Search posts…" />
-    <button id="search-btn" class="btn small">Search</button>
-  </div>
-
-  <!-- TABS (Selling / Requests) -->
   <div class="tabs-top">
-    <button id="tab-selling" class="tab active">Selling</button>
-    <button id="tab-requests" class="tab">Requests</button>
+    <button id="tab-selling" class="active">Selling</button>
+    <button id="tab-requests">Requests</button>
   </div>
 
-  <!-- USER CARD -->
-  <section id="user-card">
-    <div class="user-left">
-      <div id="user-name">Guest</div>
-      <small id="user-status">Not signed in</small>
+  <main class="content">
+
+    <!-- User card -->
+    <div class="user-card" id="user-card">
+      <div class="user-avatar" id="user-avatar"></div>
+      <div class="user-meta">
+        <div id="user-name">Guest</div>
+        <small id="user-email">Not signed in</small>
+        <div>
+          <span class="badge" id="user-plan">Free (guest)</span>
+        </div>
+      </div>
+      <button class="btn small outline" id="user-signin-shortcut">Sign in</button>
     </div>
 
-    <div class="user-right">
-      <div id="user-plan-badge" class="badge free">Free</div>
-    </div>
-  </section>
+    <!-- POSTS VIEW -->
+    <section id="view-posts" class="view active">
+      <div id="posts-status" class="hint" style="margin-bottom:6px;"></div>
+      <div class="posts" id="posts-grid"></div>
+    </section>
 
-  <!-- POSTS -->
-  <main id="posts-container">
-    <p id="posts-status" class="hint">Loading posts…</p>
-    <div id="posts-grid"></div>
+    <!-- MAP VIEW (premium) -->
+    <section id="view-map" class="view">
+      <div class="map-wrapper">
+        <h3 style="margin-top:0;">BuyerFinder Radar</h3>
+        <p class="hint" id="map-message">
+          Map shows posts near you. Use search to filter by product keywords.
+        </p>
+
+        <div class="field-row">
+          <label>Search</label>
+          <input type="text" id="map-search-query" placeholder="e.g. guitar, bike, lawn mower" />
+          <button class="btn small" id="map-search-btn">Go</button>
+        </div>
+
+        <div id="map-canvas"></div>
+        <button class="btn small outline" id="map-close-btn">Close map</button>
+      </div>
+    </section>
+
+    <!-- SETTINGS VIEW -->
+    <section id="view-settings" class="view">
+      <div class="section">
+        <h3>Profile</h3>
+
+        <div class="field-row">
+          <label>Email</label>
+          <input type="email" id="profile-email" disabled />
+        </div>
+
+        <div class="field-row">
+          <label>Username</label>
+          <input type="text" id="profile-username" />
+          <button class="btn small" id="btn-save-username">Save</button>
+        </div>
+
+        <div class="field-row">
+          <label>Avatar</label>
+          <input type="file" id="profile-avatar-input" accept="image/*" />
+          <button class="btn small" id="btn-upload-avatar">Upload</button>
+        </div>
+
+        <div class="field-row">
+          <label>Location</label>
+          <input type="text" id="profile-location-text" placeholder="e.g. Columbus, OH" />
+          <button class="btn small" id="btn-save-location">Save</button>
+          <button class="btn small outline" id="btn-use-gps">Use GPS</button>
+        </div>
+
+        <p class="hint">
+          Location is stored as an approximate coordinate for map features (rounded, not exact).
+        </p>
+      </div>
+
+      <div class="section">
+        <h3>Theme</h3>
+        <div class="field-row">
+          <label>Mode</label>
+          <button class="btn small" id="btn-toggle-theme">Toggle dark / light</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Premium</h3>
+        <p id="premium-status-text" class="hint"></p>
+        <button class="btn small" id="btn-upgrade-premium">Upgrade (dev-mode)</button>
+      </div>
+
+      <div class="section">
+        <h3>Danger zone</h3>
+        <p class="hint">
+          Real account deletion must be done on a secure backend with the service role key.
+          This app does not delete auth users from the browser.
+        </p>
+        <button class="btn small danger" id="btn-delete-account">Fake delete (explain)</button>
+      </div>
+
+      <div class="section">
+        <h3>About</h3>
+        <p class="hint">
+          BuyerFinder is your tiny marketplace for matching buyers and sellers,
+          with public listings, requests, and premium map radar features.
+        </p>
+        <p class="hint">
+          Contact support:
+          <a href="mailto:jessrp13@gmail.com" style="color:var(--accent);">jessrp13@gmail.com</a>
+        </p>
+      </div>
+    </section>
+
   </main>
 
-  <!-- ADD POST BUTTON -->
-  <button id="fab-add" class="fab">+</button>
-
   <!-- BOTTOM NAV -->
-  <footer class="bottom-nav">
-    <button id="nav-selling" class="nav-btn active">🏷 Selling</button>
-    <button id="nav-requests" class="nav-btn">📥 Requests</button>
-    <button id="nav-map" class="nav-btn">🗺 Map</button>
-    <button id="nav-settings" class="nav-btn">⚙️ Settings</button>
-  </footer>
-
-  <!-- MAP OVERLAY -->
-  <div id="map-overlay" class="overlay">
-    <div class="map-controls">
-      <input id="map-search-query" placeholder="Search map…" />
-      <button id="map-search-btn" class="btn small">Go</button>
-      <button id="close-map-btn" class="btn small">Close</button>
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-selling">
+      <span>🏷</span> Selling
     </div>
-
-    <div id="map-message" class="hint"></div>
-    <div id="map-canvas"></div>
+    <div class="nav-item" id="nav-requests">
+      <span>📥</span> Requests
+    </div>
+    <div class="nav-item" id="nav-map">
+      <span>🗺</span> Map</div>
+    <div class="nav-item" id="nav-settings">
+      <span>⚙️</span> Settings
+    </div>
   </div>
 
-  <!-- POST MODAL -->
-  <div id="modal-backdrop" class="modal-backdrop">
-    <div id="modal" class="modal">
-      <h2>New Post</h2>
+  <!-- FAB -->
+  <button class="fab" id="fab-add">+</button>
 
-      <label>Title</label>
-      <input id="post-title" />
+  <!-- ADD POST MODAL -->
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal">
+      <h3>New post</h3>
 
-      <label>Description</label>
-      <textarea id="post-description"></textarea>
+      <div class="field-row">
+        <label>Title</label>
+        <input type="text" id="post-title" />
+      </div>
 
-      <label>Price</label>
-      <input id="post-price" />
+      <div class="field-row">
+        <label>Description</label>
+        <textarea id="post-description"></textarea>
+      </div>
 
-      <label>Type</label>
-      <select id="post-type">
-        <option value="selling">Selling</option>
-        <option value="request">Request</option>
-      </select>
+      <div class="field-row">
+        <label>Price (optional)</label>
+        <input type="text" id="post-price" />
+      </div>
 
-      <label>Category</label>
-      <input id="post-category" />
+      <div class="field-row">
+        <label>Type</label>
+        <select id="post-type">
+          <option value="selling">Selling</option>
+          <option value="request">Request</option>
+        </select>
+      </div>
 
-      <label>Condition</label>
-      <input id="post-condition" />
+      <div class="field-row">
+        <label>Category</label>
+        <input type="text" id="post-category" placeholder="e.g. Electronics" />
+      </div>
 
-      <label>Location</label>
-      <input id="post-location" />
+      <div class="field-row">
+        <label>Condition</label>
+        <input type="text" id="post-condition" placeholder="e.g. New, Used, Fair" />
+      </div>
 
-      <label>Images</label>
-      <input id="post-image" type="file" multiple />
+      <div class="field-row">
+        <label>Location</label>
+        <input type="text" id="post-location" placeholder="Uses profile location if blank" />
+      </div>
 
-      <p id="post-modal-hint" class="hint"></p>
+      <div class="field-row">
+        <label>Images</label>
+        <input type="file" id="post-image" accept="image/*" multiple />
+      </div>
 
       <div class="modal-actions">
-        <button id="btn-cancel-post" class="btn outline small">Cancel</button>
-        <button id="btn-save-post" class="btn small">Save</button>
+        <button class="btn small outline" id="btn-cancel-post">Cancel</button>
+        <button class="btn small" id="btn-save-post">Save</button>
       </div>
+      <p class="hint" id="post-modal-hint"></p>
     </div>
   </div>
 
-  <!-- DETAIL PANEL -->
-  <div id="detail-overlay" class="detail-overlay"></div>
-
-  <div id="detail-panel" class="detail-panel">
-    <button id="detail-close-btn" class="close-btn">✕</button>
-
-    <div id="detail-images" class="detail-images"></div>
-
-    <h2 id="detail-title"></h2>
-    <p id="detail-price" class="big-price"></p>
-    <p id="detail-description"></p>
-    <p id="detail-meta" class="hint"></p>
-
-    <div id="detail-seller" class="seller-info">
-      <div id="detail-seller-avatar" class="avatar"></div>
-      <div>
-        <strong id="detail-seller-name"></strong><br />
-        <small id="detail-seller-email"></small>
-      </div>
-    </div>
-
-    <p id="detail-location-text" class="hint"></p>
-
-    <div id="detail-minimap-container">
-      <div id="detail-minimap"></div>
-    </div>
-
-    <button id="detail-message-btn" class="btn full">Send message</button>
-  </div>
-
-  <!-- JS -->
+  <!-- Supabase + app scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
   <script src="auth.js"></script>
-  <script src="app.js"></script>
   <script src="posts.js"></script>
   <script src="map.js"></script>
+  <script src="app.js"></script>
+
+  <!-- Google Maps API (replace YOUR_KEY_HERE) -->
+  <script
+    async
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY">
+  </script>
+
 </body>
 </html>
