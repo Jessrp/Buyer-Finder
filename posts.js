@@ -1,16 +1,12 @@
 // posts.js
-// Loads posts, saves posts, displays them, and handles the detail panel.
-
 (function () {
   const supa = window.supa;
 
-  // DOM
   const postsGrid = document.getElementById("posts-grid");
   const postsStatus = document.getElementById("posts-status");
 
   const fabAdd = document.getElementById("fab-add");
   const modalBackdrop = document.getElementById("modal-backdrop");
-
   const postTitle = document.getElementById("post-title");
   const postDescription = document.getElementById("post-description");
   const postPrice = document.getElementById("post-price");
@@ -19,43 +15,17 @@
   const postCondition = document.getElementById("post-condition");
   const postLocation = document.getElementById("post-location");
   const postImage = document.getElementById("post-image");
-
   const btnCancelPost = document.getElementById("btn-cancel-post");
   const btnSavePost = document.getElementById("btn-save-post");
   const postModalHint = document.getElementById("post-modal-hint");
 
-  // Detail panel
-  const detailOverlay = document.getElementById("detail-overlay");
-  const detailPanel = document.getElementById("detail-panel");
-  const detailCloseBtn = document.getElementById("detail-close-btn");
-
-  const detailImages = document.getElementById("detail-images");
-  const detailTitle = document.getElementById("detail-title");
-  const detailPrice = document.getElementById("detail-price");
-  const detailDescription = document.getElementById("detail-description");
-  const detailMeta = document.getElementById("detail-meta");
-
-  const detailSellerAvatar = document.getElementById("detail-seller-avatar");
-  const detailSellerName = document.getElementById("detail-seller-name");
-  const detailSellerEmail = document.getElementById("detail-seller-email");
-
-  const detailLocationText = document.getElementById("detail-location-text");
-  const detailMinimapContainer = document.getElementById(
-    "detail-minimap-container"
-  );
-  const detailMessageBtn = document.getElementById("detail-message-btn");
-
   window.activePostType = window.activePostType || "selling";
 
-  // ============================
-  // OPEN/CLOSE MODAL
-  // ============================
   function openModal() {
     if (!window.currentUser) {
       alert("You must sign in to add a post.");
       return;
     }
-
     postTitle.value = "";
     postDescription.value = "";
     postPrice.value = "";
@@ -65,7 +35,6 @@
     postLocation.value = "";
     postImage.value = "";
     postModalHint.textContent = "";
-
     modalBackdrop.classList.add("active");
   }
 
@@ -73,77 +42,123 @@
     modalBackdrop.classList.remove("active");
   }
 
-  fabAdd?.addEventListener("click", openModal);
-  btnCancelPost?.addEventListener("click", closeModal);
+  async function enforcePostLimitForFree() {
+    const user = window.currentUser;
+    const profile = window.currentProfile;
+    if (!user) return false;
 
-  // ============================
-  // IMAGE UPLOAD
-  // ============================
-  async function uploadImages(files, userId) {
-    if (!files?.length) return [];
+    if (profile && profile.premium) return true;
+
+    const { count, error } = await supa
+      .from("posts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.log("post count error (ignoring):", error.message);
+      return true;
+    }
+
+    if ((count || 0) >= 5) {
+      alert(
+        "You reached the free plan limit of 5 posts.\nUpgrade to premium to post unlimited."
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  async function uploadPostImages(files, userId) {
+    if (!files || !files.length) return [];
     const urls = [];
 
     for (const file of files) {
       const ext = file.name.split(".").pop() || "jpg";
-      const path =
-        "posts/" +
-        userId +
-        "-" +
-        Date.now() +
-        "-" +
-        Math.random().toString(36).slice(2) +
-        "." +
-        ext;
+      const path = `posts/${userId}-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}.${ext}`;
 
-      const { error: upErr } = await supa.storage
+      const { error: uploadError } = await supa.storage
         .from("post_images")
-        .upload(path, file);
+        .upload(path, file, { upsert: true });
 
-      if (upErr) {
-        console.log("Upload error:", upErr.message);
+      if (uploadError) {
+        console.log("Upload error:", uploadError.message);
         continue;
       }
 
       const { data: urlData } = supa.storage
         .from("post_images")
         .getPublicUrl(path);
-
-      if (urlData?.publicUrl) urls.push(urlData.publicUrl);
+      if (urlData && urlData.publicUrl) {
+        urls.push(urlData.publicUrl);
+      }
     }
 
     return urls;
   }
 
-  // ============================
-  // SAVE POST
-  // ============================
   async function savePost() {
-    if (!window.currentUser) return alert("Sign in first.");
+    const user = window.currentUser;
+    const profile = window.currentProfile;
+    if (!user) {
+      alert("You must sign in to add a post.");
+      return;
+    }
+
+    const ok = await enforcePostLimitForFree();
+    if (!ok) {
+      postModalHint.textContent =
+        "Free plan: post limit reached. Upgrade to premium for unlimited posts.";
+      return;
+    }
 
     const title = postTitle.value.trim();
-    if (!title) return alert("Title is required.");
+    if (!title) {
+      alert("Title is required.");
+      return;
+    }
 
-    const files = postImage.files;
-    postModalHint.textContent = "Saving...";
+    const description = postDescription.value.trim();
+    const price = postPrice.value.trim();
+    const type = postType.value;
+    const category = postCategory.value.trim();
+    const condition = postCondition.value.trim();
+    const locationText =
+      postLocation.value.trim() || (profile && profile.location_text) || null;
 
-    const imageUrls = await uploadImages(files, window.currentUser.id);
+    const lat = profile && typeof profile.lat === "number" ? profile.lat : null;
+    const lng = profile && typeof profile.lng === "number" ? profile.lng : null;
+
+    postModalHint.textContent = "Saving post...";
+
+    const fileList = postImage.files;
+    let imageUrls = [];
+    if (fileList && fileList.length) {
+      imageUrls = await uploadPostImages(fileList, user.id);
+    }
+
+    const isPremiumUser = !!(profile && profile.premium);
 
     const { error } = await supa.from("posts").insert({
-      user_id: window.currentUser.id,
+      user_id: user.id,
       title,
-      description: postDescription.value.trim(),
-      price: postPrice.value.trim() || null,
-      type: postType.value,
-      category: postCategory.value.trim(),
-      condition: postCondition.value.trim(),
-      location_text: postLocation.value.trim(),
+      description,
+      price: price || null,
+      type,
+      category: category || null,
+      condition: condition || null,
+      location_text: locationText,
+      lat,
+      lng,
       image_urls: imageUrls.length ? JSON.stringify(imageUrls) : null,
-      created_at: new Date().toISOString(),
+      is_premium: isPremiumUser,
     });
 
     if (error) {
-      console.log(error.message);
-      postModalHint.textContent = "Error saving post.";
+      console.log("Insert error:", error.message);
+      postModalHint.textContent = "Error saving post: " + error.message;
       return;
     }
 
@@ -154,185 +169,106 @@
     }, 400);
   }
 
-  btnSavePost?.addEventListener("click", savePost);
-
-  // ============================
-  // LOAD POSTS
-  // ============================
-  async function loadPosts(searchText = "") {
+  async function loadPosts() {
     if (!postsGrid || !postsStatus) return;
 
+    postsStatus.textContent = "Loading posts...";
     postsGrid.innerHTML = "";
-    postsStatus.textContent = "Loading posts…";
 
-    let query = supa
+    let { data, error } = await supa
       .from("posts")
       .select("*")
+      .order("is_premium", { ascending: false })
       .order("created_at", { ascending: false });
 
-    if (searchText) {
-      const q = searchText.toLowerCase();
-      query = query.or(
-        `title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`
-      );
-    }
-
-    const { data, error } = await query;
-
     if (error) {
-      postsStatus.textContent = "Error loading posts.";
-      console.log(error.message);
+      console.log("load posts error:", error.message);
+      postsStatus.textContent =
+        "Error loading posts. Check console / Supabase.";
       return;
     }
 
-    if (!data?.length) {
-      postsStatus.textContent = "No posts found.";
+    if (!data || !data.length) {
+      postsStatus.textContent = "No posts yet. Be the first to post!";
+      postsGrid.innerHTML =
+        "<p class='hint'>No posts yet in this category.</p>";
       return;
     }
 
     const filtered = data.filter((p) => {
       const t =
-        p.type?.toLowerCase() === "request" ? "request" : "selling";
+        (p.type || "").toString().toLowerCase() === "request"
+          ? "request"
+          : "selling";
       return t === window.activePostType;
     });
+
+    if (!filtered.length) {
+      postsGrid.innerHTML =
+        "<p class='hint'>No posts in this category yet.</p>";
+      postsStatus.textContent = "";
+      return;
+    }
 
     postsStatus.textContent = "";
 
     postsGrid.innerHTML = filtered
       .map((p) => {
-        let firstImg = "";
+        let priceText = p.price ? `$${p.price}` : "";
+        let primaryImage = null;
 
         if (p.image_urls) {
           try {
             const arr = JSON.parse(p.image_urls);
-            if (arr.length) firstImg = arr[0];
-          } catch {}
+            if (Array.isArray(arr) && arr.length) {
+              primaryImage = arr[0];
+            }
+          } catch (e) {
+            console.log("image_urls parse error:", e);
+          }
+        } else if (p.image_url) {
+          primaryImage = p.image_url;
         }
 
+        const badge =
+          p.is_premium && p.is_premium === true
+            ? `<span class="badge premium">Premium</span>`
+            : "";
+
+        const metaBits = [];
+        if (p.category) metaBits.push(p.category);
+        if (p.condition) metaBits.push(p.condition);
+        if (p.location_text) metaBits.push(p.location_text);
+
+        const metaLine = metaBits.length
+          ? `<small class="hint">${metaBits.join(" • ")}</small>`
+          : "";
+
+        const imgHtml = primaryImage
+          ? `<img src="${primaryImage}" alt="Post image" />`
+          : "";
+
         return `
-          <article class="post" data-id="${p.id}">
-            ${firstImg ? `<img src="${firstImg}">` : ""}
-            <h3>${p.title}</h3>
+          <article class="post">
+            ${imgHtml}
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+              <h3>${p.title || "Untitled"}</h3>
+              ${badge}
+            </div>
             <p>${p.description || ""}</p>
-            ${
-              p.price
-                ? `<small style="color:#22c55e;">$${p.price}</small>`
-                : ""
-            }
+            ${metaLine}
+            <small>${priceText}</small>
           </article>
         `;
       })
       .join("");
-
-    attachDetailHandlers(filtered);
   }
 
-  // ============================
-  // DETAIL PANEL
-  // ============================
-  function openDetailUI() {
-    detailOverlay?.classList.add("active");
-    detailPanel?.classList.add("active");
-  }
+  if (fabAdd) fabAdd.addEventListener("click", openModal);
+  if (btnCancelPost) btnCancelPost.addEventListener("click", closeModal);
+  if (btnSavePost) btnSavePost.addEventListener("click", savePost);
 
-  function closeDetailUI() {
-    detailOverlay?.classList.remove("active");
-    detailPanel?.classList.remove("active");
-  }
-
-  detailCloseBtn?.addEventListener("click", closeDetailUI);
-  detailOverlay?.addEventListener("click", closeDetailUI);
-
-  // Load full post when clicked
-  function attachDetailHandlers(posts) {
-    const cards = document.querySelectorAll(".post[data-id]");
-    cards.forEach((card) => {
-      card.addEventListener("click", () => {
-        const id = Number(card.getAttribute("data-id"));
-        const post = posts.find((p) => p.id === id);
-        if (post) openDetail(post);
-      });
-    });
-  }
-
-  async function openDetail(post) {
-    // Seller info
-    const { data: profile } = await supa
-      .from("profiles")
-      .select("*")
-      .eq("id", post.user_id)
-      .maybeSingle();
-
-    // Images
-    detailImages.innerHTML = "";
-    let urls = [];
-    try {
-      if (post.image_urls) urls = JSON.parse(post.image_urls);
-    } catch {}
-
-    if (urls.length) {
-      urls.forEach((u) => {
-        const img = document.createElement("img");
-        img.src = u;
-        detailImages.appendChild(img);
-      });
-    }
-
-    detailTitle.textContent = post.title || "Untitled";
-    detailDescription.textContent = post.description || "";
-    detailPrice.textContent = post.price ? "$" + post.price : "";
-
-    detailMeta.textContent = [
-      post.category,
-      post.condition,
-      post.type === "request" ? "Request" : "Selling",
-    ]
-      .filter(Boolean)
-      .join(" • ");
-
-    detailSellerName.textContent = profile?.username || "Seller";
-    detailSellerEmail.textContent = profile?.email || "";
-
-    // Avatar
-    detailSellerAvatar.innerHTML = "";
-    const av = document.createElement("img");
-    av.src =
-      profile?.avatar_url ||
-      "data:image/svg+xml;base64," +
-        btoa(
-          '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#111"/><text x="50%" y="55%" fill="#999" font-size="28" text-anchor="middle">BF</text></svg>'
-        );
-    detailSellerAvatar.appendChild(av);
-
-    detailLocationText.textContent =
-      post.location_text || "Location not specified";
-
-    // Mini-map (premium only)
-    const isPremium = window.currentProfile?.premium;
-    const lat = post.lat;
-    const lng = post.lng;
-
-    if (lat && lng && isPremium) {
-      detailMinimapContainer.style.display = "block";
-      if (window.BFMap?.renderMiniMap)
-        window.BFMap.renderMiniMap(lat, lng);
-    } else {
-      detailMinimapContainer.style.display = "none";
-    }
-
-    detailMessageBtn.onclick = () => {
-      alert("Messaging coming soon.");
-    };
-
-    openDetailUI();
-  }
-
-  // ============================
-  // EXPORT
-  // ============================
   window.Posts = {
     loadPosts,
   };
-
-  loadPosts();
 })();
