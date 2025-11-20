@@ -143,3 +143,12 @@
     },
   };
 })();
+(function(){
+  const btn=document.getElementById('map-close-btn');
+  if(btn){
+    btn.addEventListener('click',()=>{
+      document.getElementById('view-posts').classList.add('active');
+      document.getElementById('view-map').classList.remove('active');
+    });
+  }
+})();
