@@ -265,7 +265,7 @@ async function uploadAvatar() {
   const path = `avatars/${user.id}-${Date.now()}.${ext}`;
 
   const { error } = await supa.storage
-    .from("post_images")
+    .from("profile_images")
     .upload(path, file, { upsert: true });
   if (error) {
     alert("Upload failed: " + error.message);
