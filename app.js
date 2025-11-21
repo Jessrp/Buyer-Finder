@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const navRequests = document.getElementById("nav-requests");
   const navMap = document.getElementById("nav-map");
   const navSettings = document.getElementById("nav-settings");
+  const mapCloseBtn = document.getElementById("map-close-btn");
 
   const btnToggleTheme = document.getElementById("btn-toggle-theme");
   const btnUpgradePremium = document.getElementById("btn-upgrade-premium");
@@ -71,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (!profile || !profile.premium) {
         alert(
-          "Map is a premium feature.\nUse the Upgrade button in Settings (dev-mode) to mark your account premium for now."
+          "Map is a premium feature. Use the Upgrade button in Settings (dev-mode) to mark your account premium for now."
         );
         return;
       }
@@ -80,6 +81,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       setActiveView("map");
     });
+
+  if (mapCloseBtn) {
+    mapCloseBtn.addEventListener("click", () => {
+      setActiveView("posts");
+    });
+  }
 
   if (navSettings)
     navSettings.addEventListener("click", () => setActiveView("settings"));
