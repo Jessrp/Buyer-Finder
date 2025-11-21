@@ -28,7 +28,7 @@
 
     if (!map) {
       map = new google.maps.Map(mapCanvas, {
-        center: { lat: 39.8283, lng: -98.5795 }, // center-ish US
+        center: { lat: 39.8283, lng: -98.5795 },
         zoom: 4,
         disableDefaultUI: false,
       });
@@ -142,13 +142,4 @@
       loadPostsForMap(mapSearchInput ? mapSearchInput.value : "");
     },
   };
-})();
-(function(){
-  const btn=document.getElementById('map-close-btn');
-  if(btn){
-    btn.addEventListener('click',()=>{
-      document.getElementById('view-posts').classList.add('active');
-      document.getElementById('view-map').classList.remove('active');
-    });
-  }
 })();
