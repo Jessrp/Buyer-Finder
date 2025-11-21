@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <div class="debug-bar">DEBUG: BuyerFinder multi-file build (posts + premium + map)</div>
+  <div class="debug-bar">DEBUG: BuyerFinder multi-file build (posts + premium + map + detail panel)</div>
 
   <header>
     <h1>🔎 BuyerFinder</h1>
@@ -210,6 +210,23 @@
     </div>
   </div>
 
+  <!-- DETAIL PANEL -->
+  <div id="detail-overlay" class="detail-overlay"></div>
+
+  <div id="detail-panel" class="detail-panel">
+    <button id="detail-close" class="detail-close">✕</button>
+    <div id="detail-img-wrap" class="detail-img-wrap"></div>
+    <h2 id="detail-title"></h2>
+    <p id="detail-price" class="big-price"></p>
+    <p id="detail-desc"></p>
+    <p id="detail-meta" class="hint"></p>
+
+    <div class="detail-actions">
+      <button id="detail-msg-btn" class="btn full">Send message</button>
+      <button id="detail-share-btn" class="btn outline full">Share</button>
+    </div>
+  </div>
+
   <!-- Supabase + app scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
   <script src="auth.js"></script>
@@ -217,10 +234,10 @@
   <script src="map.js"></script>
   <script src="app.js"></script>
 
-  <!-- Google Maps API (replace YOUR_KEY_HERE) -->
+  <!-- Google Maps API -->
   <script
     async
-    src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY">
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvGgUxOR4Dmm0fDwMYg7IltbKfyWrmMFY">
   </script>
 
 </body>
