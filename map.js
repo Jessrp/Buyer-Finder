@@ -28,7 +28,7 @@
 
     if (!map) {
       map = new google.maps.Map(mapCanvas, {
-        center: { lat: 39.8283, lng: -98.5795 },
+        center: { lat: 39.8283, lng: -98.5795 }, // center-ish US
         zoom: 4,
         disableDefaultUI: false,
       });
