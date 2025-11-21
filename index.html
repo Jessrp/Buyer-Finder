@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <div class="debug-bar">DEBUG: BuyerFinder multi-file build (posts + premium + map)</div>
+  <div class="debug-bar">DEBUG: BuyerFinder multi-file build (posts + premium + map + detail panel)</div>
 
   <header>
     <h1>🔎 BuyerFinder</h1>
@@ -207,6 +207,23 @@
         <button class="btn small" id="btn-save-post">Save</button>
       </div>
       <p class="hint" id="post-modal-hint"></p>
+    </div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <div id="detail-overlay" class="detail-overlay"></div>
+
+  <div id="detail-panel" class="detail-panel">
+    <button id="detail-close" class="detail-close">✕</button>
+    <div id="detail-img-wrap" class="detail-img-wrap"></div>
+    <h2 id="detail-title"></h2>
+    <p id="detail-price" class="big-price"></p>
+    <p id="detail-desc"></p>
+    <p id="detail-meta" class="hint"></p>
+
+    <div class="detail-actions">
+      <button id="detail-msg-btn" class="btn full">Send message</button>
+      <button id="detail-share-btn" class="btn outline full">Share</button>
     </div>
   </div>
 
