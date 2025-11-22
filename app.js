@@ -1,29 +1,47 @@
 // app.js
+// Glue code: views, nav, theme, search, map entry.
+
 document.addEventListener("DOMContentLoaded", () => {
   let activeView = "posts";
   window.activePostType = window.activePostType || "selling";
 
-  const tabSelling = document.getElementById("tab-selling");
-  const tabRequests = document.getElementById("tab-requests");
-
   const viewPosts = document.getElementById("view-posts");
+  const viewMatches = document.getElementById("view-matches");
+  const viewNotifications = document.getElementById("view-notifications");
   const viewMap = document.getElementById("view-map");
   const viewSettings = document.getElementById("view-settings");
 
   const navSelling = document.getElementById("nav-selling");
   const navRequests = document.getElementById("nav-requests");
-  const navMap = document.getElementById("nav-map");
+  const navMatches = document.getElementById("nav-matches");
+  const navNotifications = document.getElementById("nav-notifications");
   const navSettings = document.getElementById("nav-settings");
-  const mapCloseBtn = document.getElementById("map-close-btn");
 
   const btnToggleTheme = document.getElementById("btn-toggle-theme");
   const btnUpgradePremium = document.getElementById("btn-upgrade-premium");
   const btnDeleteAccount = document.getElementById("btn-delete-account");
+  const btnOpenMap = document.getElementById("btn-open-map");
+
+  const matchesDot = document.getElementById("matches-dot");
+  const notificationsDot = document.getElementById("notifications-dot");
+
+  const searchInput = document.getElementById("search-input");
+
+  function getSearchQuery() {
+    return searchInput ? searchInput.value.trim() : "";
+  }
 
   function setActiveView(view) {
     activeView = view;
-    if (viewPosts) viewPosts.classList.toggle("active", view === "posts");
-    if (viewMap) viewMap.classList.toggle("active", view === "map");
+
+    if (viewPosts)
+      viewPosts.classList.toggle("active", view === "posts");
+    if (viewMatches)
+      viewMatches.classList.toggle("active", view === "matches");
+    if (viewNotifications)
+      viewNotifications.classList.toggle("active", view === "notifications");
+    if (viewMap)
+      viewMap.classList.toggle("active", view === "map");
     if (viewSettings)
       viewSettings.classList.toggle("active", view === "settings");
 
@@ -37,34 +55,82 @@ document.addEventListener("DOMContentLoaded", () => {
         "active",
         view === "posts" && window.activePostType === "request"
       );
-    if (navMap) navMap.classList.toggle("active", view === "map");
+    if (navMatches)
+      navMatches.classList.toggle("active", view === "matches");
+    if (navNotifications)
+      navNotifications.classList.toggle("active", view === "notifications");
     if (navSettings)
       navSettings.classList.toggle("active", view === "settings");
   }
 
+  function reloadPostsForCurrentTab() {
+    if (window.Posts && typeof window.Posts.loadPosts === "function") {
+      window.Posts.loadPosts(getSearchQuery());
+    }
+  }
+
   function setActivePostType(type) {
     window.activePostType = type;
-    if (tabSelling) tabSelling.classList.toggle("active", type === "selling");
-    if (tabRequests)
-      tabRequests.classList.toggle("active", type === "request");
-    if (window.Posts && typeof window.Posts.loadPosts === "function") {
-      window.Posts.loadPosts();
-    }
+    reloadPostsForCurrentTab();
     setActiveView("posts");
   }
 
-  if (tabSelling)
-    tabSelling.addEventListener("click", () => setActivePostType("selling"));
-  if (tabRequests)
-    tabRequests.addEventListener("click", () => setActivePostType("request"));
+  // NAV EVENTS
+  if (navSelling) {
+    navSelling.addEventListener("click", () => {
+      setActivePostType("selling");
+    });
+  }
 
-  if (navSelling)
-    navSelling.addEventListener("click", () => setActivePostType("selling"));
-  if (navRequests)
-    navRequests.addEventListener("click", () => setActivePostType("request"));
+  if (navRequests) {
+    navRequests.addEventListener("click", () => {
+      setActivePostType("request");
+    });
+  }
 
-  if (navMap)
-    navMap.addEventListener("click", () => {
+  if (navMatches) {
+    navMatches.addEventListener("click", () => {
+      setActiveView("matches");
+      // TODO: load matches from Supabase when backend matching is finalized
+      if (matchesDot) matchesDot.style.display = "none";
+    });
+  }
+
+  if (navNotifications) {
+    navNotifications.addEventListener("click", () => {
+      setActiveView("notifications");
+      // TODO: load notifications when messaging + matching events are wired
+      if (notificationsDot) notificationsDot.style.display = "none";
+    });
+  }
+
+  if (navSettings) {
+    navSettings.addEventListener("click", () => {
+      setActiveView("settings");
+    });
+  }
+
+  // SEARCH
+  function triggerSearch() {
+    reloadPostsForCurrentTab();
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        triggerSearch();
+      }
+    });
+
+    searchInput.addEventListener("blur", () => {
+      // Light-weight requery
+      triggerSearch();
+    });
+  }
+
+  // MAP ENTRY FROM SETTINGS
+  if (btnOpenMap) {
+    btnOpenMap.addEventListener("click", () => {
       const profile = window.currentProfile;
       if (!window.currentUser) {
         alert("Map is for signed-in premium users.");
@@ -72,25 +138,19 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (!profile || !profile.premium) {
         alert(
-          "Map is a premium feature. Use the Upgrade button in Settings (dev-mode) to mark your account premium for now."
+          "Map is a premium feature.\nUse the Upgrade button in Settings (dev-mode) to mark your account premium for now."
         );
         return;
       }
+
       if (window.BFMap && typeof window.BFMap.initMap === "function") {
         window.BFMap.initMap();
       }
       setActiveView("map");
     });
-
-  if (mapCloseBtn) {
-    mapCloseBtn.addEventListener("click", () => {
-      setActiveView("posts");
-    });
   }
 
-  if (navSettings)
-    navSettings.addEventListener("click", () => setActiveView("settings"));
-
+  // THEME
   function applyTheme() {
     const theme = localStorage.getItem("buyerfinder-theme") || "dark";
     if (theme === "light") document.body.classList.add("light");
@@ -98,15 +158,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   applyTheme();
 
-  if (btnToggleTheme)
+  if (btnToggleTheme) {
     btnToggleTheme.addEventListener("click", () => {
       const cur = localStorage.getItem("buyerfinder-theme") || "dark";
       const next = cur === "dark" ? "light" : "dark";
       localStorage.setItem("buyerfinder-theme", next);
       applyTheme();
     });
+  }
 
-  if (btnUpgradePremium)
+  // PREMIUM UPGRADE DEV-MODE
+  if (btnUpgradePremium) {
     btnUpgradePremium.addEventListener("click", async () => {
       if (!window.currentUser) {
         alert("Sign in first to upgrade.");
@@ -132,21 +194,19 @@ document.addEventListener("DOMContentLoaded", () => {
         window.currentProfile.premium = true;
       }
 
-      if (window.Auth && typeof window.Auth.checkUser === "function") {
-        window.Auth.checkUser();
-      }
-
       alert("You are now PREMIUM. Map & unlimited posts unlocked.");
     });
+  }
 
-  if (btnDeleteAccount)
+  if (btnDeleteAccount) {
     btnDeleteAccount.addEventListener("click", () => {
       alert(
         "Real account deletion must be done on a secure backend using the service role key.\nThis button just explains that; nothing is deleted."
       );
     });
-
-  if (window.Posts && typeof window.Posts.loadPosts === "function") {
-    window.Posts.loadPosts();
   }
+
+  // INITIAL LOAD
+  setActiveView("posts");
+  reloadPostsForCurrentTab();
 });
