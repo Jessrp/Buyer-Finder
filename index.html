@@ -8,7 +8,9 @@
 </head>
 <body>
 
-  <div class="debug-bar">DEBUG: BuyerFinder multi-file build (posts + premium + map + detail panel)</div>
+  <div class="debug-bar">
+    DEBUG: BuyerFinder multi-file build (posts + premium + map + search + nav icons)
+  </div>
 
   <header>
     <h1>🔎 BuyerFinder</h1>
@@ -19,14 +21,9 @@
     </div>
   </header>
 
-  <div class="tabs-top">
-    <button id="tab-selling" class="active">Selling</button>
-    <button id="tab-requests">Requests</button>
-  </div>
-
   <main class="content">
 
-    <!-- User card -->
+    <!-- USER CARD -->
     <div class="user-card" id="user-card">
       <div class="user-avatar" id="user-avatar"></div>
       <div class="user-meta">
@@ -39,13 +36,55 @@
       <button class="btn small outline" id="user-signin-shortcut">Sign in</button>
     </div>
 
-    <!-- POSTS VIEW -->
+    <!-- SEARCH BAR -->
+    <div class="search-row">
+      <div class="search-pill">
+        <span class="search-icon">
+          <!-- search icon -->
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5" />
+            <line x1="15.5" y1="15.5" x2="20" y2="20" />
+          </svg>
+        </span>
+        <input
+          id="search-input"
+          type="text"
+          placeholder="Search posts…"
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
+    <!-- POSTS VIEW (SELLING / REQUESTS via filter) -->
     <section id="view-posts" class="view active">
       <div id="posts-status" class="hint" style="margin-bottom:6px;"></div>
       <div class="posts" id="posts-grid"></div>
     </section>
 
-    <!-- MAP VIEW (premium) -->
+    <!-- MATCHES VIEW -->
+    <section id="view-matches" class="view">
+      <div class="section">
+        <h3>Matches</h3>
+        <p class="hint">
+          This will show items that match what you’re searching for,
+          and people who need what you’re selling.
+        </p>
+        <div id="matches-list"></div>
+      </div>
+    </section>
+
+    <!-- NOTIFICATIONS VIEW -->
+    <section id="view-notifications" class="view">
+      <div class="section">
+        <h3>Notifications</h3>
+        <p class="hint">
+          Here you’ll see alerts for new matches, messages, and other important activity.
+        </p>
+        <div id="notifications-list"></div>
+      </div>
+    </section>
+
+    <!-- MAP VIEW (PREMIUM) -->
     <section id="view-map" class="view">
       <div class="map-wrapper">
         <h3 style="margin-top:0;">BuyerFinder Radar</h3>
@@ -88,7 +127,7 @@
 
         <div class="field-row">
           <label>Location</label>
-          <input type="text" id="profile-location-text" placeholder="e.g. Columbus, OH" />
+          <input type="text" id="profile-location-text" placeholder="e.g. Lexington, SC" />
           <button class="btn small" id="btn-save-location">Save</button>
           <button class="btn small outline" id="btn-use-gps">Use GPS</button>
         </div>
@@ -110,6 +149,7 @@
         <h3>Premium</h3>
         <p id="premium-status-text" class="hint"></p>
         <button class="btn small" id="btn-upgrade-premium">Upgrade (dev-mode)</button>
+        <button class="btn small outline" id="btn-open-map">Open map</button>
       </div>
 
       <div class="section">
@@ -139,15 +179,64 @@
   <!-- BOTTOM NAV -->
   <div class="bottom-nav">
     <div class="nav-item active" id="nav-selling">
-      <span>🏷</span> Selling
+      <span class="nav-icon">
+        <!-- tag icon -->
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 4h7.5l8.5 8.5-7.5 7.5L4 11.5V4z" />
+          <circle cx="9" cy="9" r="1.5" />
+        </svg>
+      </span>
+      <span class="nav-label">Selling</span>
     </div>
+
     <div class="nav-item" id="nav-requests">
-      <span>📥</span> Requests
+      <span class="nav-icon">
+        <!-- inbox / request icon -->
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 6h16v10H4z" />
+          <path d="M4 10l4 3h8l4-3" />
+        </svg>
+      </span>
+      <span class="nav-label">Requests</span>
     </div>
-    <div class="nav-item" id="nav-map">
-      <span>🗺</span> Map</div>
+
+    <div class="nav-item" id="nav-matches">
+      <span class="nav-icon">
+        <!-- target icon -->
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="7" />
+          <circle cx="12" cy="12" r="3" />
+          <line x1="12" y1="3" x2="12" y2="1" />
+          <line x1="21" y1="12" x2="23" y2="12" />
+          <line x1="12" y1="21" x2="12" y2="23" />
+          <line x1="1" y1="12" x2="3" y2="12" />
+        </svg>
+      </span>
+      <span class="nav-label">Matches</span>
+      <span class="badge-dot" id="matches-dot" style="display:none;"></span>
+    </div>
+
+    <div class="nav-item" id="nav-notifications">
+      <span class="nav-icon">
+        <!-- bell icon -->
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3a4 4 0 0 0-4 4v2.3c0 .6-.2 1.1-.5 1.6L6 13v2h12v-2l-1.5-2.1c-.3-.5-.5-1-.5-1.6V7a4 4 0 0 0-4-4z" />
+          <path d="M10 18a2 2 0 0 0 4 0" />
+        </svg>
+      </span>
+      <span class="nav-label">Notifications</span>
+      <span class="badge-dot" id="notifications-dot" style="display:none;"></span>
+    </div>
+
     <div class="nav-item" id="nav-settings">
-      <span>⚙️</span> Settings
+      <span class="nav-icon">
+        <!-- gear icon -->
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M4 12h2.2M17.8 12H20M12 4v2.2M12 17.8V20M7.1 7.1l1.5 1.5M15.4 15.4l1.5 1.5M7.1 16.9l1.5-1.5M15.4 8.6l1.5-1.5" />
+        </svg>
+      </span>
+      <span class="nav-label">Settings</span>
     </div>
   </div>
 
@@ -207,23 +296,6 @@
         <button class="btn small" id="btn-save-post">Save</button>
       </div>
       <p class="hint" id="post-modal-hint"></p>
-    </div>
-  </div>
-
-  <!-- DETAIL PANEL -->
-  <div id="detail-overlay" class="detail-overlay"></div>
-
-  <div id="detail-panel" class="detail-panel">
-    <button id="detail-close" class="detail-close">✕</button>
-    <div id="detail-img-wrap" class="detail-img-wrap"></div>
-    <h2 id="detail-title"></h2>
-    <p id="detail-price" class="big-price"></p>
-    <p id="detail-desc"></p>
-    <p id="detail-meta" class="hint"></p>
-
-    <div class="detail-actions">
-      <button id="detail-msg-btn" class="btn full">Send message</button>
-      <button id="detail-share-btn" class="btn outline full">Share</button>
     </div>
   </div>
 
