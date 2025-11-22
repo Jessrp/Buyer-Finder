@@ -305,9 +305,20 @@ header .right {
 
 .field-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+/* Make the input take full width, buttons sit under it cleanly */
+.field-row input[type="file"] {
+  flex: 1 1 100%;
+}
+
+/* Buttons aligned horizontally with clean spacing */
+.field-row button {
+  flex-shrink: 0;
 }
 
 .field-row label {
