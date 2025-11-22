@@ -1,3 +1,4 @@
+alert("POSTS.JS LOADED");
 async function loadPosts(query) {
     if (!postsGrid || !postsStatus) return;
 
