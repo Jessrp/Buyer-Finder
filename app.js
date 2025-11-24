@@ -79,7 +79,12 @@ document.addEventListener("DOMContentLoaded", () => {
         window.BFMap.initMap();
       }
       setActiveView("map");
-    });
+    
+// SETTINGS & MAP CLOSE BUTTONS
+document.getElementById("settings-close-btn")?.addEventListener("click", ()=> setActiveView("posts"));
+document.getElementById("map-close-btn")?.addEventListener("click", ()=> setActiveView("posts"));
+
+});
 
   if (navSettings)
     navSettings.addEventListener("click", () => setActiveView("settings"));
@@ -97,7 +102,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const next = cur === "dark" ? "light" : "dark";
       localStorage.setItem("buyerfinder-theme", next);
       applyTheme();
-    });
+    
+// SETTINGS & MAP CLOSE BUTTONS
+document.getElementById("settings-close-btn")?.addEventListener("click", ()=> setActiveView("posts"));
+document.getElementById("map-close-btn")?.addEventListener("click", ()=> setActiveView("posts"));
+
+});
 
   if (btnUpgradePremium)
     btnUpgradePremium.addEventListener("click", async () => {
@@ -130,16 +140,31 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       alert("You are now PREMIUM. Map & unlimited posts unlocked.");
-    });
+    
+// SETTINGS & MAP CLOSE BUTTONS
+document.getElementById("settings-close-btn")?.addEventListener("click", ()=> setActiveView("posts"));
+document.getElementById("map-close-btn")?.addEventListener("click", ()=> setActiveView("posts"));
+
+});
 
   if (btnDeleteAccount)
     btnDeleteAccount.addEventListener("click", () => {
       alert(
         "Real account deletion must be done on a secure backend using the service role key.\nThis button just explains that; nothing is deleted."
       );
-    });
+    
+// SETTINGS & MAP CLOSE BUTTONS
+document.getElementById("settings-close-btn")?.addEventListener("click", ()=> setActiveView("posts"));
+document.getElementById("map-close-btn")?.addEventListener("click", ()=> setActiveView("posts"));
+
+});
 
   if (window.Posts && typeof window.Posts.loadPosts === "function") {
     window.Posts.loadPosts();
   }
+
+// SETTINGS & MAP CLOSE BUTTONS
+document.getElementById("settings-close-btn")?.addEventListener("click", ()=> setActiveView("posts"));
+document.getElementById("map-close-btn")?.addEventListener("click", ()=> setActiveView("posts"));
+
 });
