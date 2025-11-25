@@ -38,6 +38,8 @@ body.light {
   text-align: center;
 }
 
+/* HEADER */
+
 header {
   display: flex;
   align-items: center;
@@ -62,6 +64,28 @@ header .right {
   gap: 6px;
 }
 
+/* SEARCH BAR */
+
+.search-bar {
+  padding: 8px 12px 0;
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  gap: 8px;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: #020617;
+  color: var(--text);
+  font-size: 13px;
+}
+
+/* BUTTONS */
+
 .btn {
   border-radius: 999px;
   border: none;
@@ -71,6 +95,9 @@ header .right {
   cursor: pointer;
   font-weight: 600;
   font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn.small {
@@ -89,29 +116,11 @@ header .right {
   color: #fee2e2;
 }
 
-.tabs-top {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 12px;
+.btn.full {
+  width: 100%;
 }
 
-.tabs-top button {
-  flex: 1;
-  padding: 6px 10px;
-  background: transparent;
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-  color: var(--muted);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.tabs-top button.active {
-  background: var(--accent-soft);
-  color: var(--accent);
-  border-color: var(--accent);
-}
+/* LAYOUT */
 
 .content {
   padding: 10px 12px 80px;
@@ -120,6 +129,7 @@ header .right {
 }
 
 /* User card */
+
 .user-card {
   display: flex;
   align-items: center;
@@ -144,6 +154,11 @@ header .right {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.user-avatar.small {
+  width: 32px;
+  height: 32px;
 }
 
 .user-meta {
@@ -176,6 +191,7 @@ header .right {
 }
 
 /* Views */
+
 .view {
   display: none;
 }
@@ -184,42 +200,45 @@ header .right {
   display: block;
 }
 
-/* Posts grid */
+/* Posts grid – 2 columns */
+
 .posts {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-@media (max-width: 460px) {
+@media (min-width: 900px) {
   .posts {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 .post {
+  position: relative;
   border-radius: 12px;
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
-  padding: 10px;
+  padding: 8px;
+  cursor: pointer;
 }
 
 .post img {
   width: 100%;
   border-radius: 10px;
-  margin-bottom: 8px;
-  max-height: 260px;
+  margin-bottom: 6px;
+  max-height: 180px;
   object-fit: cover;
 }
 
 .post h3 {
-  margin: 0 0 4px;
-  font-size: 15px;
+  margin: 0 0 2px;
+  font-size: 14px;
 }
 
 .post p {
   margin: 0 0 4px;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--muted);
 }
 
@@ -228,7 +247,32 @@ header .right {
   color: var(--accent);
 }
 
+/* Edit pencil */
+
+.post .edit-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(15, 23, 42, 0.95);
+  color: var(--muted);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.post .edit-btn:hover {
+  color: var(--accent);
+}
+
 /* Map */
+
 .map-wrapper {
   padding: 10px;
   border-radius: var(--radius-lg);
@@ -238,13 +282,14 @@ header .right {
 
 #map-canvas {
   margin-top: 8px;
-  min-height: 200px;
+  min-height: 220px;
   border-radius: 12px;
   border: 1px solid var(--border-subtle);
   background: radial-gradient(circle at top, #22c1c30d, #020617);
 }
 
 /* Settings */
+
 .section {
   margin-bottom: 18px;
   padding: 10px;
@@ -293,32 +338,60 @@ header .right {
   color: var(--muted);
 }
 
-/* Bottom nav */
+/* Lists (matches / notifications) */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.list-item {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  font-size: 13px;
+}
+
+.list-item small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Bottom nav – 6 items now */
+
 .bottom-nav {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 52px;
+  height: 56px;
   background: rgba(3, 7, 18, 0.96);
   border-top: 1px solid var(--border-subtle);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   z-index: 30;
 }
 
 .nav-item {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--muted);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  gap: 2px;
 }
 
 .nav-item span {
-  font-size: 16px;
+  font-size: 15px;
+}
+
+.nav-item .nav-label {
+  font-size: 10px;
 }
 
 .nav-item.active {
@@ -326,6 +399,7 @@ header .right {
 }
 
 /* FAB */
+
 .fab {
   position: fixed;
   right: 16px;
@@ -343,6 +417,7 @@ header .right {
 }
 
 /* Modal */
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -378,7 +453,89 @@ header .right {
   margin-top: 8px;
 }
 
+/* Detail panel */
+
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  display: none;
+  z-index: 49;
+}
+
+.detail-overlay.active {
+  display: block;
+}
+
+.detail-panel {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 520px;
+  max-height: 80vh;
+  background: var(--bg-elevated);
+  border-radius: 18px 18px 0 0;
+  border: 1px solid var(--border-subtle);
+  padding: 12px;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
+  display: none;
+  z-index: 50;
+  overflow-y: auto;
+}
+
+.detail-panel.active {
+  display: block;
+}
+
+.close-btn {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.detail-images {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin-bottom: 8px;
+}
+
+.detail-images img {
+  border-radius: 10px;
+  max-height: 200px;
+}
+
+.big-price {
+  font-size: 18px;
+  color: var(--accent);
+  margin: 0 0 4px;
+}
+
+.seller-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+#detail-minimap-container {
+  margin: 8px 0;
+}
+
+#detail-minimap {
+  height: 160px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+}
+
 /* Light mode tweaks */
+
 body.light header {
   background: #ffffff;
 }
@@ -400,13 +557,4 @@ body.light select {
 
 body.light .bottom-nav {
   background: #ffffff;
-}
-.settings-close-btn,
-.map-close-btn {
-  position: fixed;
-  bottom: 70px;
-  right: 16px;
-  z-index: 50;
-  padding: 10px 18px;
-  border-radius: 12px;
-}
+  }
