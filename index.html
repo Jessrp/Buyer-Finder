@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <div class="debug-bar">DEBUG: BuyerFinder multi-file build (posts + premium + map)</div>
+  <div class="debug-bar">DEBUG: BuyerFinder multi-file build (posts + search + matches)</div>
 
   <header>
     <h1>🔎 BuyerFinder</h1>
@@ -19,14 +19,20 @@
     </div>
   </header>
 
-  <div class="tabs-top">
-    <button id="tab-selling" class="active">Selling</button>
-    <button id="tab-requests">Requests</button>
+  <!-- SEARCH BAR -->
+  <div class="search-bar" style="padding:10px;">
+    <input 
+      type="text" 
+      id="global-search-input" 
+      placeholder="Search posts (title, description, category)..."
+      class="search-input"
+    />
+    <button class="btn small" id="global-search-btn">Search</button>
   </div>
 
   <main class="content">
 
-    <!-- User card -->
+    <!-- USER CARD -->
     <div class="user-card" id="user-card">
       <div class="user-avatar" id="user-avatar"></div>
       <div class="user-meta">
@@ -45,27 +51,28 @@
       <div class="posts" id="posts-grid"></div>
     </section>
 
-    <!-- MAP VIEW (premium) -->
+    <!-- MAP VIEW -->
     <section id="view-map" class="view">
       <div class="map-wrapper">
+        <button class="btn small outline" id="map-close-btn" style="margin-bottom:10px;">Close</button>
         <h3 style="margin-top:0;">BuyerFinder Radar</h3>
-        <p class="hint" id="map-message">
-          Map shows posts near you. Use search to filter by product keywords.
-        </p>
+        <p class="hint" id="map-message">Map shows posts near you.</p>
 
         <div class="field-row">
           <label>Search</label>
-          <input type="text" id="map-search-query" placeholder="e.g. guitar, bike, lawn mower" />
+          <input type="text" id="map-search-query" />
           <button class="btn small" id="map-search-btn">Go</button>
         </div>
 
         <div id="map-canvas"></div>
-        <button class="btn small outline map-close-btn" id="map-close-btn">Close Map</button>
       </div>
     </section>
 
     <!-- SETTINGS VIEW -->
     <section id="view-settings" class="view">
+
+      <button class="btn small outline" id="settings-close-btn" style="margin-bottom:10px;">Close</button>
+
       <div class="section">
         <h3>Profile</h3>
 
@@ -80,22 +87,19 @@
           <button class="btn small" id="btn-save-username">Save</button>
         </div>
 
-        <div class="field-row">
-          <label>Avatar</label>
+        <div class="field-row" style="flex-wrap:wrap;">
+          <label style="width:70px;">Avatar</label>
           <input type="file" id="profile-avatar-input" accept="image/*" />
           <button class="btn small" id="btn-upload-avatar">Upload</button>
         </div>
 
-        <div class="field-row">
-          <label>Location</label>
+        <div class="field-row" style="flex-wrap:wrap;">
+          <label style="width:70px;">Location</label>
           <input type="text" id="profile-location-text" placeholder="e.g. Columbus, OH" />
           <button class="btn small" id="btn-save-location">Save</button>
           <button class="btn small outline" id="btn-use-gps">Use GPS</button>
         </div>
 
-        <p class="hint">
-          Location is stored as an approximate coordinate for map features (rounded, not exact).
-        </p>
       </div>
 
       <div class="section">
@@ -112,64 +116,22 @@
         <button class="btn small" id="btn-upgrade-premium">Upgrade (dev-mode)</button>
       </div>
 
-      <div class="section">
-        <h3>Danger zone</h3>
-        <p class="hint">
-          Real account deletion must be done on a secure backend with the service role key.
-          This app does not delete auth users from the browser.
-        </p>
-        <button class="btn small danger" id="btn-delete-account">Fake delete (explain)</button>
-      </div>
-
-      <div class="section">
-        <h3>About</h3>
-        <p class="hint">
-          BuyerFinder is your tiny marketplace for matching buyers and sellers,
-          with public listings, requests, and premium map radar features.
-        </p>
-        <p class="hint">
-          Contact support:
-          <a href="mailto:jessrp13@gmail.com" style="color:var(--accent);">jessrp13@gmail.com</a>
-        </p>
-      </div>
     </section>
-    <button class="settings-close-btn btn small outline" id="btn-close-settings">
-  Close
-</button>
 
   </main>
 
   <!-- BOTTOM NAV -->
   <div class="bottom-nav">
-  <div class="nav-item" id="nav-selling">
-    <span>🏷</span> Sell
+    <div class="nav-item active" id="nav-selling"><span>🏷</span>Selling</div>
+    <div class="nav-item" id="nav-requests"><span>📥</span>Requests</div>
+    <div class="nav-item" id="nav-map"><span>🗺</span>Map</div>
+    <div class="nav-item" id="nav-settings"><span>⚙️</span>Settings</div>
   </div>
-
-  <div class="nav-item" id="nav-requests">
-    <span>📥</span> Requests
-  </div>
-
-  <div class="nav-item" id="nav-matches">
-    <span>✨</span> Matches
-  </div>
-
-  <div class="nav-item" id="nav-alerts">
-    <span>🔔</span> Alerts
-  </div>
-
-  <div class="nav-item" id="nav-map">
-    <span>🗺</span> Map
-  </div>
-
-  <div class="nav-item" id="nav-settings">
-    <span>⚙️</span> Settings
-  </div>
-</div>
 
   <!-- FAB -->
   <button class="fab" id="fab-add">+</button>
 
-  <!-- ADD POST MODAL -->
+  <!-- MODAL -->
   <div class="modal-backdrop" id="modal-backdrop">
     <div class="modal">
       <h3>New post</h3>
@@ -185,7 +147,7 @@
       </div>
 
       <div class="field-row">
-        <label>Price (optional)</label>
+        <label>Price</label>
         <input type="text" id="post-price" />
       </div>
 
@@ -199,17 +161,12 @@
 
       <div class="field-row">
         <label>Category</label>
-        <input type="text" id="post-category" placeholder="e.g. Electronics" />
+        <input type="text" id="post-category" />
       </div>
 
       <div class="field-row">
         <label>Condition</label>
-        <input type="text" id="post-condition" placeholder="e.g. New, Used, Fair" />
-      </div>
-
-      <div class="field-row">
-        <label>Location</label>
-        <input type="text" id="post-location" placeholder="Uses profile location if blank" />
+        <input type="text" id="post-condition" />
       </div>
 
       <div class="field-row">
@@ -221,22 +178,20 @@
         <button class="btn small outline" id="btn-cancel-post">Cancel</button>
         <button class="btn small" id="btn-save-post">Save</button>
       </div>
+
       <p class="hint" id="post-modal-hint"></p>
     </div>
   </div>
 
-  <!-- Supabase + app scripts -->
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
   <script src="auth.js"></script>
   <script src="posts.js"></script>
   <script src="map.js"></script>
   <script src="app.js"></script>
 
-  <!-- Google Maps API (replace YOUR_KEY_HERE) -->
-  <script
-    async
-    src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY">
-  </script>
+  <!-- Google Maps API -->
+  <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvGgUxOR4Dmm0fDwMYg7IltbKfyWrmMFY"></script>
 
 </body>
 </html>
