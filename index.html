@@ -3,197 +3,163 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BuyerFinder</title>
+  <title>Buyer Finder</title>
   <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    /* Ensure Alerts view and Matches overlay don't flash */
+    #view-alerts,
+    #matches-overlay {
+      display: none;
+    }
+    #view-alerts.active,
+    #matches-overlay.active {
+      display: block;
+    }
+  </style>
 </head>
+
 <body>
-
-  <div class="debug-bar">DEBUG: BuyerFinder multi-file build (posts + search + matches)</div>
-
   <header>
-    <h1>🔎 BuyerFinder</h1>
-    <div class="right">
-      <button class="btn small" id="login-google-btn">Sign in with Google</button>
-      <button class="btn small" id="login-email-btn">Sign in with Email</button>
-      <button class="btn small" id="logout-btn" style="display:none;">Sign out</button>
-    </div>
+    <h1>Buyer-Finder</h1>
+    <p id="global-status" class="hint"></p>
   </header>
 
-  <!-- SEARCH BAR -->
-  <div class="search-bar" style="padding:10px;">
-    <input 
-      type="text" 
-      id="global-search-input" 
-      placeholder="Search posts (title, description, category)..."
-      class="search-input"
-    />
-    <button class="btn small" id="global-search-btn">Search</button>
-  </div>
-
-  <main class="content">
-
-    <!-- USER CARD -->
-    <div class="user-card" id="user-card">
-      <div class="user-avatar" id="user-avatar"></div>
-      <div class="user-meta">
-        <div id="user-name">Guest</div>
-        <small id="user-email">Not signed in</small>
-        <div>
-          <span class="badge" id="user-plan">Free (guest)</span>
-        </div>
-      </div>
-      <button class="btn small outline" id="user-signin-shortcut">Sign in</button>
-    </div>
-
+  <main>
     <!-- POSTS VIEW -->
     <section id="view-posts" class="view active">
-      <div id="posts-status" class="hint" style="margin-bottom:6px;"></div>
-      <div class="posts" id="posts-grid"></div>
+      <div class="section">
+        <div class="search-row">
+          <input id="global-search-input" placeholder="Search…" />
+          <button id="global-search-btn" class="btn small">Go</button>
+        </div>
+        <p class="hint">Tap a post to view details.</p>
+      </div>
+
+      <div id="posts-status"></div>
+      <div id="posts-grid"></div>
     </section>
 
     <!-- MAP VIEW -->
     <section id="view-map" class="view">
-      <div class="map-wrapper">
-        <button class="btn small outline" id="map-close-btn" style="margin-bottom:10px;">Close</button>
-        <h3 style="margin-top:0;">BuyerFinder Radar</h3>
-        <p class="hint" id="map-message">Map shows posts near you.</p>
-
-        <div class="field-row">
-          <label>Search</label>
-          <input type="text" id="map-search-query" />
-          <button class="btn small" id="map-search-btn">Go</button>
-        </div>
-
-        <div id="map-canvas"></div>
-      </div>
+      <button id="map-close-btn" class="btn small outline close-btn">Close</button>
+      <div id="map" class="map-container"></div>
     </section>
 
     <!-- SETTINGS VIEW -->
     <section id="view-settings" class="view">
-
-      <button class="btn small outline" id="settings-close-btn" style="margin-bottom:10px;">Close</button>
+      <button id="settings-close-btn" class="btn small outline close-btn">Close</button>
 
       <div class="section">
-        <h3>Profile</h3>
-
-        <div class="field-row">
-          <label>Email</label>
-          <input type="email" id="profile-email" disabled />
-        </div>
-
-        <div class="field-row">
-          <label>Username</label>
-          <input type="text" id="profile-username" />
-          <button class="btn small" id="btn-save-username">Save</button>
-        </div>
-
-        <div class="field-row" style="flex-wrap:wrap;">
-          <label style="width:70px;">Avatar</label>
-          <input type="file" id="profile-avatar-input" accept="image/*" />
-          <button class="btn small" id="btn-upload-avatar">Upload</button>
-        </div>
-
-        <div class="field-row" style="flex-wrap:wrap;">
-          <label style="width:70px;">Location</label>
-          <input type="text" id="profile-location-text" placeholder="e.g. Columbus, OH" />
-          <button class="btn small" id="btn-save-location">Save</button>
-          <button class="btn small outline" id="btn-use-gps">Use GPS</button>
-        </div>
-
+        <h3>Account</h3>
+        <div id="user-card"></div>
+        <button id="btn-sign-in" class="btn full">Sign In</button>
+        <button id="btn-sign-out" class="btn full outline">Sign Out</button>
       </div>
 
       <div class="section">
-        <h3>Theme</h3>
-        <div class="field-row">
-          <label>Mode</label>
-          <button class="btn small" id="btn-toggle-theme">Toggle dark / light</button>
-        </div>
+        <h3>Location</h3>
+        <button id="btn-use-gps" class="btn small">Use GPS</button>
+        <input id="manual-location-input" placeholder="Enter your city…" />
+        <button id="btn-save-location" class="btn small">Save Location</button>
       </div>
 
       <div class="section">
         <h3>Premium</h3>
         <p id="premium-status-text" class="hint"></p>
-        <button class="btn small" id="btn-upgrade-premium">Upgrade (dev-mode)</button>
+        <button id="btn-upgrade-premium" class="btn full">Upgrade (dev-mode)</button>
       </div>
-
     </section>
 
+    <!-- ALERTS VIEW -->
+    <section id="view-alerts" class="view">
+      <div class="section">
+        <h3>Alerts</h3>
+        <button class="btn small full" id="btn-open-matches">My matches</button>
+        <p class="hint">Automatic matches between your posts and what other people are looking for.</p>
+      </div>
+
+      <div class="section">
+        <h3>Notifications</h3>
+        <div class="list" id="notifications-list"></div>
+      </div>
+    </section>
   </main>
 
-  <!-- BOTTOM NAV -->
-  <div class="bottom-nav" style="display:flex; justify-content:space-between">
-    <div class="nav-item active" id="nav-selling"><span>🏷</span>Selling</div>
-    <div class="nav-item" id="nav-requests"><span>📥</span>Requests</div>
-    <div class="nav-item" id="nav-map"><span>🗺</span>Map</div>
-    <div class="nav-item" id="nav-settings"><span>⚙️</span>Settings</div>
-  </div>
-    <div class="nav-item" id="Alerts"><span>🔔</span>Alerts</div>
-  </div>
-
-  <!-- FAB -->
-  <button class="fab" id="fab-add">+</button>
-
-  <!-- MODAL -->
-  <div class="modal-backdrop" id="modal-backdrop">
+  <!-- POST MODAL -->
+  <div id="modal-backdrop" class="modal-backdrop">
     <div class="modal">
-      <h3>New post</h3>
+      <h3>Create / Edit Post</h3>
+      <input id="post-title" placeholder="Title" />
+      <textarea id="post-description" placeholder="Description"></textarea>
+      <input id="post-price" placeholder="Price" />
 
-      <div class="field-row">
-        <label>Title</label>
-        <input type="text" id="post-title" />
-      </div>
+      <label class="file-picker">
+        <input id="post-image" type="file" multiple />
+        Add images
+      </label>
 
-      <div class="field-row">
-        <label>Description</label>
-        <textarea id="post-description"></textarea>
-      </div>
+      <p id="post-modal-hint" class="hint"></p>
 
-      <div class="field-row">
-        <label>Price</label>
-        <input type="text" id="post-price" />
-      </div>
-
-      <div class="field-row">
-        <label>Type</label>
-        <select id="post-type">
-          <option value="selling">Selling</option>
-          <option value="request">Request</option>
-        </select>
-      </div>
-
-      <div class="field-row">
-        <label>Category</label>
-        <input type="text" id="post-category" />
-      </div>
-
-      <div class="field-row">
-        <label>Condition</label>
-        <input type="text" id="post-condition" />
-      </div>
-
-      <div class="field-row">
-        <label>Images</label>
-        <input type="file" id="post-image" accept="image/*" multiple />
-      </div>
-
-      <div class="modal-actions">
-        <button class="btn small outline" id="btn-cancel-post">Cancel</button>
-        <button class="btn small" id="btn-save-post">Save</button>
-      </div>
-
-      <p class="hint" id="post-modal-hint"></p>
+      <button id="btn-save-post" class="btn full">Save</button>
+      <button id="btn-cancel-post" class="btn full outline">Cancel</button>
     </div>
   </div>
 
+  <!-- POST DETAIL OVERLAY -->
+  <div id="detail-overlay" class="detail-overlay">
+    <div id="detail-panel" class="detail-panel">
+      <div id="detail-images" class="detail-images"></div>
+
+      <h2 id="detail-title"></h2>
+      <p id="detail-price"></p>
+      <p id="detail-description"></p>
+      <p id="detail-meta" class="hint"></p>
+
+      <h3>Seller</h3>
+      <div class="seller-row">
+        <div id="detail-seller-avatar"></div>
+        <div>
+          <p id="detail-seller-name"></p>
+          <p id="detail-seller-email" class="hint"></p>
+        </div>
+      </div>
+
+      <h3>Location</h3>
+      <p id="detail-location-text"></p>
+      <div id="detail-minimap-container" class="mini-map-area"></div>
+
+      <button id="detail-message-btn" class="btn full">Send message</button>
+      <button id="detail-close-btn" class="btn full outline">Close</button>
+    </div>
+  </div>
+
+  <!-- MATCHES OVERLAY -->
+  <div class="modal-backdrop" id="matches-overlay">
+    <div class="modal">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <h3>My matches</h3>
+        <button class="btn small outline" id="matches-close-btn">Close</button>
+      </div>
+      <div class="list" id="matches-list"></div>
+    </div>
+  </div>
+
+  <!-- Floating Add Button -->
+  <button id="fab-add" class="fab">+</button>
+
   <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    window.supa = supabase.createClient(
+      "YOUR_SUPABASE_URL",
+      "YOUR_SUPABASE_ANON_KEY"
+    );
+  </script>
+
   <script src="auth.js"></script>
   <script src="posts.js"></script>
-  <script src="map.js"></script>
+  <script src="maps.js"></script>
   <script src="app.js"></script>
-
-  <!-- Google Maps API -->
-  <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvGgUxOR4Dmm0fDwMYg7IltbKfyWrmMFY"></script>
-
 </body>
 </html>

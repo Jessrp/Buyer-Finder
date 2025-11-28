@@ -1,7 +1,10 @@
-// posts.js – posts grid, modal (create/edit), detail panel, search, basic matches hooks
+/* posts.js – posts grid, modal (create/edit), detail panel, search, matches */
+
+// Wrap everything to avoid globals
 (function () {
   const supa = window.supa;
 
+  // Elements
   const postsGrid = document.getElementById("posts-grid");
   const postsStatus = document.getElementById("posts-status");
 
@@ -15,7 +18,7 @@
   const btnSavePost = document.getElementById("btn-save-post");
   const postModalHint = document.getElementById("post-modal-hint");
 
-  // Detail panel
+  // Detail elements
   const detailOverlay = document.getElementById("detail-overlay");
   const detailPanel = document.getElementById("detail-panel");
   const detailCloseBtn = document.getElementById("detail-close-btn");
@@ -28,41 +31,48 @@
   const detailSellerName = document.getElementById("detail-seller-name");
   const detailSellerEmail = document.getElementById("detail-seller-email");
   const detailLocationText = document.getElementById("detail-location-text");
-  const detailMinimapContainer = document.getElementById(
-    "detail-minimap-container"
-  );
+  const detailMinimapContainer = document.getElementById("detail-minimap-container");
   const detailMessageBtn = document.getElementById("detail-message-btn");
 
+  // Alerts panel
   const matchesList = document.getElementById("matches-list");
   const notificationsList = document.getElementById("notifications-list");
 
+  // Working state
+  let editingPostId = null;
+  let editingPostImages = []; // retains previous images on edit
   window.activePostType = window.activePostType || "selling";
 
-  let editingPostId = null;
-  let editingPostImages = []; // keep existing URLs on edit
-
-  // ---------- MODAL ----------
-
+  // ------------------------------------------------------------
+  // MODAL — Open for new post
+  // ------------------------------------------------------------
   function openModalForCreate() {
     if (!window.currentUser) {
       alert("You must sign in to add a post.");
       return;
     }
+
     editingPostId = null;
     editingPostImages = [];
+
     postTitle.value = "";
     postDescription.value = "";
     postPrice.value = "";
     if (postImage) postImage.value = "";
+
     postModalHint.textContent = "";
     modalBackdrop.classList.add("active");
   }
 
+  // ------------------------------------------------------------
+  // MODAL — Open for editing post
+  // ------------------------------------------------------------
   function openModalForEdit(post) {
     if (!window.currentUser || window.currentUser.id !== post.user_id) {
       alert("You can only edit your own posts.");
       return;
     }
+
     editingPostId = post.id;
     editingPostImages = [];
 
@@ -79,6 +89,7 @@
     postDescription.value = post.description || "";
     postPrice.value = post.price || "";
     if (postImage) postImage.value = "";
+
     postModalHint.textContent = "Editing existing post";
     modalBackdrop.classList.add("active");
   }
@@ -87,17 +98,16 @@
     modalBackdrop.classList.remove("active");
   }
 
-  // ---------- IMAGE UPLOAD ----------
-
+  // ------------------------------------------------------------
+  // IMAGE UPLOAD
+  // ------------------------------------------------------------
   async function uploadPostImages(files, userId) {
     if (!files || !files.length) return [];
     const urls = [];
 
     for (const file of files) {
       const ext = file.name.split(".").pop() || "jpg";
-      const path = `posts/${userId}-${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}.${ext}`;
+      const path = `posts/${userId}-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
       const { error: uploadError } = await supa.storage
         .from("post_images")
@@ -108,22 +118,20 @@
         continue;
       }
 
-      const { data: urlData } = supa.storage
-        .from("post_images")
-        .getPublicUrl(path);
-      if (urlData && urlData.publicUrl) {
-        urls.push(urlData.publicUrl);
-      }
+      const { data: urlData } = supa.storage.from("post_images").getPublicUrl(path);
+      if (urlData?.publicUrl) urls.push(urlData.publicUrl);
     }
 
     return urls;
   }
 
-  // ---------- SAVE POST (CREATE / EDIT) ----------
-
+  // ------------------------------------------------------------
+  // SAVE POST (CREATE or EDIT)
+  // ------------------------------------------------------------
   async function savePost() {
     const user = window.currentUser;
     const profile = window.currentProfile;
+
     if (!user) {
       alert("You must sign in to add a post.");
       return;
@@ -138,25 +146,20 @@
     const description = postDescription.value.trim();
     const price = postPrice.value.trim();
 
-    const lat =
-      profile && typeof profile.lat === "number" ? profile.lat : null;
-    const lng =
-      profile && typeof profile.lng === "number" ? profile.lng : null;
-    const locationText =
-      (profile && profile.location_text) || null;
+    const lat = profile?.lat ?? null;
+    const lng = profile?.lng ?? null;
+    const locationText = profile?.location_text ?? null;
 
-    postModalHint.textContent = "Saving post...";
+    postModalHint.textContent = "Saving post…";
 
-    const fileList = postImage?.files || [];
+    // Upload new images
     let newImageUrls = [];
-    if (fileList && fileList.length) {
-      newImageUrls = await uploadPostImages(fileList, user.id);
+    if (postImage?.files?.length) {
+      newImageUrls = await uploadPostImages(postImage.files, user.id);
     }
 
     let finalImageUrls = editingPostImages.slice();
-    if (newImageUrls.length) {
-      finalImageUrls = finalImageUrls.concat(newImageUrls);
-    }
+    if (newImageUrls.length) finalImageUrls = finalImageUrls.concat(newImageUrls);
 
     const payload = {
       user_id: user.id,
@@ -169,9 +172,7 @@
       location_text: locationText,
       lat,
       lng,
-      image_urls: finalImageUrls.length
-        ? JSON.stringify(finalImageUrls)
-        : null,
+      image_urls: finalImageUrls.length ? JSON.stringify(finalImageUrls) : null,
     };
 
     try {
@@ -189,7 +190,6 @@
           .maybeSingle();
         if (error) throw error;
 
-        // Try to generate matches/notifications based on this new post
         if (data) {
           tryCreateMatchesForNewPost(data);
         }
@@ -199,19 +199,20 @@
       setTimeout(() => {
         closeModal();
         loadPosts();
-      }, 400);
+      }, 350);
     } catch (err) {
-      console.log("Insert/update error:", err.message || err);
-      postModalHint.textContent = "Error saving post: " + err.message;
+      console.log("Post save error:", err.message || err);
+      postModalHint.textContent = "Error: " + err.message;
     }
   }
 
-  // ---------- LOAD POSTS ----------
-
+  // ------------------------------------------------------------
+  // LOAD POSTS
+  // ------------------------------------------------------------
   async function loadPosts(query) {
     if (!postsGrid || !postsStatus) return;
 
-    postsStatus.textContent = "Loading posts...";
+    postsStatus.textContent = "Loading posts…";
     postsGrid.innerHTML = "";
 
     let req = supa
@@ -220,99 +221,69 @@
       .order("is_premium", { ascending: false })
       .order("created_at", { ascending: false });
 
-    if (query && query.trim()) {
+    if (query?.trim()) {
       const q = query.trim();
-      req = req.or(
-        `title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`
-      );
+      req = req.or(`title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`);
     }
 
-    let data = [];
-    let error = null;
-
+    let res;
     try {
-      const res = await req;
-      data = res.data || [];
-      error = res.error || null;
+      res = await req;
     } catch (e) {
-      error = e;
-    }
-
-    if (error) {
-      console.log("load posts error:", error.message || error);
-      postsStatus.textContent =
-        "Error loading posts. Check Supabase config.";
+      postsStatus.textContent = "Error loading posts.";
       return;
     }
 
-    if (!data || !data.length) {
-      postsStatus.textContent = "No posts yet. Be the first to post!";
-      postsGrid.innerHTML =
-        "<p class='hint'>No posts yet in this category.</p>";
+    const data = res.data || [];
+    const error = res.error;
+
+    if (error) {
+      postsStatus.textContent = "Error loading posts.";
+      return;
+    }
+    if (!data.length) {
+      postsStatus.textContent = "No posts yet.";
       return;
     }
 
     const filtered = data.filter((p) => {
-      const t =
-        (p.type || "").toString().toLowerCase() === "request"
-          ? "request"
-          : "selling";
-      return t === window.activePostType;
+      const t = (p.type || "").toLowerCase();
+      const isReq = t === "request";
+      return window.activePostType === (isReq ? "request" : "selling");
     });
 
+    postsStatus.textContent = "";
     if (!filtered.length) {
-      postsGrid.innerHTML =
-        "<p class='hint'>No posts in this category yet.</p>";
-      postsStatus.textContent = "";
+      postsGrid.innerHTML = `<p class="hint">No posts in this category.</p>`;
       return;
     }
-
-    postsStatus.textContent = "";
 
     const currentUser = window.currentUser;
 
     postsGrid.innerHTML = filtered
       .map((p) => {
-        let priceText = p.price ? `$${p.price}` : "";
-        let primaryImage = null;
-
+        let img = null;
         if (p.image_urls) {
           try {
             const arr = JSON.parse(p.image_urls);
-            if (Array.isArray(arr) && arr.length) {
-              primaryImage = arr[0];
-            }
-          } catch (e) {
-            console.log("image_urls parse error:", e);
-          }
+            if (arr?.length) img = arr[0];
+          } catch (_) {}
         } else if (p.image_url) {
-          primaryImage = p.image_url;
+          img = p.image_url;
         }
-
-        const metaBits = [];
-        if (p.location_text) metaBits.push(p.location_text);
-
-        const metaLine = metaBits.length
-          ? `<small class="hint">${metaBits.join(" • ")}</small>`
-          : "";
-
-        const imgHtml = primaryImage
-          ? `<img src="${primaryImage}" alt="Post image" />`
-          : "";
-
-        const showEdit =
-          currentUser && currentUser.id && p.user_id === currentUser.id;
 
         return `
           <article class="post" data-post-id="${p.id}">
-            ${showEdit ? `<button class="edit-btn" data-edit-id="${p.id}" title="Edit">✎</button>` : ""}
-            ${imgHtml}
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
-              <h3>${p.title || "Untitled"}</h3>
-            </div>
+            ${
+              currentUser?.id === p.user_id
+                ? `<button class="edit-btn" data-edit-id="${p.id}">✎</button>`
+                : ""
+            }
+            ${img ? `<img src="${img}" />` : ""}
+            <h3>${p.title || "Untitled"}</h3>
             <p>${p.description || ""}</p>
-            ${metaLine}
-            <small>${priceText}</small>
+            ${p.location_text ? `<small class="hint">${p.location_text}</small>` : ""}
+            <small>${p.price ? `$${p.price}` : ""}</small>
           </article>
         `;
       })
@@ -321,20 +292,19 @@
     attachPostHandlers(filtered);
   }
 
+  // ------------------------------------------------------------
+  // ATTACH CLICK HANDLERS FOR POSTS
+  // ------------------------------------------------------------
   function attachPostHandlers(posts) {
     const cards = postsGrid.querySelectorAll(".post[data-post-id]");
     cards.forEach((card) => {
-      const idRaw = card.getAttribute("data-post-id");
-      const idNum = Number(idRaw);
-      const post = posts.find((p) => p.id === idNum);
+      const id = Number(card.dataset.postId);
+      const post = posts.find((x) => x.id === id);
+
       if (!post) return;
 
-      // Card click → open detail
-      card.addEventListener("click", () => {
-        openDetailPanel(post);
-      });
+      card.addEventListener("click", () => openDetailPanel(post));
 
-      // Edit button
       const editBtn = card.querySelector(".edit-btn");
       if (editBtn) {
         editBtn.addEventListener("click", (e) => {
@@ -345,23 +315,12 @@
     });
   }
 
-  // ---------- DETAIL PANEL & MESSAGE ----------
-
-  function showDetailPanel() {
-    if (detailOverlay) detailOverlay.classList.add("active");
-    if (detailPanel) detailPanel.classList.add("active");
-  }
-
-  function hideDetailPanel() {
-    if (detailOverlay) detailOverlay.classList.remove("active");
-    if (detailPanel) detailPanel.classList.remove("active");
-  }
-
+  // ------------------------------------------------------------
+  // DETAIL PANEL
+  // ------------------------------------------------------------
   async function openDetailPanel(post) {
-    if (!detailPanel) return;
-
-    // Re-fetch full post in case data is stale
     let fullPost = post;
+
     try {
       const { data, error } = await supa
         .from("posts")
@@ -371,7 +330,6 @@
       if (!error && data) fullPost = data;
     } catch (_) {}
 
-    // Seller profile
     let profile = null;
     try {
       const { data } = await supa
@@ -387,133 +345,117 @@
     let imgs = [];
     if (fullPost.image_urls) {
       try {
-        const arr = JSON.parse(fullPost.image_urls);
-        if (Array.isArray(arr) && arr.length) imgs = arr;
+        imgs = JSON.parse(fullPost.image_urls) || [];
       } catch (_) {}
     } else if (fullPost.image_url) {
       imgs = [fullPost.image_url];
     }
-    if (imgs.length) {
-      imgs.forEach((url, idx) => {
-        const img = document.createElement("img");
-        img.src = url;
-        img.alt = "Post image " + (idx + 1);
-        detailImages.appendChild(img);
-      });
-    }
+    imgs.forEach((u) => {
+      const i = document.createElement("img");
+      i.src = u;
+      detailImages.appendChild(i);
+    });
 
     // Text
-    detailTitle.textContent = fullPost.title || "Untitled";
+    detailTitle.textContent = fullPost.title || "";
     detailPrice.textContent = fullPost.price ? `$${fullPost.price}` : "";
     detailDescription.textContent = fullPost.description || "";
-
-    const metaBits = [];
-    if (fullPost.type) {
-      const t =
-        fullPost.type.toString().toLowerCase() === "request"
-          ? "Request"
-          : "Selling";
-      metaBits.push(t);
-    }
-    detailMeta.textContent = metaBits.join(" • ");
+    detailMeta.textContent =
+      fullPost.type?.toLowerCase() === "request" ? "Request" : "Selling";
 
     // Seller
-    detailSellerAvatar.innerHTML = "";
-    const av = document.createElement("div");
-    av.className = "user-avatar small";
-    const img = document.createElement("img");
-    if (profile && profile.avatar_url) {
-      img.src = profile.avatar_url;
-    } else {
-      img.src =
-        "data:image/svg+xml;base64," +
+    const avatar = document.createElement("img");
+    avatar.src =
+      profile?.avatar_url ||
+      "data:image/svg+xml;base64," +
         btoa(
           '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#111827"/><text x="50%" y="55%" fill="#9ca3af" font-size="28" text-anchor="middle">BF</text></svg>'
         );
-    }
-    av.appendChild(img);
-    detailSellerAvatar.appendChild(av);
+    avatar.className = "user-avatar small";
+    detailSellerAvatar.innerHTML = "";
+    detailSellerAvatar.appendChild(avatar);
 
     detailSellerName.textContent = profile?.username || "Seller";
     detailSellerEmail.textContent = profile?.email || "";
 
-    // Location / minimap
-    const locText =
-      fullPost.location_text || profile?.location_text || "";
+    const locText = fullPost.location_text || profile?.location_text || "";
     detailLocationText.textContent = locText || "Location not specified.";
 
     const viewerProfile = window.currentProfile;
-    const isViewerPremium = !!viewerProfile?.premium;
+    const isPremium = !!viewerProfile?.premium;
     const lat = fullPost.lat ?? profile?.lat ?? null;
     const lng = fullPost.lng ?? profile?.lng ?? null;
 
     if (
-      isViewerPremium &&
+      isPremium &&
       typeof lat === "number" &&
       typeof lng === "number" &&
       window.BFMap &&
       typeof window.BFMap.renderMiniMap === "function"
     ) {
-      if (detailMinimapContainer)
-        detailMinimapContainer.style.display = "block";
+      detailMinimapContainer.style.display = "block";
       window.BFMap.renderMiniMap(lat, lng);
     } else {
-      if (detailMinimapContainer)
-        detailMinimapContainer.style.display = "none";
+      detailMinimapContainer.style.display = "none";
     }
 
-    // Send message
-    if (detailMessageBtn) {
-      detailMessageBtn.onclick = () => {
-        handleSendMessage(fullPost, profile);
-      };
-    }
+    detailMessageBtn.onclick = () => handleSendMessage(fullPost, profile);
 
-    showDetailPanel();
+    detailOverlay.classList.add("active");
+    detailPanel.classList.add("active");
+  }
+
+  function hideDetailPanel() {
+    detailOverlay.classList.remove("active");
+    detailPanel.classList.remove("active");
   }
 
   if (detailCloseBtn) detailCloseBtn.addEventListener("click", hideDetailPanel);
   if (detailOverlay)
     detailOverlay.addEventListener("click", hideDetailPanel);
 
+  // ------------------------------------------------------------
+  // SEND MESSAGE
+  // ------------------------------------------------------------
   async function handleSendMessage(post, profile) {
-    const user = window.currentUser;
-    if (!user) {
-      alert("Sign in to send a message.");
-      return;
-    }
-    if (!profile || !profile.email) {
-      alert("Seller has no visible contact info yet.");
+    if (!window.currentUser) {
+      alert("Sign in to send messages.");
       return;
     }
 
-    const body = prompt("Your message to the seller:");
-    if (!body || !body.trim()) return;
+    if (!profile?.email) {
+      alert("Seller has no visible contact info.");
+      return;
+    }
+
+    const body = prompt("Your message:");
+    if (!body?.trim()) return;
 
     try {
       const { error } = await supa.from("messages").insert({
         post_id: post.id,
-        from_user: user.id,
+        from_user: window.currentUser.id,
         to_user: post.user_id,
         body: body.trim(),
       });
       if (error) throw error;
-      alert("Message saved. A real app would show full chat threads here.");
+
+      alert("Message saved. (Full chat system still pending.)");
     } catch (err) {
-      console.log("message insert error:", err.message || err);
-      alert(
-        "Message table not fully set up in Supabase yet.\nAsk me for the SQL later if you want full chat."
-      );
+      alert("Message insert error: " + err.message);
     }
   }
 
-  // ---------- MATCHES / NOTIFICATIONS (safe placeholders) ----------
+  // ------------------------------------------------------------
+  // MATCHES & NOTIFICATIONS
+  // ------------------------------------------------------------
 
   async function loadMatches() {
     if (!matchesList) return;
+
     if (!window.currentUser) {
       matchesList.innerHTML =
-        "<p class='hint'>Sign in to see automatic matches.</p>";
+        "<p class='hint'>Sign in to see matches.</p>";
       return;
     }
 
@@ -526,31 +468,31 @@
 
       if (error) throw error;
 
-      if (!data || !data.length) {
+      if (!data?.length) {
         matchesList.innerHTML =
-          "<p class='hint'>No matches yet. Keep posting and searching.</p>";
+          "<p class='hint'>No matches yet.</p>";
         return;
       }
 
       matchesList.innerHTML = data
         .map(
           (m) => `
-          <div class="list-item">
-            <strong>${m.title || "Match"}</strong>
-            <small>${m.message || ""}</small>
-          </div>
-        `
+            <div class="list-item">
+              <strong>${m.title || "Match"}</strong>
+              <small>${m.message || ""}</small>
+            </div>
+          `
         )
         .join("");
     } catch (err) {
-      console.log("matches load error:", err.message || err);
       matchesList.innerHTML =
-        "<p class='hint'>Matches table not configured yet in Supabase.</p>";
+        "<p class='hint'>Matches system not configured.</p>";
     }
   }
 
   async function loadNotifications() {
     if (!notificationsList) return;
+
     if (!window.currentUser) {
       notificationsList.innerHTML =
         "<p class='hint'>Sign in to see notifications.</p>";
@@ -566,89 +508,87 @@
 
       if (error) throw error;
 
-      if (!data || !data.length) {
+      if (!data?.length) {
         notificationsList.innerHTML =
-          "<p class='hint'>No notifications yet.</p>";
+          "<p class='hint'>No notifications.</p>";
         return;
       }
 
       notificationsList.innerHTML = data
         .map(
           (n) => `
-          <div class="list-item">
-            <strong>${n.title || n.type || "Notification"}</strong>
-            <small>${n.message || ""}</small>
-          </div>
-        `
+            <div class="list-item">
+              <strong>${n.title || n.type || "Notification"}</strong>
+              <small>${n.message || ""}</small>
+            </div>
+          `
         )
         .join("");
     } catch (err) {
-      console.log("notifications load error:", err.message || err);
       notificationsList.innerHTML =
-        "<p class='hint'>Notifications table not configured yet in Supabase.</p>";
+        "<p class='hint'>Notifications not configured.</p>";
     }
   }
 
-  // Called when a *new* post is created to ping searchers
+  // ------------------------------------------------------------
+  // AUTO MATCH GENERATION (simple version)
+  // ------------------------------------------------------------
   async function tryCreateMatchesForNewPost(post) {
     try {
-      const { data: queries, error } = await supa
+      const { data: queries } = await supa
         .from("search_queries")
         .select("*")
         .not("user_id", "eq", post.user_id);
-      if (error) throw error;
-      if (!queries || !queries.length) return;
+
+      if (!queries?.length) return;
 
       const titleLower = (post.title || "").toLowerCase();
 
-      const interesting = queries.filter((q) => {
+      const hits = queries.filter((q) => {
         if (!q.last_query) return false;
         const s = q.last_query.toLowerCase();
         return titleLower.includes(s) || s.includes(titleLower);
       });
 
-      if (!interesting.length) return;
+      if (!hits.length) return;
 
-      const notifPayload = interesting.map((q) => ({
-        user_id: q.user_id,
-        type: "match",
-        title: "New matching post",
-        message: `Someone posted "${post.title}" that may match your search "${q.last_query}".`,
-      }));
-
-      await supa.from("notifications").insert(notifPayload).catch(() => {});
+      await supa.from("notifications").insert(
+        hits.map((q) => ({
+          user_id: q.user_id,
+          type: "match",
+          title: "New matching post",
+          message: `Someone posted "${post.title}" matching your search "${q.last_query}".`,
+        }))
+      );
     } catch (err) {
-      console.log("match generation error (non-fatal):", err.message || err);
+      console.log("match generation error:", err.message || err);
     }
   }
 
-  // ---------- SEARCH LOGGING ----------
-
+  // ------------------------------------------------------------
+  // SEARCH QUERY LOGGING
+  // ------------------------------------------------------------
   async function recordSearchQuery(query) {
-    if (!query || !query.trim()) return;
+    if (!query?.trim()) return;
     if (!window.currentUser) return;
+
     try {
-      await supa
-        .from("search_queries")
-        .insert({
-          user_id: window.currentUser.id,
-          last_query: query.trim(),
-        })
-        .catch(() => {});
+      await supa.from("search_queries").insert({
+        user_id: window.currentUser.id,
+        last_query: query.trim(),
+      });
     } catch (_) {}
   }
 
-  // ---------- WIRES ----------
+  // ------------------------------------------------------------
+  // WIRES
+  // ------------------------------------------------------------
 
-  function openModal() {
-    openModalForCreate();
-  }
-
-  if (fabAdd) fabAdd.addEventListener("click", openModal);
+  if (fabAdd) fabAdd.addEventListener("click", openModalForCreate);
   if (btnCancelPost) btnCancelPost.addEventListener("click", closeModal);
   if (btnSavePost) btnSavePost.addEventListener("click", savePost);
 
-  // Exported API for app.js
+  // Expose for app.js
   window.Posts = {
     loadPosts,
     loadMatches,
@@ -656,6 +596,5 @@
     recordSearchQuery,
   };
 
-  // Initial load
-  loadPosts();
+  loadPosts(); // initial load
 })();
