@@ -43,7 +43,15 @@
     <!-- MAP VIEW -->
     <section id="view-map" class="view">
       <button id="map-close-btn" class="btn small outline close-btn">Close</button>
-      <div id="map" class="map-container"></div>
+      <div class="section">
+        <h3>BuyerFinder Radar</h3>
+        <p class="hint" id="map-message">Map shows posts near you.</p>
+        <div class="search-row">
+          <input id="map-search-query" placeholder="Search" />
+          <button id="map-search-btn" class="btn small">Go</button>
+        </div>
+      </div>
+      <div id="map-canvas" class="map-container"></div>
     </section>
 
     <!-- SETTINGS VIEW -->
@@ -85,6 +93,15 @@
       </div>
     </section>
   </main>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-selling"><span>🏷</span>Selling</div>
+    <div class="nav-item" id="nav-requests"><span>📥</span>Requests</div>
+    <div class="nav-item" id="nav-map"><span>🗺</span>Map</div>
+    <div class="nav-item" id="nav-alerts"><span>🔔</span>Alerts</div>
+    <div class="nav-item" id="nav-settings"><span>⚙️</span>Settings</div>
+  </div>
 
   <!-- POST MODAL -->
   <div id="modal-backdrop" class="modal-backdrop">
