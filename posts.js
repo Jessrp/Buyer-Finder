@@ -1,4 +1,4 @@
-// posts.js – posts grid, modal (create/edit), detail panel, search, basic matches hooks
+// posts.js – posts grid, modal, detail panel, messaging limits, matches
 (function () {
   const supa = window.supa;
 
@@ -142,8 +142,7 @@
       profile && typeof profile.lat === "number" ? profile.lat : null;
     const lng =
       profile && typeof profile.lng === "number" ? profile.lng : null;
-    const locationText =
-      (profile && profile.location_text) || null;
+    const locationText = (profile && profile.location_text) || null;
 
     postModalHint.textContent = "Saving post...";
 
@@ -305,7 +304,11 @@
 
         return `
           <article class="post" data-post-id="${p.id}">
-            ${showEdit ? `<button class="edit-btn" data-edit-id="${p.id}" title="Edit">✎</button>` : ""}
+            ${
+              showEdit
+                ? `<button class="edit-btn" data-edit-id="${p.id}" title="Edit">✎</button>`
+                : ""
+            }
             ${imgHtml}
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
               <h3>${p.title || "Untitled"}</h3>
@@ -376,7 +379,9 @@
     try {
       const { data } = await supa
         .from("profiles")
-        .select("username,email,avatar_url,lat,lng,location_text,premium")
+        .select(
+          "username,email,avatar_url,lat,lng,location_text,premium,msg_sent_count,msg_recv_count"
+        )
         .eq("id", fullPost.user_id)
         .maybeSingle();
       profile = data || null;
@@ -438,8 +443,7 @@
     detailSellerEmail.textContent = profile?.email || "";
 
     // Location / minimap
-    const locText =
-      fullPost.location_text || profile?.location_text || "";
+    const locText = fullPost.location_text || profile?.location_text || "";
     detailLocationText.textContent = locText || "Location not specified.";
 
     const viewerProfile = window.currentProfile;
@@ -476,38 +480,145 @@
   if (detailOverlay)
     detailOverlay.addEventListener("click", hideDetailPanel);
 
-  async function handleSendMessage(post, profile) {
+  // Expose helper so map markers can open detail
+  async function openPostDetailFromId(id) {
+    if (!id) return;
+    openDetailPanel({ id });
+  }
+
+  // ---------- MESSAGING WITH LIMITS (3 send / 3 receive for free) ----------
+
+  async function handleSendMessage(post, sellerProfile) {
     const user = window.currentUser;
     if (!user) {
       alert("Sign in to send a message.");
       return;
     }
-    if (!profile || !profile.email) {
-      alert("Seller has no visible contact info yet.");
+
+    // basic sanity: don't message yourself
+    if (post.user_id === user.id) {
+      alert("You can't message yourself. That’s what inner dialogue is for.");
       return;
     }
 
-    const body = prompt("Your message to the seller:");
+    // Load fresh profiles for limits
+    const { data: sender, error: senderErr } = await supa
+      .from("profiles")
+      .select("id,premium,msg_sent_count,msg_recv_count")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (senderErr || !sender) {
+      alert("Could not load your profile for messaging limits.");
+      return;
+    }
+
+    const { data: recipient, error: recErr } = await supa
+      .from("profiles")
+      .select("id,premium,msg_sent_count,msg_recv_count,email")
+      .eq("id", post.user_id)
+      .maybeSingle();
+    if (recErr || !recipient) {
+      alert("Could not load the other user's profile.");
+      return;
+    }
+
+    const senderIsBF = !!sender.premium;
+    const recipientIsBF = !!recipient.premium;
+    const senderSent = sender.msg_sent_count ?? 0;
+    const recipientRecv = recipient.msg_recv_count ?? 0;
+
+    // Free user send limit
+    if (!senderIsBF && senderSent >= 3) {
+      alert(
+        "You’ve hit the free limit of 3 sent messages.\nUpgrade to BF+ in Settings to send unlimited messages."
+      );
+      return;
+    }
+
+    if (!sellerProfile || !sellerProfile.email) {
+      // we still allow messaging even if email isn't visible; backend chat concept
+      console.log("Seller profile has no public email; continuing with app inbox message.");
+    }
+
+    const body = prompt("Your message:");
     if (!body || !body.trim()) return;
 
+    const trimmedBody = body.trim();
+
+    // Determine whether recipient can read it
+    let lockedForRecipient = false;
+    let newRecipientRecv = recipientRecv;
+
+    if (!recipientIsBF) {
+      if (recipientRecv >= 3) {
+        lockedForRecipient = true;
+      } else {
+        newRecipientRecv = recipientRecv + 1;
+      }
+    }
+
     try {
-      const { error } = await supa.from("messages").insert({
+      const { error: msgError } = await supa.from("messages").insert({
         post_id: post.id,
         from_user: user.id,
         to_user: post.user_id,
-        body: body.trim(),
+        body: trimmedBody,
+        locked_for_recipient: lockedForRecipient,
       });
-      if (error) throw error;
-      alert("Message saved. A real app would show full chat threads here.");
+      if (msgError) throw msgError;
+
+      // Update sender count if free
+      if (!senderIsBF) {
+        await supa
+          .from("profiles")
+          .update({ msg_sent_count: senderSent + 1 })
+          .eq("id", user.id)
+          .catch(() => {});
+        if (window.currentProfile && window.currentProfile.id === user.id) {
+          window.currentProfile.msg_sent_count = senderSent + 1;
+        }
+      }
+
+      // Update recipient receive count if free and still under cap
+      if (!recipientIsBF && !lockedForRecipient) {
+        await supa
+          .from("profiles")
+          .update({ msg_recv_count: newRecipientRecv })
+          .eq("id", recipient.id)
+          .catch(() => {});
+      }
+
+      // Notification so their inbox/alerts can show something even if locked
+      const notifMsg = lockedForRecipient
+        ? `You have a new message about "${post.title}". Unlock BF+ to read it.`
+        : `You have a new message about "${post.title}".`;
+
+      await supa
+        .from("notifications")
+        .insert({
+          user_id: recipient.id,
+          type: "message",
+          title: "New message",
+          message: notifMsg,
+        })
+        .catch(() => {});
+
+      if (lockedForRecipient) {
+        alert(
+          "Message sent.\nThe other user has reached their free receive limit, so it will appear locked until they upgrade to BF+."
+        );
+      } else {
+        alert("Message sent.");
+      }
     } catch (err) {
       console.log("message insert error:", err.message || err);
       alert(
-        "Message table not fully set up in Supabase yet.\nAsk me for the SQL later if you want full chat."
+        "Message table or columns are not fully set up in Supabase yet.\nMake sure 'messages' exists with the expected columns."
       );
     }
   }
 
-  // ---------- MATCHES / NOTIFICATIONS (safe placeholders) ----------
+  // ---------- MATCHES / NOTIFICATIONS ----------
 
   async function loadMatches() {
     if (!matchesList) return;
@@ -559,103 +670,4 @@
 
     try {
       const { data, error } = await supa
-        .from("notifications")
-        .select("*")
-        .eq("user_id", window.currentUser.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      if (!data || !data.length) {
-        notificationsList.innerHTML =
-          "<p class='hint'>No notifications yet.</p>";
-        return;
-      }
-
-      notificationsList.innerHTML = data
-        .map(
-          (n) => `
-          <div class="list-item">
-            <strong>${n.title || n.type || "Notification"}</strong>
-            <small>${n.message || ""}</small>
-          </div>
-        `
-        )
-        .join("");
-    } catch (err) {
-      console.log("notifications load error:", err.message || err);
-      notificationsList.innerHTML =
-        "<p class='hint'>Notifications table not configured yet in Supabase.</p>";
-    }
-  }
-
-  // Called when a *new* post is created to ping searchers
-  async function tryCreateMatchesForNewPost(post) {
-    try {
-      const { data: queries, error } = await supa
-        .from("search_queries")
-        .select("*")
-        .not("user_id", "eq", post.user_id);
-      if (error) throw error;
-      if (!queries || !queries.length) return;
-
-      const titleLower = (post.title || "").toLowerCase();
-
-      const interesting = queries.filter((q) => {
-        if (!q.last_query) return false;
-        const s = q.last_query.toLowerCase();
-        return titleLower.includes(s) || s.includes(titleLower);
-      });
-
-      if (!interesting.length) return;
-
-      const notifPayload = interesting.map((q) => ({
-        user_id: q.user_id,
-        type: "match",
-        title: "New matching post",
-        message: `Someone posted "${post.title}" that may match your search "${q.last_query}".`,
-      }));
-
-      await supa.from("notifications").insert(notifPayload).catch(() => {});
-    } catch (err) {
-      console.log("match generation error (non-fatal):", err.message || err);
-    }
-  }
-
-  // ---------- SEARCH LOGGING ----------
-
-  async function recordSearchQuery(query) {
-    if (!query || !query.trim()) return;
-    if (!window.currentUser) return;
-    try {
-      await supa
-        .from("search_queries")
-        .insert({
-          user_id: window.currentUser.id,
-          last_query: query.trim(),
-        })
-        .catch(() => {});
-    } catch (_) {}
-  }
-
-  // ---------- WIRES ----------
-
-  function openModal() {
-    openModalForCreate();
-  }
-
-  if (fabAdd) fabAdd.addEventListener("click", openModal);
-  if (btnCancelPost) btnCancelPost.addEventListener("click", closeModal);
-  if (btnSavePost) btnSavePost.addEventListener("click", savePost);
-
-  // Exported API for app.js
-  window.Posts = {
-    loadPosts,
-    loadMatches,
-    loadNotifications,
-    recordSearchQuery,
-  };
-
-  // Initial load
-  loadPosts();
-})();
+      
