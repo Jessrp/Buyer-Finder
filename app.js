@@ -1,4 +1,4 @@
-// app.js – nav, views, search, theme, premium gating
+// app.js – nav, views, search, theme, BF+ gating
 document.addEventListener("DOMContentLoaded", () => {
   let activeView = "posts";
   window.activePostType = window.activePostType || "selling";
@@ -100,17 +100,17 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-  // Map (premium gated)
+  // Map (BF+ gated)
   if (navMap)
     navMap.addEventListener("click", () => {
       const profile = window.currentProfile;
       if (!window.currentUser) {
-        alert("Map is for signed-in premium users.");
+        alert("Map is available for signed-in BF+ members.");
         return;
       }
       if (!profile || !profile.premium) {
         alert(
-          "Map is a premium feature.\nUse the Upgrade button in Settings (dev-mode) to mark your account premium for now."
+          "Map is part of BF+.\nGo to Settings → BF+ to unlock the radar map and unlimited messaging ($5)."
         );
         return;
       }
@@ -158,16 +158,16 @@ document.addEventListener("DOMContentLoaded", () => {
       applyTheme();
     });
 
-  // Premium dev-upgrade
+  // BF+ dev-upgrade
   if (btnUpgradePremium)
     btnUpgradePremium.addEventListener("click", async () => {
       if (!window.currentUser) {
-        alert("Sign in first to upgrade.");
+        alert("Sign in first to upgrade to BF+.");
         return;
       }
 
       const ok = confirm(
-        "In a real app this would open Stripe Checkout.\nFor now, press OK to mark your account as PREMIUM for testing."
+        "In a real app this would open Stripe Checkout.\nFor now, press OK to simulate upgrading this account to BF+ for testing."
       );
       if (!ok) return;
 
@@ -187,9 +187,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (premiumStatusText)
         premiumStatusText.textContent =
-          "You are premium. Map & unlimited posts unlocked.";
+          "You have BF+. Map & messaging are unlimited.";
 
-      alert("You are now PREMIUM. Map & unlimited posts unlocked.");
+      alert("BF+ enabled for this account (dev mode).");
     });
 
   if (btnDeleteAccount)
