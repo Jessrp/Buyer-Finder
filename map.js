@@ -1,4 +1,4 @@
-// map.js
+// map.js – BF+ radar map + open detail from marker
 (function () {
   const supa = window.supa;
 
@@ -85,9 +85,10 @@
         position: pos,
         map: m,
         title: p.title || "",
+        // RED = selling, BLUE = requesting
         icon: isRequest
-          ? "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
-          : "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+          ? "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+          : "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
       });
 
       const info = new google.maps.InfoWindow({
@@ -115,7 +116,15 @@
       });
 
       marker.addListener("click", () => {
-        info.open(m, marker);
+        // Prefer full BF detail panel; fall back to simple info window
+        if (
+          window.Posts &&
+          typeof window.Posts.openPostDetailFromId === "function"
+        ) {
+          window.Posts.openPostDetailFromId(p.id);
+        } else {
+          info.open(m, marker);
+        }
       });
 
       markers.push(marker);
@@ -126,7 +135,7 @@
 
     if (mapMessage) {
       mapMessage.textContent =
-        "Blue = selling, Red = requests. Use search to filter.";
+        "Red = selling, Blue = requests. Use search to filter.";
     }
   }
 
@@ -140,6 +149,20 @@
   window.BFMap = {
     initMap() {
       loadPostsForMap(mapSearchInput ? mapSearchInput.value : "");
+    },
+    // minimap support if needed
+    renderMiniMap(lat, lng) {
+      const mini = document.getElementById("detail-minimap");
+      if (!mini || !window.google || !google.maps) return;
+      const m2 = new google.maps.Map(mini, {
+        center: { lat, lng },
+        zoom: 13,
+        disableDefaultUI: true,
+      });
+      new google.maps.Marker({
+        position: { lat, lng },
+        map: m2,
+      });
     },
   };
 })();
