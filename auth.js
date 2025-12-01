@@ -144,7 +144,9 @@ async function loadOrCreateProfile() {
         id: user.id,
         email: user.email,
         username,
-        premium: false,
+        premium: false,          // BF+ flag
+        msg_sent_count: 0,       // free tier: 0/3 sent so far
+        msg_recv_count: 0,       // free tier: 0/3 received so far
       })
       .select()
       .maybeSingle();
@@ -155,8 +157,13 @@ async function loadOrCreateProfile() {
         email: user.email,
         username,
         premium: false,
+        msg_sent_count: 0,
+        msg_recv_count: 0,
       };
   } else {
+    // make sure counters exist in case older rows didn't have them
+    data.msg_sent_count = data.msg_sent_count ?? 0;
+    data.msg_recv_count = data.msg_recv_count ?? 0;
     window.currentProfile = data;
   }
 }
@@ -191,7 +198,7 @@ function renderUserCard() {
   if (userEmailEl) userEmailEl.textContent = user.email || "";
   const isPremium = !!profile?.premium;
   if (userPlanEl) {
-    userPlanEl.textContent = isPremium ? "Premium" : "Free";
+    userPlanEl.textContent = isPremium ? "BF+" : "Free";
     userPlanEl.className = "badge" + (isPremium ? " premium" : "");
   }
   if (userAvatarEl) {
@@ -229,11 +236,12 @@ function syncSettingsUI() {
   if (profileUsername) profileUsername.value = profile?.username || "";
   if (profileLocationText)
     profileLocationText.value = profile?.location_text || "";
+
   const isPremium = !!profile?.premium;
   if (premiumStatusText)
     premiumStatusText.textContent = isPremium
-      ? "You are premium. Map & unlimited posts unlocked."
-      : "You are on the free plan. Map is locked, posts limited.";
+      ? "You have BF+. Map & messaging are unlimited."
+      : "You’re on the free plan. Map is locked and messaging is limited to 3 sent / 3 received.";
 }
 
 async function saveUsername() {
@@ -247,8 +255,7 @@ async function saveUsername() {
     .eq("id", user.id);
   if (error) alert(error.message);
   else {
-    if (window.currentProfile)
-      window.currentProfile.username = newName;
+    if (window.currentProfile) window.currentProfile.username = newName;
     renderUserCard();
     alert("Username updated.");
   }
@@ -270,9 +277,7 @@ async function uploadAvatar() {
     alert("Upload failed: " + error.message);
     return;
   }
-  const { data: urlData } = supa.storage
-    .from("post_images")
-    .getPublicUrl(path);
+  const { data: urlData } = supa.storage.from("post_images").getPublicUrl(path);
   const publicUrl = urlData.publicUrl;
 
   await supa
@@ -280,8 +285,7 @@ async function uploadAvatar() {
     .update({ avatar_url: publicUrl })
     .eq("id", user.id);
 
-  if (window.currentProfile)
-    window.currentProfile.avatar_url = publicUrl;
+  if (window.currentProfile) window.currentProfile.avatar_url = publicUrl;
   renderUserCard();
   alert("Avatar updated.");
 }
