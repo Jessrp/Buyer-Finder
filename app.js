@@ -1,214 +1,72 @@
-// app.js – nav, views, search, theme, BF+ gating
-document.addEventListener("DOMContentLoaded", () => {
-  let activeView = "posts";
-  window.activePostType = window.activePostType || "selling";
+// app.js
 
-  // Views
-  const viewPosts = document.getElementById("view-posts");
-  const viewMap = document.getElementById("view-map");
-  const viewSettings = document.getElementById("view-settings");
-  const viewMatches = document.getElementById("view-matches");
-  const viewNotifications = document.getElementById("view-notifications");
+// Initialize Supabase client
+const supabase = window.supabase.createClient(
+    "YOUR_URL",
+    "YOUR_ANON_KEY"
+);
 
-  // Nav
-  const navSelling = document.getElementById("nav-selling");
-  const navRequests = document.getElementById("nav-requests");
-  const navMap = document.getElementById("nav-map");
-  const navSettings = document.getElementById("nav-settings");
-  const navMatches = document.getElementById("nav-matches");
-  const navNotifications = document.getElementById("nav-notifications");
-
-  // Search
-  const searchInput = document.getElementById("search-input");
-  const searchBtn = document.getElementById("search-btn");
-
-  // Settings buttons
-  const btnToggleTheme = document.getElementById("btn-toggle-theme");
-  const btnUpgradePremium = document.getElementById("btn-upgrade-premium");
-  const btnDeleteAccount = document.getElementById("btn-delete-account");
-  const premiumStatusText = document.getElementById("premium-status-text");
-
-  function setActiveView(view) {
-    activeView = view;
-
-    if (viewPosts) viewPosts.classList.toggle("active", view === "posts");
-    if (viewMap) viewMap.classList.toggle("active", view === "map");
-    if (viewSettings)
-      viewSettings.classList.toggle("active", view === "settings");
-    if (viewMatches)
-      viewMatches.classList.toggle("active", view === "matches");
-    if (viewNotifications)
-      viewNotifications.classList.toggle("active", view === "notifications");
-
-    if (navSelling)
-      navSelling.classList.toggle(
-        "active",
-        view === "posts" && window.activePostType === "selling"
-      );
-    if (navRequests)
-      navRequests.classList.toggle(
-        "active",
-        view === "posts" && window.activePostType === "request"
-      );
-    if (navMap) navMap.classList.toggle("active", view === "map");
-    if (navSettings) navSettings.classList.toggle("active", view === "settings");
-    if (navMatches) navMatches.classList.toggle("active", view === "matches");
-    if (navNotifications)
-      navNotifications.classList.toggle("active", view === "notifications");
-  }
-
-  function getSearchQuery() {
-    return searchInput ? searchInput.value.trim() : "";
-  }
-
-  function refreshPosts() {
-    if (window.Posts && typeof window.Posts.loadPosts === "function") {
-      window.Posts.loadPosts(getSearchQuery());
+// Auth listener
+supabase.auth.onAuthStateChange((event, session) => {
+    if (session?.user) {
+        document.getElementById("authPanel").style.display = "none";
+        loadPosts();
+    } else {
+        document.getElementById("authPanel").style.display = "block";
     }
-  }
-
-  function setActivePostType(type) {
-    window.activePostType = type;
-    refreshPosts();
-    setActiveView("posts");
-  }
-
-  // Selling / requests
-  if (navSelling)
-    navSelling.addEventListener("click", () => setActivePostType("selling"));
-  if (navRequests)
-    navRequests.addEventListener("click", () => setActivePostType("request"));
-
-  // Matches
-  if (navMatches)
-    navMatches.addEventListener("click", () => {
-      setActiveView("matches");
-      if (window.Posts && typeof window.Posts.loadMatches === "function") {
-        window.Posts.loadMatches();
-      }
-    });
-
-  // Notifications
-  if (navNotifications)
-    navNotifications.addEventListener("click", () => {
-      setActiveView("notifications");
-      if (
-        window.Posts &&
-        typeof window.Posts.loadNotifications === "function"
-      ) {
-        window.Posts.loadNotifications();
-      }
-    });
-
-  // Map (BF+ gated)
-  if (navMap)
-    navMap.addEventListener("click", () => {
-      const profile = window.currentProfile;
-      if (!window.currentUser) {
-        alert("Map is available for signed-in BF+ members.");
-        return;
-      }
-      if (!profile || !profile.premium) {
-        alert(
-          "Map is part of BF+.\nGo to Settings → BF+ to unlock the radar map and unlimited messaging ($5)."
-        );
-        return;
-      }
-      if (window.BFMap && typeof window.BFMap.initMap === "function") {
-        window.BFMap.initMap();
-      }
-      setActiveView("map");
-    });
-
-  // Settings
-  if (navSettings)
-    navSettings.addEventListener("click", () => setActiveView("settings"));
-
-  // Search
-  function handleSearch() {
-    refreshPosts();
-    if (
-      window.Posts &&
-      typeof window.Posts.recordSearchQuery === "function"
-    ) {
-      window.Posts.recordSearchQuery(getSearchQuery());
-    }
-  }
-
-  if (searchBtn) searchBtn.addEventListener("click", handleSearch);
-  if (searchInput) {
-    searchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") handleSearch();
-    });
-  }
-
-  // Theme
-  function applyTheme() {
-    const theme = localStorage.getItem("buyerfinder-theme") || "dark";
-    if (theme === "light") document.body.classList.add("light");
-    else document.body.classList.remove("light");
-  }
-  applyTheme();
-
-  if (btnToggleTheme)
-    btnToggleTheme.addEventListener("click", () => {
-      const cur = localStorage.getItem("buyerfinder-theme") || "dark";
-      const next = cur === "dark" ? "light" : "dark";
-      localStorage.setItem("buyerfinder-theme", next);
-      applyTheme();
-    });
-
-  // BF+ dev-upgrade
-  if (btnUpgradePremium)
-    btnUpgradePremium.addEventListener("click", async () => {
-      if (!window.currentUser) {
-        alert("Sign in first to upgrade to BF+.");
-        return;
-      }
-
-      const ok = confirm(
-        "In a real app this would open Stripe Checkout.\nFor now, press OK to simulate upgrading this account to BF+ for testing."
-      );
-      if (!ok) return;
-
-      const { error } = await window.supa
-        .from("profiles")
-        .update({ premium: true })
-        .eq("id", window.currentUser.id);
-
-      if (error) {
-        alert("Failed to upgrade: " + error.message);
-        return;
-      }
-
-      if (window.currentProfile) {
-        window.currentProfile.premium = true;
-      }
-
-      if (premiumStatusText)
-        premiumStatusText.textContent =
-          "You have BF+. Map & messaging are unlimited.";
-
-      alert("BF+ enabled for this account (dev mode).");
-    });
-
-  if (btnDeleteAccount)
-    btnDeleteAccount.addEventListener("click", () => {
-      alert(
-        "Real account deletion must be done on a secure backend using the service role key.\nThis button just explains that; nothing is deleted."
-      );
-    });
-
-  // Initial load
-  if (window.Posts && typeof window.Posts.loadPosts === "function") {
-    window.Posts.loadPosts("");
-  }
-
-  // Auth boot (auth.js exposes window.Auth.checkUser)
-  if (window.Auth && typeof window.Auth.checkUser === "function") {
-    window.Auth.checkUser();
-  }
-
-  // Default
-  setActivePostType("selling");
 });
+
+// Sign in
+async function signIn() {
+    const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google"
+    });
+
+    if (error) console.error("Auth error:", error);
+}
+
+// Sign out
+async function signOut() {
+    await supabase.auth.signOut();
+    document.getElementById("postsContainer").innerHTML = "";
+}
+
+
+
+// Only BF+ users get full features
+async function checkBFPlus() {
+    const user = supabase.auth.getUser();
+    if (!user) return false;
+
+    const { data, error } = await supabase
+        .from("profiles")
+        .select("premium")
+        .eq("id", (await user).data.user.id)
+        .single();
+
+    if (error) return false;
+
+    return data.premium === true;
+}
+
+
+
+// Open map (BF+ only)
+async function openMap() {
+    const allowed = await checkBFPlus();
+
+    if (!allowed) {
+        alert("BF+ required for map access.");
+        return;
+    }
+
+    document.getElementById("mapPanel").style.display = "block";
+    loadMap();
+}
+
+
+
+// Close map
+function closeMap() {
+    document.getElementById("mapPanel").style.display = "none";
+}
