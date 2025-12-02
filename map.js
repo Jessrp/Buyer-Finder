@@ -1,168 +1,61 @@
-// map.js – BF+ radar map + open detail from marker
-(function () {
-  const supa = window.supa;
+// map.js
 
-  let map;
-  let markers = [];
+let map;
+let markers = [];
 
-  const mapCanvas = document.getElementById("map-canvas");
-  const mapMessage = document.getElementById("map-message");
-  const mapSearchInput = document.getElementById("map-search-query");
-  const mapSearchBtn = document.getElementById("map-search-btn");
-
-  function clearMarkers() {
-    markers.forEach((m) => m.setMap(null));
-    markers = [];
-  }
-
-  function ensureMap() {
-    if (!mapCanvas) return null;
-
-    if (!window.google || !google.maps) {
-      if (mapMessage) {
-        mapMessage.textContent =
-          "Google Maps API not loaded or key invalid.";
-      }
-      return null;
-    }
-
+async function loadMap() {
     if (!map) {
-      map = new google.maps.Map(mapCanvas, {
-        center: { lat: 39.8283, lng: -98.5795 },
-        zoom: 4,
-        disableDefaultUI: false,
-      });
-    }
-    return map;
-  }
+        map = L.map("mapContainer").setView([37.0902, -95.7129], 4);
 
-  async function loadPostsForMap(query) {
-    const m = ensureMap();
-    if (!m) return;
-
-    if (mapMessage) mapMessage.textContent = "Loading posts for map...";
-
-    let req = supa
-      .from("posts")
-      .select("id,title,description,price,type,lat,lng,category,location_text")
-      .not("lat", "is", null)
-      .not("lng", "is", null);
-
-    if (query && query.trim()) {
-      const q = query.trim();
-      req = req.or(
-        `title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`
-      );
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19
+        }).addTo(map);
     }
 
-    const { data, error } = await req;
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+
+    const { data: posts, error } = await supabase
+        .from("posts")
+        .select("id, title, lat, lng, type");
 
     if (error) {
-      console.log("map posts error:", error.message);
-      if (mapMessage)
-        mapMessage.textContent = "Error loading map posts.";
-      return;
+        console.error("Map load error:", error);
+        return;
     }
 
-    clearMarkers();
+    posts.forEach(post => {
+        if (!post.lat || !post.lng) return;
 
-    if (!data || !data.length) {
-      if (mapMessage)
-        mapMessage.textContent = "No posts match this search on the map.";
-      return;
-    }
+        const color = post.type === "sell" ? "red" : "blue";
 
-    const bounds = new google.maps.LatLngBounds();
+        const marker = L.circleMarker([post.lat, post.lng], {
+            radius: 8,
+            color,
+            fillColor: color,
+            fillOpacity: 0.9
+        }).addTo(map);
 
-    data.forEach((p) => {
-      if (typeof p.lat !== "number" || typeof p.lng !== "number") return;
+        marker.on("click", () => {
+            openPostFromMap(post.id);
+        });
 
-      const pos = { lat: p.lat, lng: p.lng };
-      const isRequest =
-        (p.type || "").toString().toLowerCase() === "request";
-
-      const marker = new google.maps.Marker({
-        position: pos,
-        map: m,
-        title: p.title || "",
-        // RED = selling, BLUE = requesting
-        icon: isRequest
-          ? "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-          : "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
-      });
-
-      const info = new google.maps.InfoWindow({
-        content: `
-          <div style="font-size:13px;max-width:220px;">
-            <strong>${p.title || "Untitled"}</strong><br/>
-            ${p.description ? `<span>${p.description}</span><br/>` : ""}
-            ${
-              p.price
-                ? `<span style="color:#22c55e;">$${p.price}</span><br/>`
-                : ""
-            }
-            ${
-              p.category
-                ? `<span class="hint">${p.category}</span><br/>`
-                : ""
-            }
-            ${
-              p.location_text
-                ? `<span class="hint">${p.location_text}</span>`
-                : ""
-            }
-          </div>
-        `,
-      });
-
-      marker.addListener("click", () => {
-        // Prefer full BF detail panel; fall back to simple info window
-        if (
-          window.Posts &&
-          typeof window.Posts.openPostDetailFromId === "function"
-        ) {
-          window.Posts.openPostDetailFromId(p.id);
-        } else {
-          info.open(m, marker);
-        }
-      });
-
-      markers.push(marker);
-      bounds.extend(pos);
+        markers.push(marker);
     });
+}
 
-    m.fitBounds(bounds);
 
-    if (mapMessage) {
-      mapMessage.textContent =
-        "Red = selling, Blue = requests. Use search to filter.";
+async function openPostFromMap(postId) {
+    const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("id", postId)
+        .single();
+
+    if (error) {
+        console.error("Map-post fetch error:", error);
+        return;
     }
-  }
 
-  if (mapSearchBtn && mapSearchInput) {
-    mapSearchBtn.addEventListener("click", () => {
-      const q = mapSearchInput.value;
-      loadPostsForMap(q);
-    });
-  }
-
-  window.BFMap = {
-    initMap() {
-      loadPostsForMap(mapSearchInput ? mapSearchInput.value : "");
-    },
-    // minimap support if needed
-    renderMiniMap(lat, lng) {
-      const mini = document.getElementById("detail-minimap");
-      if (!mini || !window.google || !google.maps) return;
-      const m2 = new google.maps.Map(mini, {
-        center: { lat, lng },
-        zoom: 13,
-        disableDefaultUI: true,
-      });
-      new google.maps.Marker({
-        position: { lat, lng },
-        map: m2,
-      });
-    },
-  };
-})();
+    openPostDetails(data);
+}
