@@ -1,84 +1,63 @@
 // posts.js
 
-// Load all posts (selling + requesting)
 async function loadPosts() {
-    try {
-        const { data, error } = await supabase
-            .from('posts')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error("Error loading posts:", error);
-            return;
-        }
-
-        const postsContainer = document.getElementById("postsContainer");
-        postsContainer.innerHTML = "";
-
-        data.forEach(post => {
-            const div = document.createElement("div");
-            div.classList.add("post-item");
-
-            div.innerHTML = `
-                <h3>${post.title}</h3>
-                <p>${post.description}</p>
-                <p><strong>$${post.price}</strong></p>
-                ${post.image_url ? `<img src="${post.image_url}" class="post-img">` : ""}
-            `;
-
-            div.onclick = () => openPostDetails(post);
-            postsContainer.appendChild(div);
-        });
-
-    } catch (err) {
-        console.error("loadPosts() crashed:", err);
-    }
-}
-
-
-
-// Create a post
-async function createPost(newPost) {
-    const { data, error } = await supabase.from("posts").insert(newPost);
+  try {
+    const { data: posts, error } = await supabase
+      .from("posts")
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (error) {
-        console.error("Post create error:", error);
-        return false;
+      console.error("Error loading posts:", error);
+      return;
     }
 
-    return true;
-}
-
-
-
-// Search posts
-async function searchPosts(query) {
-    const { data, error } = await supabase
-        .from("posts")
-        .select("*")
-        .ilike("title", `%${query}%`);
-
-    if (error) {
-        console.error("Search error:", error);
-        return [];
+    const container = document.getElementById("postsContainer");
+    if (!container) {
+      console.error("postsContainer not found in DOM");
+      return;
     }
 
-    return data;
-}
+    container.innerHTML = "";
 
+    posts.forEach(post => {
+      const div = document.createElement("div");
+      div.classList.add("post-card");
 
-
-// Open post details
-function openPostDetails(post) {
-    const panel = document.getElementById("postDetailPanel");
-
-    panel.innerHTML = `
-        <h2>${post.title}</h2>
+      div.innerHTML = `
+        <h3>${post.title}</h3>
         <p>${post.description}</p>
         <p><strong>$${post.price}</strong></p>
-        ${post.image_url ? `<img src="${post.image_url}" class="post-img-large">` : ""}
-    `;
+        ${post.image_url ? `<img src="${post.image_url}" class="post-img" />` : ""}
+      `;
 
-    panel.style.display = "block";
+      // open detail view
+      div.addEventListener("click", () => openPostDetail(post));
+
+      container.appendChild(div);
+    });
+
+  } catch (err) {
+    console.error("loadPosts crashed:", err);
+  }
+}
+
+function openPostDetail(post) {
+  const panel = document.getElementById("postDetailPanel");
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <button class="close-btn" onclick="closePostDetail()">X</button>
+    <h2>${post.title}</h2>
+    <p>${post.description}</p>
+    <p><strong>$${post.price}</strong></p>
+    ${post.image_url ? `<img src="${post.image_url}" class="post-img-large" />` : ""}
+  `;
+
+  panel.classList.add("active");
+}
+
+function closePostDetail() {
+  const panel = document.getElementById("postDetailPanel");
+  if (panel) panel.classList.remove("active");
 }
