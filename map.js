@@ -1,61 +1,44 @@
 // map.js
 
 let map;
-let markers = [];
 
-async function loadMap() {
-    if (!map) {
-        map = L.map("mapContainer").setView([37.0902, -95.7129], 4);
+async function initMap() {
+  if (!google || !google.maps) {
+    console.error("Google Maps not loaded");
+    return;
+  }
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19
-        }).addTo(map);
-    }
+  map = new google.maps.Map(document.getElementById("map-canvas"), {
+    center: { lat: 37.0902, lng: -95.7129 },
+    zoom: 4,
+  });
 
-    markers.forEach(m => map.removeLayer(m));
-    markers = [];
+  loadMapPosts();
+}
 
+async function loadMapPosts() {
+  try {
     const { data: posts, error } = await supabase
-        .from("posts")
-        .select("id, title, lat, lng, type");
+      .from("posts")
+      .select("id, title, lat, lng, type");
 
     if (error) {
-        console.error("Map load error:", error);
-        return;
+      console.error("Error loading map posts:", error);
+      return;
     }
 
     posts.forEach(post => {
-        if (!post.lat || !post.lng) return;
+      if (!post.lat || !post.lng) return;
 
-        const color = post.type === "sell" ? "red" : "blue";
-
-        const marker = L.circleMarker([post.lat, post.lng], {
-            radius: 8,
-            color,
-            fillColor: color,
-            fillOpacity: 0.9
-        }).addTo(map);
-
-        marker.on("click", () => {
-            openPostFromMap(post.id);
-        });
-
-        markers.push(marker);
+      new google.maps.Marker({
+        position: { lat: post.lat, lng: post.lng },
+        map,
+        title: post.title,
+        icon: post.type === "sell" ? "red-dot.png" : "blue-dot.png",
+      });
     });
-}
 
-
-async function openPostFromMap(postId) {
-    const { data, error } = await supabase
-        .from("posts")
-        .select("*")
-        .eq("id", postId)
-        .single();
-
-    if (error) {
-        console.error("Map-post fetch error:", error);
-        return;
-    }
-
-    openPostDetails(data);
+  } catch (err) {
+    console.error("Map loading crashed:", err);
+  }
 }
