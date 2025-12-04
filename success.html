@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>BF+ Activated</title>
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding-top: 40px;
+      background: #111;
+      color: #fff;
+    }
+    .box {
+      background: #222;
+      padding: 20px;
+      margin: 20px auto;
+      max-width: 400px;
+      border-radius: 12px;
+      border: 1px solid #444;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="box">
+    <h1>🎉 BF+ Activated</h1>
+    <p>Your purchase was successful.</p>
+    <p>Unlocking all features now...</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
+  <script>
+    const SUPABASE_URL = "https://hcgwldsslzkppzgfhwws.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3dsZHNzbHprcHB6Z2Zod3dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MzE1MTYsImV4cCI6MjA3NjEwNzUxNn0.fCKpSI2UYHBlgAbus18srgkJ3FuOTAzDCgtw_lH3Yc4";
+
+    const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    async function activateBFPlus() {
+      try {
+        const { data, error } = await supa.auth.getUser();
+        if (error) {
+          console.log("getUser error on success page:", error.message);
+          return;
+        }
+        const user = data?.user;
+        if (!user) {
+          console.log("No user on success page.");
+          return;
+        }
+
+        const { error: updateError } = await supa
+          .from("profiles")
+          .update({ premium: true })
+          .eq("id", user.id);
+
+        if (updateError) {
+          console.log("Failed to update premium:", updateError.message);
+        } else {
+          console.log("BF+ activated for:", user.id);
+        }
+
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1500);
+      } catch (err) {
+        console.log("activateBFPlus error:", err);
+      }
+    }
+
+    activateBFPlus();
+  </script>
+
+</body>
+</html>
