@@ -28,6 +28,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnDeleteAccount = document.getElementById("btn-delete-account");
   const premiumStatusText = document.getElementById("premium-status-text");
 
+  // BF+ floating prompt
+  const bfPlusPrompt = document.getElementById("bfPlusPrompt");
+  const upgradeBtn = document.getElementById("upgradeBtn");
+
   function setActiveView(view) {
     activeView = view;
 
@@ -110,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (!profile || !profile.premium) {
         alert(
-          "Map is a premium feature.\nUse the Upgrade button in Settings (dev-mode) to mark your account premium for now."
+          "Map is a BF+ feature. Use the BF+ prompt at the bottom of the screen to upgrade."
         );
         return;
       }
@@ -158,46 +162,62 @@ document.addEventListener("DOMContentLoaded", () => {
       applyTheme();
     });
 
-  // Premium dev-upgrade
-  if (btnUpgradePremium)
-    btnUpgradePremium.addEventListener("click", async () => {
-      if (!window.currentUser) {
-        alert("Sign in first to upgrade.");
-        return;
-      }
-
-      const ok = confirm(
-        "In a real app this would open Stripe Checkout.\nFor now, press OK to mark your account as PREMIUM for testing."
-      );
-      if (!ok) return;
-
-      const { error } = await window.supa
-        .from("profiles")
-        .update({ premium: true })
-        .eq("id", window.currentUser.id);
-
-      if (error) {
-        alert("Failed to upgrade: " + error.message);
-        return;
-      }
-
-      if (window.currentProfile) {
-        window.currentProfile.premium = true;
-      }
-
-      if (premiumStatusText)
-        premiumStatusText.textContent =
-          "You are premium. Map & unlimited posts unlocked.";
-
-      alert("You are now PREMIUM. Map & unlimited posts unlocked.");
-    });
-
   if (btnDeleteAccount)
     btnDeleteAccount.addEventListener("click", () => {
       alert(
         "Real account deletion must be done on a secure backend using the service role key.\nThis button just explains that; nothing is deleted."
       );
     });
+
+
+  // BF+ upgrade (Stripe checkout)
+  async function buyBFPlus() {
+    try {
+      const supa = window.supa;
+      if (!supa) {
+        alert("Supabase client not ready.");
+        return;
+      }
+
+      const { data, error } = await supa.auth.getUser();
+      if (error) {
+        console.log("auth.getUser error:", error.message);
+      }
+      const user = data?.user;
+      if (!user) {
+        alert("Please sign in to upgrade.");
+        return;
+      }
+
+      const res = await fetch(
+        "https://hcgwldsslzkppzgfhwws.supabase.co/functions/v1/create-checkout-session",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.id }),
+        }
+      );
+
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !body.url) {
+        console.log("Stripe checkout error:", body);
+        alert("Unable to start checkout. Try again in a moment.");
+        return;
+      }
+
+      window.location.href = body.url;
+    } catch (err) {
+      console.log("buyBFPlus error:", err);
+      alert("Unexpected error while starting BF+ checkout.");
+    }
+  }
+
+  if (upgradeBtn) {
+    upgradeBtn.addEventListener("click", buyBFPlus);
+  }
+  if (btnUpgradePremium) {
+    btnUpgradePremium.addEventListener("click", buyBFPlus);
+  }
 
   // Initial load
   if (window.Posts && typeof window.Posts.loadPosts === "function") {
