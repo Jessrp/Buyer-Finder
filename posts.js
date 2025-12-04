@@ -2,9 +2,7 @@
 (function () {
   const supa = window.supa;
 
-  const postsGrid =
-    document.getElementById("postsContainer") ||
-    document.getElementById("posts-grid");
+  const postsGrid = document.getElementById("posts-grid");
   const postsStatus = document.getElementById("posts-status");
 
   const fabAdd = document.getElementById("fab-add");
@@ -661,4 +659,3 @@
   // Initial load
   loadPosts();
 })();
-          
