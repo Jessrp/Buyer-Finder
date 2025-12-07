@@ -1,0 +1,221 @@
+/* -----------------------------------------
+   GLOBAL DARK THEME
+------------------------------------------ */
+
+:root {
+  --bg: #050608;
+  --bg-elevated: #0c0f14;
+  --text: #ffffff;
+  --text-dim: #888;
+  --accent: #00c2ff;
+  --accent-red: #ff3b3b;
+  --accent-blue: #3ba0ff;
+  --card: #10141b;
+  --border: #1e232b;
+  --chip-on: #00c2ff;
+  --chip-off: #333;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* -----------------------------------------
+   HEADER
+------------------------------------------ */
+#header {
+  padding: 16px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+#header h2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* -----------------------------------------
+   SEARCH BAR
+------------------------------------------ */
+
+#search {
+  padding: 10px;
+  background: var(--bg-elevated);
+  display: flex;
+  gap: 10px;
+}
+
+#searchfield {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  background: #1b1f27;
+  color: var(--text);
+}
+
+#searchbtn {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #000;
+  font-weight: bold;
+}
+
+/* -----------------------------------------
+   VIEWS AREA
+------------------------------------------ */
+
+#views {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 80px;
+}
+
+.view {
+  display: none;
+  padding: 15px;
+}
+
+.view.active {
+  display: block;
+}
+
+/* -----------------------------------------
+   POSTS HEADER ROW
+------------------------------------------ */
+
+.posts-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.hint {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+/* -----------------------------------------
+   MY POSTS FILTER BUTTONS
+------------------------------------------ */
+
+.chip {
+  padding: 6px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--chip-off);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chip-selling { color: var(--accent-red); }
+.chip-requesting { color: var(--accent-blue); }
+
+.chip-on {
+  background: var(--chip-on);
+  color: #000 !important;
+}
+
+/* -----------------------------------------
+   POSTS GRID
+------------------------------------------ */
+
+#posts-grid, #matches-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.post-card {
+  background: var(--card);
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.post-card h3 {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.post-card p {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.post-card button {
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #000;
+}
+
+/* -----------------------------------------
+   FLOATING ADD BUTTON
+------------------------------------------ */
+
+.floating {
+  position: fixed;
+  right: 20px;
+  bottom: 70px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  font-size: 32px;
+  font-weight: bold;
+  text-align: center;
+  line-height: 52px;
+  cursor: pointer;
+}
+
+/* -----------------------------------------
+   NAV BAR
+------------------------------------------ */
+
+#navbar {
+  height: 60px;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border);
+  display: flex;
+}
+
+#navbar button {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 14px;
+}
+
+#navbar button.active {
+  color: var(--accent);
+  font-weight: bold;
+}
