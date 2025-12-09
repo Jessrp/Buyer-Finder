@@ -1,79 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BuyerFinder</title>
-    <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BuyerFinder</title>
 
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Supabase client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
-<div id="app">
-
+  <div id="app">
     <!-- HEADER -->
-    <div id="header">
-        <h2>BuyerFinder</h2>
-    </div>
+    <header id="header">
+      <h1>BuyerFinder</h1>
+      <div id="auth-bar">
+        <span id="auth-status">Not signed in</span>
+        <button id="login-btn">Sign in</button>
+        <button id="logout-btn" style="display:none;">Sign out</button>
+      </div>
+    </header>
 
-    <!-- SEARCH BAR -->
-    <div id="search">
-        <input
-            type="text"
-            id="searchfield"
-            placeholder="Search products, items, etc..."
-        />
-        <button id="searchbtn">Search</button>
-    </div>
+    <!-- SEARCH -->
+    <section id="search">
+      <input
+        type="text"
+        id="searchfield"
+        placeholder="Search products, items, etc..."
+      />
+      <button id="searchbtn">Search</button>
+    </section>
 
-    <!-- POSTS / VIEW WRAPPER -->
-    <div id="views">
+    <!-- FEED -->
+    <main id="main">
+      <div class="posts-header-row">
+        <div id="posts-status" class="hint"></div>
 
-        <!-- GLOBAL FEED -->
-        <section id="view-posts" class="view active">
-            <div class="posts-header-row">
-                <div id="posts-status" class="hint"></div>
+        <div class="posts-header-controls">
+          <button id="btn-my-posts" class="chip">My Posts</button>
 
-                <!-- MY POSTS BUTTON + FILTERS -->
-                <div class="posts-header-controls">
-                    <button id="btn-my-posts" class="chip" onclick="showMyPosts()">
-                        My Posts
-                    </button>
+          <div class="my-posts-toggle">
+            <button id="filter-selling" class="chip chip-selling">↑</button>
+            <button id="filter-requesting" class="chip chip-request">↓</button>
+          </div>
+        </div>
+      </div>
 
-                    <div class="my-posts-toggle">
-                        <button
-                            id="my-filter-selling"
-                            class="chip chip-selling"
-                            onclick="filterMyPostsSell()">
-                            ↑
-                        </button>
+      <div id="posts-grid"></div>
+    </main>
 
-                        <button
-                            id="my-filter-request"
-                            class="chip chip-request"
-                            onclick="filterMyPostsRequest()">
-                            ↓
-                        </button>
-                    </div>
-                </div>
-            </div>
+    <!-- ADD POST FAB (hooked later) -->
+    <button id="fab-addpost">+</button>
+  </div>
 
-            <div id="posts-grid"></div>
-        </section>
-
-    </div>
-
-    <!-- FLOATING POST BUTTON -->
-    <button id="fab-addpost" onclick="alert('Post creation coming soon')">+</button>
-
-</div>
-
-<!-- APP SCRIPTS -->
-<script src="auth.js"></script>
-<script src="posts.js"></script>
-<script src="app.js"></script>
-
+  <!-- JS FILES (ORDER MATTERS) -->
+  <script src="auth.js"></script>
+  <script src="posts.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
