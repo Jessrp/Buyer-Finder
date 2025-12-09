@@ -1,146 +1,141 @@
-/* -----------------------------------------------------------
-   APP.JS — App State, Navigation, Login Sync, View Switching
-------------------------------------------------------------*/
+/* -----------------------------------------
+   APP.JS — app state + event wiring
+------------------------------------------ */
 
-window.currentUser = null;
+let myPostsMode = false;        // false = global feed, true = my posts
+let currentFilter = "all";      // all | selling | requesting
+let currentSearch = "";         // search text
 
-/* -----------------------------------------------------------
-   AUTH STATE LISTENER
-------------------------------------------------------------*/
-supabaseClient.auth.onAuthStateChange(async (event, session) => {
-    if (session && session.user) {
-        window.currentUser = session.user;
-        console.log("Logged in as:", session.user.id);
+/* Reload posts based on current state */
+window.reloadPosts = async function () {
+  const statusEl = document.getElementById("posts-status");
+  const grid = document.getElementById("posts-grid");
 
-        // sync profile if needed
-        await ensureUserProfile(session.user);
-    } else {
-        window.currentUser = null;
-        console.log("Logged out.");
-    }
+  if (!statusEl || !grid) return;
 
-    // reload current view
-    if (window.myPostsMode) {
-        loadMyPostsWithFilter();
-    } else {
-        loadPosts("global");
-    }
-});
+  statusEl.textContent = "Loading...";
+  grid.innerHTML = "";
 
-/* -----------------------------------------------------------
-   ENSURE PROFILE EXISTS
-------------------------------------------------------------*/
-async function ensureUserProfile(user) {
-    const { data } = await supabaseClient
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
+  let query = supabaseClient
+    .from("posts")
+    .select("*")
+    .order("created_at", { ascending: false });
 
-    if (!data) {
-        console.log("Creating new profile…");
-        await supabaseClient.from("profiles").insert([
-            {
-                id: user.id,
-                email: user.email || null,
-                username: user.email ? user.email.split("@")[0] : "user",
-            }
-        ]);
-    }
-}
-
-/* -----------------------------------------------------------
-   LOGIN + LOGOUT
-------------------------------------------------------------*/
-window.signIn = async function () {
-    const { error } = await supabaseClient.auth.signInWithOAuth({
-        provider: "google"
-    });
-    if (error) alert("Sign-in error: " + error.message);
-};
-
-window.signOut = async function () {
-    const { error } = await supabaseClient.auth.signOut();
-    if (error) alert("Sign-out error: " + error.message);
-};
-
-/* -----------------------------------------------------------
-   VIEW SWITCHING
-------------------------------------------------------------*/
-
-window.switchView = function (viewId) {
-    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-    document.getElementById(viewId).classList.add("active");
-};
-
-/* Navigation helpers */
-window.showFeed = function () {
-    window.myPostsMode = false;
-    switchView("view-posts");
-    loadPosts("global");
-};
-
-window.showMyPosts = function () {
-    window.myPostsMode = true;
-    switchView("view-posts");
-    loadMyPostsWithFilter();
-};
-
-/* -----------------------------------------------------------
-   POST CREATION (placeholder — wired later)
-------------------------------------------------------------*/
-
-window.createPost = async function () {
+  // My posts mode
+  if (myPostsMode) {
     if (!window.currentUser) {
-        alert("Sign in first.");
-        return;
+      statusEl.textContent = "Sign in to view your posts.";
+      return;
     }
+    query = query.eq("user_id", window.currentUser.id);
+  }
 
-    alert("Post creation UI coming soon!");
+  // Filter selling/requesting
+  if (currentFilter === "selling") {
+    query = query.eq("type", "sell");
+  } else if (currentFilter === "requesting") {
+    query = query.eq("type", "request");
+  }
+
+  // Search
+  if (currentSearch && currentSearch.trim().length > 0) {
+    const q = currentSearch.trim();
+    query = query.ilike("title", `%${q}%`);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error(error);
+    statusEl.textContent = "Error loading posts.";
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    statusEl.textContent = "No posts found.";
+    return;
+  }
+
+  statusEl.textContent = myPostsMode ? "Showing your posts" : "Showing all posts";
+  window.renderPosts(data);
 };
 
-/* -----------------------------------------------------------
-   DELETE POST (wired when UI is ready)
-------------------------------------------------------------*/
-window.deletePost = async function (postId) {
-    if (!window.currentUser) {
-        alert("You must be signed in.");
-        return;
-    }
-
-    const { error } = await supabaseClient
-        .from("posts")
-        .delete()
-        .eq("id", postId);
-
-    if (error) {
-        alert("Delete failed: " + error.message);
-        return;
-    }
-
-    alert("Post deleted.");
-    if (window.myPostsMode) loadMyPostsWithFilter();
-    else loadPosts("global");
-};
-
-/* -----------------------------------------------------------
-   MARK SOLD / FOUND
-------------------------------------------------------------*/
-
-window.markSold = async function (postId) {
-    await supabaseClient.from("posts").update({ is_sold: true }).eq("id", postId);
-    if (window.myPostsMode) loadMyPostsWithFilter();
-};
-
-window.markFound = async function (postId) {
-    await supabaseClient.from("posts").update({ is_found: true }).eq("id", postId);
-    if (window.myPostsMode) loadMyPostsWithFilter();
-};
-
-/* -----------------------------------------------------------
-   INITIAL LOAD
-------------------------------------------------------------*/
-
+/* Event wiring */
 document.addEventListener("DOMContentLoaded", () => {
-    showFeed();
+  // Search
+  const searchField = document.getElementById("searchfield");
+  const searchBtn = document.getElementById("searchbtn");
+
+  if (searchBtn) {
+    searchBtn.onclick = () => {
+      currentSearch = searchField.value || "";
+      reloadPosts();
+    };
+  }
+
+  if (searchField) {
+    searchField.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        currentSearch = searchField.value || "";
+        reloadPosts();
+      }
+    });
+  }
+
+  // My posts toggle
+  const myBtn = document.getElementById("btn-my-posts");
+  if (myBtn) {
+    myBtn.onclick = () => {
+      myPostsMode = !myPostsMode;
+      myBtn.classList.toggle("active", myPostsMode);
+      reloadPosts();
+    };
+  }
+
+  // Filter buttons
+  const sellBtn = document.getElementById("filter-selling");
+  const reqBtn = document.getElementById("filter-requesting");
+
+  if (sellBtn) {
+    sellBtn.onclick = () => {
+      currentFilter = currentFilter === "selling" ? "all" : "selling";
+      updateFilterButtons();
+      reloadPosts();
+    };
+  }
+
+  if (reqBtn) {
+    reqBtn.onclick = () => {
+      currentFilter = currentFilter === "requesting" ? "all" : "requesting";
+      updateFilterButtons();
+      reloadPosts();
+    };
+  }
+
+  // FAB (for now just placeholder)
+  const fab = document.getElementById("fab-addpost");
+  if (fab) {
+    fab.onclick = () => {
+      alert("Post creation UI will be wired next.");
+    };
+  }
+
+  // Initial load after auth init
+  setTimeout(() => {
+    reloadPosts();
+  }, 500);
 });
+
+function updateFilterButtons() {
+  const sellBtn = document.getElementById("filter-selling");
+  const reqBtn = document.getElementById("filter-requesting");
+
+  if (sellBtn) sellBtn.classList.remove("active");
+  if (reqBtn) reqBtn.classList.remove("active");
+
+  if (currentFilter === "selling" && sellBtn) {
+    sellBtn.classList.add("active");
+  } else if (currentFilter === "requesting" && reqBtn) {
+    reqBtn.classList.add("active");
+  }
+}
