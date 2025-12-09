@@ -1,177 +1,238 @@
-/* ------------------------------------
-   GLOBAL LAYOUT
------------------------------------- */
+/* GLOBAL */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
-    margin: 0;
-    background: #0f0f0f;
-    color: #e6e6e6;
-    font-family: system-ui, sans-serif;
+  background: #050608;
+  color: #f5f5f5;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 #app {
-    width: 100%;
-    height: 100%;
-    padding-bottom: 120px; /* space for FAB */
+  min-height: 100vh;
+  position: relative;
+  padding-bottom: 90px; /* space for FAB */
 }
 
-/* ------------------------------------
-   HEADER
------------------------------------- */
+/* HEADER */
 
 #header {
-    width: 100%;
-    padding: 20px 0;
-    text-align: center;
-    background: #111;
-    border-bottom: 1px solid #222;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid #161922;
+  background: #070910;
 }
 
-#header h2 {
-    font-size: 28px;
-    margin: 0;
-    color: white;
+#header h1 {
+  font-size: 22px;
+  font-weight: 700;
 }
 
-/* ------------------------------------
-   SEARCH BAR
------------------------------------- */
+#auth-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#auth-status {
+  font-size: 12px;
+  color: #999;
+}
+
+#login-btn,
+#logout-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: #00b7ff;
+  color: #000;
+  font-weight: 600;
+}
+
+/* SEARCH */
 
 #search {
-    width: 94%;
-    margin: 10px auto;
-    display: flex;
-    gap: 10px;
+  max-width: 900px;
+  margin: 10px auto;
+  display: flex;
+  gap: 10px;
+  padding: 0 10px;
 }
 
 #searchfield {
-    flex: 1;
-    padding: 12px 16px;
-    background: #1a1a1a;
-    border: 1px solid #333;
-    color: #eee;
-    border-radius: 10px;
-    font-size: 16px;
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid #222738;
+  background: #101320;
+  color: #f5f5f5;
+  font-size: 14px;
 }
 
 #searchbtn {
-    background: #00b7ff;
-    border: none;
-    color: black;
-    padding: 12px 18px;
-    font-size: 16px;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: none;
+  background: #00b7ff;
+  color: #000;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
 }
 
-/* ------------------------------------
-   POSTS GRID
------------------------------------- */
+/* POSTS HEADER / FILTERS */
 
-#posts-grid {
-    width: 94%;
-    margin: 15px auto;
-    display: grid;
-    gap: 16px;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+#main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 8px 10px 20px;
 }
-
-.post-card {
-    background: #161616;
-    border-radius: 14px;
-    padding: 10px;
-    border: 1px solid #2a2a2a;
-    color: #ddd;
-}
-
-.post-card img {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-    border-radius: 10px;
-}
-
-.post-title {
-    font-size: 16px;
-    font-weight: 600;
-    margin-top: 8px;
-}
-
-.post-price {
-    color: #00ffcc;
-    font-size: 15px;
-}
-
-/* ------------------------------------
-   MY POSTS BUTTON + FILTERS
------------------------------------- */
 
 .posts-header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.hint {
+  font-size: 12px;
+  color: #888ea5;
+}
+
+.posts-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .chip {
-    background: #333;
-    color: white;
-    border-radius: 25px;
-    padding: 8px 14px;
-    font-size: 14px;
-    cursor: pointer;
-    border: 1px solid #444;
-}
-
-.chip-selling {
-    background: #ff6b6b33;
-}
-
-.chip-request {
-    background: #7d7dff33;
-}
-
-.chip-selling.active {
-    background: #ff6b6b;
-}
-
-.chip-request.active {
-    background: #7d7dff;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #262b3a;
+  background: #151929;
+  color: #f5f5f5;
+  font-size: 12px;
+  cursor: pointer;
 }
 
 .my-posts-toggle {
-    display: flex;
-    gap: 10px;
+  display: flex;
+  gap: 6px;
 }
 
-/* ------------------------------------
-   FLOATING ACTION BUTTON
------------------------------------- */
+.chip-selling {
+  color: #ff6b6b;
+}
+
+.chip-request {
+  color: #7d7dff;
+}
+
+.chip.active {
+  background: #00b7ff;
+  color: #000;
+}
+
+/* POSTS GRID: STRICT 2-COLUMN */
+
+#posts-grid {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* POST CARD */
+
+.post-card {
+  background: #10141b;
+  border-radius: 14px;
+  border: 1px solid #1f2430;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.post-image-wrapper {
+  width: 100%;
+  height: 130px;
+  overflow: hidden;
+}
+
+.post-image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.post-body {
+  padding: 8px 10px 10px;
+}
+
+.post-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.post-meta {
+  font-size: 12px;
+  color: #a0a4b8;
+}
+
+.post-price {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #00ffc3;
+}
+
+/* FAB */
 
 #fab-addpost {
-    position: fixed;
-    bottom: 25px;
-    right: 25px;
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    background: #00b7ff;
-    color: black;
-    font-size: 32px;
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: #00b7ff;
+  color: #000;
+  font-size: 30px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* ------------------------------------
-   STATUS / LOADING TEXT
------------------------------------- */
+/* RESPONSIVE (just in case) */
 
-.hint {
-    color: #999;
-    font-size: 14px;
+@media (max-width: 480px) {
+  #search {
+    padding: 0 8px;
+  }
+
+  #main {
+    padding: 8px;
+  }
+
+  #posts-grid {
+    gap: 10px;
+  }
+
+  .post-image-wrapper {
+    height: 120px;
+  }
 }
