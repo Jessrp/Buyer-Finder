@@ -323,22 +323,29 @@ if (viewMode === 'mine' && user?.id) {
       })
       .join("");
 
-    attachPostHandlers(filtered);
-  }
+    function attachPostHandlers(posts) {
+  const cards = postsGrid.querySelectorAll(".post[data-post-id]");
 
-  function attachPostHandlers(posts) {
-    const cards = postsGrid.querySelectorAll(".post[data-post-id]");
-    cards.forEach((card) => {
-      const idRaw = card.getAttribute("data-post-id");
-      const idNum = Number(idRaw);
-      const post = posts.find((p) => p.id === idNum);
-      if (!post) return;
+  cards.forEach((card) => {
+    const id = card.getAttribute("data-post-id");
+    const post = posts.find((p) => p.id === id);
+    if (!post) return;
 
-      // Card click → open detail
-      card.addEventListener("click", () => {
-        openDetailPanel(post);
+    // Card click → open detail panel
+    card.addEventListener("click", () => {
+      openDetailPanel(post);
+    });
+
+    // Edit button (only if it exists)
+    const editBtn = card.querySelector(".edit-btn");
+    if (editBtn) {
+      editBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openModalForEdit(post);
       });
-
+    }
+  });
+}
       // Edit button
       const editBtn = card.querySelector(".edit-btn");
       if (editBtn) {
