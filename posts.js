@@ -1,4 +1,7 @@
 // posts.js – posts grid, modal (create/edit), detail panel, search, basic matches hooks
+let viewMode = 'all'; // 'all' | 'mine'
+let sortDir = 'desc'; // 'asc' | 'desc'
+let editingPostId = null;
 (function () {
   const supa = window.supa;
 
@@ -215,11 +218,13 @@
     postsGrid.innerHTML = "";
 
     let req = supa
-      .from("posts")
-      .select("*")
-      .order("is_premium", { ascending: false })
-      .order("created_at", { ascending: false });
+  .from("posts")
+  .select("*")
+  .order("created_at", { ascending: sortDir === 'asc' });
 
+if (viewMode === 'mine' && user?.id) {
+  req = req.eq("user_id", user.id);
+}
     if (query && query.trim()) {
       const q = query.trim();
       req = req.or(
