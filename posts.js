@@ -1,7 +1,4 @@
 // posts.js – posts grid, modal (create/edit), detail panel, search, basic matches hooks
-let viewMode = 'all'; // 'all' | 'mine'
-let sortDir = 'desc'; // 'asc' | 'desc'
-let editingPostId = null;
 (function () {
   const supa = window.supa;
 
@@ -218,13 +215,11 @@ let editingPostId = null;
     postsGrid.innerHTML = "";
 
     let req = supa
-  .from("posts")
-  .select("*")
-  .order("created_at", { ascending: sortDir === 'asc' });
+      .from("posts")
+      .select("*")
+      .order("is_premium", { ascending: false })
+      .order("created_at", { ascending: false });
 
-if (viewMode === 'mine' && user?.id) {
-  req = req.eq("user_id", user.id);
-}
     if (query && query.trim()) {
       const q = query.trim();
       req = req.or(
@@ -323,29 +318,22 @@ if (viewMode === 'mine' && user?.id) {
       })
       .join("");
 
-    function attachPostHandlers(posts) {
-  const cards = postsGrid.querySelectorAll(".post[data-post-id]");
+    attachPostHandlers(filtered);
+  }
 
-  cards.forEach((card) => {
-    const id = card.getAttribute("data-post-id");
-    const post = posts.find((p) => p.id === id);
-    if (!post) return;
+  function attachPostHandlers(posts) {
+    const cards = postsGrid.querySelectorAll(".post[data-post-id]");
+    cards.forEach((card) => {
+      const idRaw = card.getAttribute("data-post-id");
+      const idNum = Number(idRaw);
+      const post = posts.find((p) => p.id === idNum);
+      if (!post) return;
 
-    // Card click → open detail panel
-    card.addEventListener("click", () => {
-      openDetailPanel(post);
-    });
-
-    // Edit button (only if it exists)
-    const editBtn = card.querySelector(".edit-btn");
-    if (editBtn) {
-      editBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        openModalForEdit(post);
+      // Card click → open detail
+      card.addEventListener("click", () => {
+        openDetailPanel(post);
       });
-    }
-  });
-}
+
       // Edit button
       const editBtn = card.querySelector(".edit-btn");
       if (editBtn) {
