@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Buyer-Finder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Supabase -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+  <div id="app">
+
+    <header>
+      <h1>Buyer-Finder</h1>
+      <button id="auth-btn">Sign In</button>
+    </header>
+
+    <main id="main-view">
+      <div id="posts-grid"></div>
+    </main>
+
+    <!-- MAP PANEL -->
+    <div id="map-panel" class="panel hidden">
+      <button class="close-panel" id="close-map">✕</button>
+      <div id="map-canvas"></div>
+    </div>
+
+    <!-- SETTINGS PANEL -->
+    <div id="settings-panel" class="panel hidden">
+      <button class="close-panel" id="close-settings">✕</button>
+
+      <div class="settings-row">
+        <span>Premium</span>
+        <button id="btn-upgrade-premium">Upgrade</button>
+      </div>
+    </div>
+
+    <!-- NAV -->
+    <nav id="bottom-nav">
+      <button id="nav-posts">Posts</button>
+      <button id="nav-maps">Maps</button>
+      <button id="nav-messages">Messages</button>
+      <button id="nav-settings">Settings</button>
+    </nav>
+  </div>
+
+  <!-- APP SCRIPTS -->
+  <script src="app.js"></script>
+  <script src="auth.js"></script>
+  <script src="posts.js"></script>
+  <script src="messages.js"></script>
+  <script src="maps.js"></script>
+
+  <!-- GOOGLE MAPS -->
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap"
+    async
+    defer>
+  </script>
+</body>
+</html>
