@@ -4,7 +4,7 @@
   const SUPABASE_URL = "https://hcgwldsslzkppzgfhwws.supabase.co";
 
   // 🔴 PASTE YOUR *REAL* ANON PUBLIC KEY BELOW
-  const SUPABASE_ANON_KEY = "PASTE_REAL_ANON_KEY_HERE";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3dsZHNzbHprcHB6Z2Zod3dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MzE1MTYsImV4cCI6MjA3NjEwNzUxNn0.fCKpSI2UYHBlgAbus18srgkJ3FuOTAzDCgtw_lH3Yc4";
 
   window.supa =
     window.supa ||
