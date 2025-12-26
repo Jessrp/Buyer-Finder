@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>BF+ Activated</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      background:#0b1220;
+      color:#e5e7eb;
+      font-family:system-ui;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:100vh;
+      text-align:center;
+    }
+    .box {
+      max-width:420px;
+    }
+    button {
+      margin-top:16px;
+      padding:10px 16px;
+      background:#22c55e;
+      border:none;
+      border-radius:8px;
+      color:#000;
+      font-weight:700;
+      cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>BF+ Activated 🎉</h1>
+    <p>Premium features are now unlocked.</p>
+    <button onclick="goHome()">Continue</button>
+  </div>
+
+  <script>
+    const supabase = window.supabase.createClient(
+      "https://hcgwldsslzkppzgfhwws.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3dsZHNzbHprcHB6Z2Zod3dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MzE1MTYsImV4cCI6MjA3NjEwNzUxNn0.fCKpSI2UYHBlgAbus18srgkJ3FuOTAzDCgtw_lH3Yc4"
+    );
+
+    async function upgrade() {
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      await supabase
+        .from("profiles")
+        .update({ premium: true })
+        .eq("id", user.id);
+    }
+
+    upgrade();
+
+    function goHome() {
+      window.location.href = "/";
+    }
+  </script>
+</body>
+</html>
