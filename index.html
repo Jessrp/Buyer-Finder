@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuyerFinder - Connect Buyers and Sellers</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Auth Screen -->
+    <div id="authScreen" class="screen">
+        <div class="auth-container">
+            <div class="auth-header">
+                <div class="logo">
+                    <!-- Replace logo-icon span with your actual logo image -->
+                    <img src="your-logo.png" alt="BuyerFinder Logo" class="logo-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <span class="logo-icon" style="display: none;">🔍</span>
+                    <h1>BuyerFinder</h1>
+                </div>
+                <p class="tagline">Connect buyers and sellers instantly</p>
+            </div>
+            
+            <div class="auth-buttons">
+                <button id="signInGoogleAuth" class="btn btn-primary">
+                    <span>🔐</span> Sign in with Google
+                </button>
+                <button id="signInEmailAuth" class="btn btn-secondary">
+                    <span>✉️</span> Sign in with Email
+                </button>
+            </div>
+            
+            <div class="guest-continue">
+                <p>or</p>
+                <button id="continueGuestBtn" class="btn btn-ghost">Continue as Guest</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="screen hidden">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="logo-small">
+                <span class="logo-icon">🔍</span>
+                <span class="logo-text">BuyerFinder</span>
+            </div>
+            
+            <div class="auth-controls">
+                <button id="signInGoogleMain" class="btn-auth">Sign in with Google</button>
+                <button id="signInEmailMain" class="btn-auth">Sign in with Email</button>
+                <button id="signOut" class="btn-auth btn-signout hidden">Sign out</button>
+            </div>
+        </header>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Search posts (title, description, category...)"
+                class="search-input"
+            >
+            <button id="searchBtn" class="btn-search">Search</button>
+        </div>
+
+        <!-- Profile Section -->
+        <div id="profileSection" class="profile-section">
+            <!-- Will be populated by JavaScript -->
+        </div>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div id="postsContainer" class="posts-container">
+                <!-- Posts will be loaded here -->
+            </div>
+        </main>
+
+        <!-- Floating Action Button -->
+        <button id="newPostBtn" class="fab">
+            <span class="fab-icon">+</span>
+        </button>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button id="sellTab" class="nav-tab active">
+                <span class="nav-icon">🏷️</span>
+                <span class="nav-label">Sell</span>
+            </button>
+            <button id="requestsTab" class="nav-tab">
+                <span class="nav-icon">🎁</span>
+                <span class="nav-label">Requests</span>
+            </button>
+            <button id="matchesTab" class="nav-tab">
+                <span class="nav-icon">✨</span>
+                <span class="nav-label">Matches</span>
+            </button>
+            <button id="alertsTab" class="nav-tab">
+                <span class="nav-icon">🔔</span>
+                <span class="nav-label">Alerts</span>
+            </button>
+            <button id="mapTab" class="nav-tab">
+                <span class="nav-icon">🗺️</span>
+                <span class="nav-label">Map</span>
+            </button>
+            <button id="settingsTab" class="nav-tab">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Settings</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- New Post Modal -->
+    <div id="newPostModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>New post</h2>
+                <button class="btn-close" onclick="hideNewPostModal()">×</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="postTitle">Title</label>
+                    <input 
+                        type="text" 
+                        id="postTitle" 
+                        placeholder="What are you selling/requesting?"
+                        class="form-input"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="postDescription">Description</label>
+                    <textarea 
+                        id="postDescription" 
+                        placeholder="Add details about your item..."
+                        class="form-textarea"
+                        rows="4"
+                    ></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="postPrice">Price</label>
+                    <input 
+                        type="number" 
+                        id="postPrice" 
+                        placeholder="0.00"
+                        class="form-input"
+                        min="0"
+                        step="0.01"
+                    >
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="postCategory">Category</label>
+                        <select id="postCategory" class="form-select">
+                            <option value="">Select category</option>
+                            <option value="electronics">Electronics</option>
+                            <option value="clothing">Clothing</option>
+                            <option value="furniture">Furniture</option>
+                            <option value="vehicles">Vehicles</option>
+                            <option value="books">Books</option>
+                            <option value="sports">Sports & Outdoors</option>
+                            <option value="home">Home & Garden</option>
+                            <option value="toys">Toys & Games</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="postCondition">Condition</label>
+                        <select id="postCondition" class="form-select">
+                            <option value="">Select condition</option>
+                            <option value="new">New</option>
+                            <option value="like-new">Like New</option>
+                            <option value="good">Good</option>
+                            <option value="fair">Fair</option>
+                            <option value="poor">Poor</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="postLocation">Location</label>
+                    <input 
+                        type="text" 
+                        id="postLocation" 
+                        placeholder="City, State"
+                        class="form-input"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="imageUpload">Images</label>
+                    <input 
+                        type="file" 
+                        id="imageUpload" 
+                        accept="image/*"
+                        multiple
+                        class="form-file"
+                    >
+                    <div id="imagePreview" class="image-preview"></div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="cancelPost" class="btn btn-secondary">Cancel</button>
+                <button id="savePost" class="btn btn-primary">Save</button>
+            </div>
+
+            <div id="postError" class="error-message hidden"></div>
+        </div>
+    </div>
+
+    <!-- BF+ Upgrade Banner -->
+    <div id="bfPlusBanner" class="bf-plus-banner hidden">
+        <div class="banner-content">
+            <h3>Unlock BF+ for full features</h3>
+            <p>Get boosted posts, map view, and priority matching</p>
+            <button onclick="upgradeToBFPlus()" class="btn btn-premium">
+                Upgrade to BF+ - $5/month
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="supabase.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Guest mode function
+        function continueAsGuest() {
+            showMainApp();
+            loadPosts();
+        }
+    </script>
+</body>
+</html>
