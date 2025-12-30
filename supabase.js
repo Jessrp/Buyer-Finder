@@ -4,25 +4,13 @@
 const supabaseUrl = 'https://hcgwldsslzkopzgfhwws.supabase.co'
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ3dsZHNzbHprb3B6Z2Zod3dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMxNzAxNzEsImV4cCI6MjA0ODc0NjE3MX0.fCKpSI2UYHBIgAbus18srgkJ3FuOTAzDCgtw_lH3Yc4'
 
-// Check if Supabase library is loaded
-if (typeof window.supabase === 'undefined') {
-    console.error('ERROR: Supabase library not loaded! Make sure the CDN script is included in your HTML.');
-    alert('Supabase library failed to load. Check your internet connection and refresh the page.');
-} else {
-    console.log('✓ Supabase library loaded successfully');
-    
-    try {
-        // Create the Supabase client and make it globally available
-        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-        
-        // Make it available as 'supabase' globally
-        window.supabase = supabaseClient;
-        
-        console.log('✓ Supabase client created successfully!');
-        console.log('✓ Project URL:', supabaseUrl);
-        console.log('✓ Client ready:', typeof supabaseClient.from === 'function');
-    } catch (error) {
-        console.error('ERROR creating Supabase client:', error);
-        alert('Failed to initialize Supabase: ' + error.message);
-    }
-}
+// Store the library reference
+const supabaseLib = window.supabase
+
+// Create the client
+const supabase = supabaseLib.createClient(supabaseUrl, supabaseKey)
+
+// Make client globally available (don't overwrite the library!)
+window.supabaseClient = supabase
+
+console.log('Supabase initialized:', supabase ? 'Success' : 'Failed')
