@@ -6,21 +6,23 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 // Check if Supabase library is loaded
 if (typeof window.supabase === 'undefined') {
-    console.error('Supabase library not loaded! Make sure the CDN script is included in your HTML.');
+    console.error('ERROR: Supabase library not loaded! Make sure the CDN script is included in your HTML.');
+    alert('Supabase library failed to load. Check your internet connection and refresh the page.');
 } else {
-    console.log('Supabase library loaded successfully');
-}
-
-// Create the Supabase client
-try {
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-    console.log('Supabase client created successfully!');
-    console.log('Client object:', supabase);
+    console.log('✓ Supabase library loaded successfully');
     
-    // Make it globally available
-    window.supabase = supabase;
-} catch (error) {
-    console.error('Error creating Supabase client:', error);
+    try {
+        // Create the Supabase client and make it globally available
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // Make it available as 'supabase' globally
+        window.supabase = supabaseClient;
+        
+        console.log('✓ Supabase client created successfully!');
+        console.log('✓ Project URL:', supabaseUrl);
+        console.log('✓ Client ready:', typeof supabaseClient.from === 'function');
+    } catch (error) {
+        console.error('ERROR creating Supabase client:', error);
+        alert('Failed to initialize Supabase: ' + error.message);
+    }
 }
-
-console.log('Project URL:', supabaseUrl)
