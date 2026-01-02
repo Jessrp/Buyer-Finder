@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Buyer-Finder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+
+<body>
+
+<header>
+  <h1>Buyer-Finder</h1>
+  <button id="logoutBtn" class="danger hidden">Logout</button>
+</header>
+
+<section id="authSection">
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <button id="loginBtn">Login</button>
+  <button id="signupBtn" class="secondary">Sign Up</button>
+</section>
+
+<section id="appSection" class="hidden">
+
+  <nav>
+    <button data-tab="posts">Posts</button>
+    <button data-tab="chat">Chat</button>
+    <button data-tab="map">Map</button>
+  </nav>
+
+  <section id="postsTab" class="tab">
+    <button id="addPostBtn">Add Post</button>
+    <div id="postsGrid"></div>
+  </section>
+
+  <section id="chatTab" class="tab hidden">
+    <div id="chatContainer"></div>
+    <form id="chatForm">
+      <input id="chatInput" placeholder="Message">
+      <button>Send</button>
+    </form>
+  </section>
+
+  <section id="mapTab" class="tab hidden">
+    <div id="mapContainer"></div>
+  </section>
+
+</section>
+
+<div id="notificationsContainer"></div>
+
+<script src="supabase.js"></script>
+<script src="auth.js"></script>
+<script src="posts.js"></script>
+<script src="chat.js"></script>
+<script src="map.js"></script>
+<script src="notifications.js"></script>
+<script src="reviews.js"></script>
+<script src="recommendations.js"></script>
+<script src="report.js"></script>
+
+</body>
+</html>
