@@ -52,23 +52,29 @@
     const urls = [];
 
     for (const file of files) {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `posts/${userId}/${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}.${ext}`;
+  // 🚫 Reject non-images (HEIC, blobs, weird mobile junk)
+  if (!file || !file.type || !file.type.startsWith("image/")) {
+    console.warn("Skipping non-image file:", file);
+    continue;
+  }
 
-      const { error } = await supa.storage
-        .from("post_images")
-        .upload(path, file, { upsert: false });
+  const ext = file.type.includes("png") ? "png" : "jpg";
+  const path = `posts/${userId}-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2)}.${ext}`;
 
-      if (error) {
-        console.error("Upload error:", error);
-        continue;
-      }
+  const { error } = await supa.storage
+    .from("post_images")
+    .upload(path, file, { upsert: true, contentType: file.type });
 
-      const { data } = supa.storage.from("post_images").getPublicUrl(path);
-      if (data?.publicUrl) urls.push(data.publicUrl);
-    }
+  if (error) {
+    console.error("Upload error:", error);
+    continue;
+  }
+
+  const { data } = supa.storage.from("post_images").getPublicUrl(path);
+  if (data?.publicUrl) urls.push(data.publicUrl);
+}
 
     return urls;
   }
