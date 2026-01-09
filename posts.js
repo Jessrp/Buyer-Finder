@@ -290,6 +290,9 @@
   fabAdd.onclick = openModalForCreate;
   btnCancelPost.onclick = closeModal;
   btnSavePost.onclick = savePost;
-
+  function setActivePostType(type) {
+  if (type !== "selling" && type !== "request") return;
+  window.activePostType = type;
+    
   loadPosts();
 })();
