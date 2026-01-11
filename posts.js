@@ -17,8 +17,8 @@
   const btnSavePost = document.getElementById("btn-save-post");
   const postModalHint = document.getElementById("post-modal-hint");
 
-  const detailOverlay = document.getElementById("detail-overlay");
-  const detailPanel = document.getElementById("detail-panel");
+  const detailOverlay = document.querySelector("detail-overlay");
+  const detailPanel = document.querySelector("detail-panel");
   const detailCloseBtn = document.getElementById("detail-close-btn");
   const detailTitle = document.getElementById("detail-title");
   const detailPrice = document.getElementById("detail-price");
