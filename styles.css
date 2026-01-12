@@ -466,6 +466,17 @@ header .right {
 
 /* Detail panel */
 
+.delete-post-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: var(--danger);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
 
 .big-price {
   font-size: 18px;
