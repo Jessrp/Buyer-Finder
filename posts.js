@@ -187,6 +187,7 @@
   // ---------- DETAIL PANEL ----------
 
   function openDetailPanel(post) {
+    console.log("OPEN DETAIL PANEL", post.id);
     detailTitle.textContent = post.title;
     detailDescription.textContent = post.description || "";
     detailPrice.textContent = post.price ? `$${post.price}` : "";
