@@ -25,21 +25,25 @@
   const detailDescription = document.getElementById("detail-description");
   const detailMeta = document.getElementById("detail-meta");
   const detailImages = document.getElementById("detail-images");
+  let editingPost = null;
 
   window.activePostType = window.activePostType || "selling";
 
   // ---------- MODAL ----------
 
-  function openModalForCreate() {
-    if (!window.currentUser) return alert("You must sign in.");
-    postTitle.value = "";
-    postDescription.value = "";
-    postPrice.value = "";
-    postImage.value = "";
-    postModalHint.textContent = "";
-    modalBackdrop.classList.add("active");
-  }
+  function openModalForCreate(post = null) {
+  if (!window.currentUser) return alert("You must sign in.");
 
+  editingPost = post;
+
+  postTitle.value = post?.title || "";
+  postDescription.value = post?.description || "";
+  postPrice.value = post?.price || "";
+  postImage.value = "";
+  postModalHint.textContent = post ? "Editing post" : "";
+
+  modalBackdrop.classList.add("active");
+}
   function closeModal() {
     modalBackdrop.classList.remove("active");
   }
