@@ -161,8 +161,8 @@
 
   function attachPostHandlers(posts) {
     postsGrid.querySelectorAll(".post").forEach((card) => {
-      const id = Number(card.dataset.postId);
-      const post = posts.find((p) => p.id === id);
+      const id = card.dataset.postId;
+      const post = posts.find((p) => String(p.id) === String(id));
       if (!post) return;
 
       // open details
