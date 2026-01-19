@@ -212,6 +212,47 @@
     });
   }
 
+  //------------LOAD MATCHES-----------
+
+  async function loadMatches() {
+  const user = window.currentUser;
+  if (!user) return;
+
+  const { data, error } = await supa
+    .from("posts")
+    .select("*");
+
+  if (error) {
+    console.error("Match load error:", error);
+    return;
+  }
+
+  const selling = data.filter(p => p.type === "selling");
+  const requesting = data.filter(p => p.type === "requesting");
+
+  const matches = [];
+
+  selling.forEach(sell => {
+    const sellText = `${sell.title} ${sell.description || ""}`.toLowerCase();
+
+    requesting.forEach(req => {
+      const reqText = `${req.title} ${req.description || ""}`.toLowerCase();
+
+      const keywords = sellText.split(/\s+/);
+
+      const hit = keywords.some(word =>
+        word.length > 3 && reqText.includes(word)
+      );
+
+      if (hit) {
+        matches.push({ sell, req });
+      }
+    });
+  });
+
+  renderMatches(matches);
+}
+
   // ---------- DETAIL PANEL ----------
 
   function openDetailPanel(post) {
