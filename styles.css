@@ -618,3 +618,40 @@ body.light .detail-overlay,
 body.light #detail-overlay {
   background: rgba(0, 0, 0, 0.4);
   }
+
+.chat-modal {
+  max-width: 420px;
+  width: 92%;
+}
+
+.chat-messages {
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-bubble {
+  padding: 8px 10px;
+  border-radius: 8px;
+  max-width: 80%;
+  font-size: 14px;
+}
+
+.chat-bubble.me {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #000;
+}
+
+.chat-bubble.them {
+  align-self: flex-start;
+  background: rgba(255,255,255,0.1);
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 6px;
+}
