@@ -306,7 +306,7 @@
   fabAdd.onclick = openModalForCreate;
   btnCancelPost.onclick = closeModal;
   btnSavePost.onclick = savePost;
-
+  let activeConversationId = null;
   window.Posts = {
   loadPosts,
   loadMatches
