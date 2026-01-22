@@ -15,6 +15,9 @@
   const postImage = document.getElementById("post-image");
   const btnCancelPost = document.getElementById("btn-cancel-post");
   const btnSavePost = document.getElementById("btn-save-post");
+  document.getElementById("chat-close-btn").onclick = closeChatModal;
+  document.getElementById("chat-overlay").onclick = closeChatModal;
+  document.getElementById("chat-send-btn").onclick = sendMessage;
   const postModalHint = document.getElementById("post-modal-hint");
 
   const detailOverlay = document.getElementById("detail-overlay");
