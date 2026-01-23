@@ -190,7 +190,7 @@ ps.js – posts grid, modal, detail panel, delete
         ${img}
         <h3>${p.title}</h3>
         <p>${p.description || ""}</p>
-        <p>"$"${p.price}</p>
+        <p>${price.price}</p>
       </article>
     `;
   }
