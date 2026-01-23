@@ -1,4 +1,4 @@
-// posts.js – posts grid, modal, detail panel, delete
+ps.js – posts grid, modal, detail panel, delete
 (function () {
   console.error("🔥 POSTS.JS LOADED 🔥");
 
@@ -190,7 +190,7 @@
         ${img}
         <h3>${p.title}</h3>
         <p>${p.description || ""}</p>
-        <p>${p.price}</p>
+        <p>"$"${p.price}</p>
       </article>
     `;
   }
