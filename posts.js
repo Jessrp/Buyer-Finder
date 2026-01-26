@@ -256,6 +256,74 @@
 
   // ---------- DETAIL PANEL ----------
 
+  async function startConversationAndSendMessage(post) {
+  const user = window.currentUser;
+  if (!user) {
+    alert("You must be signed in to message.");
+    return;
+  }
+
+  const isSeller = user.id === post.user_id;
+
+  const buyerId = isSeller ? null : user.id;
+  const sellerId = post.user_id;
+
+  // Find existing conversation
+  const { data: existing, error: findErr } = await supa
+    .from("conversations")
+    .select("*")
+    .eq("post_id", post.id)
+    .eq("seller_id", sellerId)
+    .eq("buyer_id", buyerId)
+    .maybeSingle();
+
+  if (findErr) {
+    console.error("Conversation lookup failed", findErr);
+    alert("Conversation error");
+    return;
+  }
+
+  let conversation = existing;
+
+  // Create conversation if needed
+  if (!conversation) {
+    const { data: created, error: createErr } = await supa
+      .from("conversations")
+      .insert({
+        post_id: post.id,
+        seller_id: sellerId,
+        buyer_id: buyerId,
+      })
+      .select()
+      .single();
+
+    if (createErr) {
+      console.error("Conversation create failed", createErr);
+      alert("Could not start conversation");
+      return;
+    }
+
+    conversation = created;
+  }
+
+  // Insert first message
+  const { error: msgErr } = await supa.from("messages").insert({
+    conversation_id: conversation.id,
+    sender_id: user.id,
+    body: "Hi! I'm interested in this.",
+  });
+
+  if (msgErr) {
+    console.error("Message send failed", msgErr);
+    alert("Message failed to send");
+    return;
+  }
+
+  // Open chat modal (UI can be empty for now)
+  document.getElementById("chat-overlay").classList.add("active");
+  document.getElementById("chat-modal").classList.add("active");
+  }
+
   function openDetailPanel(post) {
     detailTitle.textContent = post.title;
     detailDescription.textContent = post.description || "";
@@ -291,6 +359,11 @@
       };
       detailPanel.appendChild(del);
     }
+
+    const msgBtn = document.getElementById("detail-message-btn");
+if (msgBtn) {
+  msgBtn.onclick = () => startConversationAndSendMessage(post);
+}
 
     detailOverlay.classList.add("active");
     detailPanel.classList.add("active");
