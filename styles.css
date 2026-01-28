@@ -15,6 +15,10 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  
+}
+html, body {
+  height: 100%;
 }
 
 body {
@@ -407,6 +411,10 @@ header .right {
 
 .nav-item.active {
   color: var(--accent);
+}
+
+body {
+  padding-bottom: 56px;
 }
 
 /* FAB */
