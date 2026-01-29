@@ -232,3 +232,53 @@ document.addEventListener("DOMContentLoaded", () => {
   // Default
   setActivePostType("selling");
 });
+
+// app.js — view switching + bottom nav
+
+document.addEventListener("DOMContentLoaded", () => {
+  const views = document.querySelectorAll(".view");
+  const navItems = document.querySelectorAll(".bottom-nav .nav-item");
+
+  function showView(viewId) {
+    views.forEach(v => v.classList.remove("active"));
+    navItems.forEach(n => n.classList.remove("active"));
+
+    const view = document.getElementById(viewId);
+    if (view) view.classList.add("active");
+  }
+
+  document.getElementById("nav-selling").onclick = () => {
+    showView("view-posts");
+    document.getElementById("nav-selling").classList.add("active");
+    window.activePostType = "selling";
+    window.Posts?.loadPosts();
+  };
+
+  document.getElementById("nav-requests").onclick = () => {
+    showView("view-posts");
+    document.getElementById("nav-requests").classList.add("active");
+    window.activePostType = "request";
+    window.Posts?.loadPosts();
+  };
+
+  document.getElementById("nav-matches").onclick = () => {
+    showView("view-matches");
+    document.getElementById("nav-matches").classList.add("active");
+    window.Posts?.loadMatches();
+  };
+
+  document.getElementById("nav-notifications").onclick = () => {
+    showView("view-notifications");
+    document.getElementById("nav-notifications").classList.add("active");
+  };
+
+  document.getElementById("nav-map").onclick = () => {
+    showView("view-map");
+    document.getElementById("nav-map").classList.add("active");
+  };
+
+  document.getElementById("nav-settings").onclick = () => {
+    showView("view-settings");
+    document.getElementById("nav-settings").classList.add("active");
+  };
+});
