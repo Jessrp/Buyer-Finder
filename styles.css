@@ -550,6 +550,12 @@ body {
   overflow-y: auto;
 }
 
+/* Make room for bottom nav inside detail panel */
+.detail-panel,
+#detail-panel {
+  padding-bottom: 88px;
+}
+
 .detail-panel.active,
 #detail-panel.active {
   display: block;
