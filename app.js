@@ -270,8 +270,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("nav-notifications").onclick = () => {
     showView("view-notifications");
     document.getElementById("nav-notifications").classList.add("active");
-  };
-
+  }; 
+    if (viewId === "view-notifications") {
+      window.Messages?.loadInbox();
+}
+  
   document.getElementById("nav-map").onclick = () => {
     showView("view-map");
     document.getElementById("nav-map").classList.add("active");
