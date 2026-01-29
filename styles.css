@@ -689,4 +689,18 @@ body.light #detail-overlay {
 .view {
   position: relative;
   z-index: 1;
-                              }
+}
+
+.bottom-nav {
+  z-index: 99999 !important;
+  pointer-events: auto !important;
+}
+
+.bottom-nav * {
+  pointer-events: auto !important;
+}
+
+/* Kill injected overlay that steals clicks */
+[id^="erudakaalgroup"] {
+  pointer-events: none !important;
+}
