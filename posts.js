@@ -376,7 +376,8 @@ alert("Message sent");
 if (msgBtn) {
   msgBtn.onclick = () => startConversationAndSendMessage(post);
 }
-
+detailOverlay.classList.add("active");
+detailPanel.classList.add("active");
 }
 
   function hideDetailPanel() {
