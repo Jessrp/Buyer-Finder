@@ -233,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setActivePostType("selling");
 });
 
-// app.js — view switching + bottom nav
+// ---------- BOTTOM NAV VIEW SWITCHING ----------
 
 document.addEventListener("DOMContentLoaded", () => {
   const views = document.querySelectorAll(".view");
