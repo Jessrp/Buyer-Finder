@@ -45,6 +45,25 @@
       <button class="btn small outline" id="user-signin-shortcut">Sign in</button>
     </div>
 
+    <section id="view-chat" class="view">
+  <div class="chat-header">
+    <button onclick="showView('view-notifications')">← Back</button>
+    <h3>Chat</h3>
+  </div>
+
+  <div id="chat-messages" class="chat-messages"></div>
+
+  <div class="chat-input">
+    <input
+      id="chat-text"
+      type="text"
+      placeholder="Type a message..."
+      autocomplete="off"
+    />
+    <button id="chat-send-btn">Send</button>
+  </div>
+    </section>
+
     <!-- POSTS VIEW -->
     <section id="view-posts" class="view active">
       <div id="posts-status" class="hint" style="margin-bottom:6px;"></div>
