@@ -670,6 +670,22 @@ body.light #detail-overlay {
   gap: 6px;
 }
 
+.inbox-item {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+}
+
+.inbox-item.unread {
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.inbox-item p {
+  font-size: 13px;
+  opacity: 0.8;
+  margin: 4px 0 0;
+}
+
 /* ===============================
    Overlay stacking + click control
    =============================== */
