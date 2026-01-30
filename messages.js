@@ -5,6 +5,29 @@ const supa = window.supa;
 let activeConversationId = null;
 let messageChannel = null;
 
+supa
+  .channel("messages-realtime")
+  .on(
+    "postgres_changes",
+    {
+      event: "INSERT",
+      schema: "public",
+      table: "messages"
+    },
+    payload => {
+      const msg = payload.new;
+
+      // only append if it's the open conversation
+      if (msg.conversation_id === activeConversationId) {
+        appendMessage(msg);
+      }
+
+      // inbox refresh for previews
+      window.Messages?.loadInbox?.();
+    }
+  )
+  .subscribe();
+
 /* ---------- VIEW SWITCH ---------- */
 function showView(id) {
   document.querySelectorAll(".view").forEach(v =>
@@ -38,6 +61,20 @@ async function loadInbox() {
   }
 
   renderInbox(data);
+}
+
+function appendMessage(msg) {
+  const list = document.getElementById("chat-messages");
+  if (!list) return;
+
+  const div = document.createElement("div");
+  div.className =
+    msg.sender_id === window.currentUser.id ? "msg me" : "msg them";
+
+  div.textContent = msg.body;
+  list.appendChild(div);
+
+  list.scrollTop = list.scrollHeight;
 }
 
 /* ---------- RENDER INBOX ---------- */
