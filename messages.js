@@ -100,6 +100,10 @@ function renderInbox(convos) {
   list.querySelectorAll(".inbox-item").forEach(el => {
     el.onclick = () => openConversation(el.dataset.id);
   });
+
+  const unread = c.messages?.some(
+  m => !m.read && m.sender_id !== window.currentUser.id
+);
 }
 
 /* ---------- OPEN CONVERSATION ---------- */
@@ -119,6 +123,12 @@ async function openConversation(conversationId) {
   if (error) {
     list.innerHTML = "Failed to load messages";
     return;
+    
+    await supa
+  .from("messages")
+  .update({ read: true })
+  .eq("conversation_id", conversationId)
+  .neq("sender_id", window.currentUser.id);
   }
 
   list.innerHTML = "";
