@@ -355,3 +355,33 @@ async function useGpsLocation() {
 window.Auth = {
   checkUser,
 };
+
+function updateSettingsUI() {
+  const user = window.currentUser;
+  const profile = window.currentProfile;
+
+  const nameEl = document.getElementById("settings-name");
+  const emailEl = document.getElementById("settings-email");
+  const planEl = document.getElementById("settings-plan");
+  const avatarEl = document.getElementById("settings-avatar");
+
+  if (!nameEl) return;
+
+  if (!user) {
+    nameEl.textContent = "Guest";
+    emailEl.textContent = "Not signed in";
+    planEl.textContent = "Free";
+    avatarEl.style.backgroundImage = "";
+    return;
+  }
+
+  nameEl.textContent = profile?.full_name || "User";
+  emailEl.textContent = user.email;
+  planEl.textContent = profile?.premium ? "BF+" : "Free";
+
+  if (profile?.avatar_url) {
+    avatarEl.style.backgroundImage = `url(${profile.avatar_url})`;
+  }
+}
+
+window.updateSettingsUI = updateSettingsUI;
