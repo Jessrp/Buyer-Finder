@@ -77,6 +77,9 @@ async function checkUser() {
   window.currentProfile = null;
   renderUserCard();
   syncSettingsUI();
+    if (window.requestNotificationPermission) {
+  window.requestNotificationPermission();
+    }
 
   if (window.updateSettingsUI) {
     window.updateSettingsUI();
@@ -91,6 +94,9 @@ async function checkUser() {
 await loadOrCreateProfile();
 renderUserCard();
 syncSettingsUI();
+  if (window.requestNotificationPermission) {
+  window.requestNotificationPermission();
+}
 
 if (window.updateSettingsUI) {
   window.updateSettingsUI();
