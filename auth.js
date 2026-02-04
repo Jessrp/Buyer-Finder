@@ -101,6 +101,17 @@ if (window.Posts && typeof window.Posts.loadPosts === "function") {
 }
 }
 
+function requestNotificationPermission() {
+  if (!("Notification" in window)) return;
+
+  if (Notification.permission === "default") {
+    Notification.requestPermission().then((permission) => {
+      console.log("Notification permission:", permission);
+    });
+  }
+}
+
+window.requestNotificationPermission = requestNotificationPermission;
 async function loginWithGoogle() {
   const { error } = await supa.auth.signInWithOAuth({
     provider: "google",
