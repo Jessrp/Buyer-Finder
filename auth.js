@@ -74,21 +74,31 @@ async function checkUser() {
   window.currentUser = user;
 
   if (!user) {
-    window.currentProfile = null;
-    renderUserCard();
-    syncSettingsUI();
-    if (window.Posts && typeof window.Posts.loadPosts === "function") {
-      window.Posts.loadPosts();
-    }
-    return;
-  }
-
-  await loadOrCreateProfile();
+  window.currentProfile = null;
   renderUserCard();
   syncSettingsUI();
+
+  if (window.updateSettingsUI) {
+    window.updateSettingsUI();
+  }
+
   if (window.Posts && typeof window.Posts.loadPosts === "function") {
     window.Posts.loadPosts();
   }
+  return;
+}
+
+await loadOrCreateProfile();
+renderUserCard();
+syncSettingsUI();
+
+if (window.updateSettingsUI) {
+  window.updateSettingsUI();
+}
+
+if (window.Posts && typeof window.Posts.loadPosts === "function") {
+  window.Posts.loadPosts();
+}
 }
 
 async function loginWithGoogle() {
