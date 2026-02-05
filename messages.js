@@ -107,11 +107,16 @@ async function openConversation(conversationId) {
         schema: "public",
         table: "messages",
         filter: `conversation_id=eq.${conversationId}`
-      },
-      payload => {
-        const msg = payload.new;
-        if (msg.sender_id === window.currentUser.id) return;
+      }
+      (payload) => {
+  const message = payload.new;
 
+  addMessageToUI(message);
+
+    if (message.sender_id !== window.currentUser?.id) {
+    showBrowserNotification(message);
+  }
+}
         const div = document.createElement("div");
         div.className = "msg them";
         div.textContent = msg.body;
