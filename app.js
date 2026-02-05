@@ -3,6 +3,23 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeView = "posts";
   window.activePostType = window.activePostType || "selling";
 
+  function showBrowserNotification(message) {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+
+  const body =
+    message.body ||
+    message.text ||
+    "You have a new message";
+
+  new Notification("New message", {
+    body,
+    icon: "/icon.png", // optional
+  });
+}
+
+window.showBrowserNotification = showBrowserNotification;
+
   // Views
   const viewPosts = document.getElementById("view-posts");
   const viewMap = document.getElementById("view-map");
