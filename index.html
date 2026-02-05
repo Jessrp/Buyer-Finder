@@ -100,6 +100,66 @@
 
     <h3>Settings</h3>
 
+    <div id="settings-panel" class="settings-panel">
+  <h2>Settings</h2>
+  
+  <div class="settings-item">
+    <label for="settings-name">Name:</label>
+    <span id="settings-name">User</span>
+  </div>
+
+  <div class="settings-item">
+    <label for="settings-email">Email:</label>
+    <span id="settings-email">Not signed in</span>
+  </div>
+
+  <div class="settings-item">
+    <label for="settings-plan">Plan:</label>
+    <span id="settings-plan">Free</span>
+  </div>
+
+  <div class="settings-item">
+    <label>Avatar:</label>
+    <div id="settings-avatar" class="settings-avatar"></div>
+  </div>
+
+  <div class="settings-actions">
+    <button id="btn-save-username">Save Username</button>
+    <button id="btn-upload-avatar">Upload Avatar</button>
+    <button id="btn-save-location">Save Location</button>
+    <button id="btn-use-gps">Use GPS Location</button>
+    <button id="logout-btn">Log Out</button>
+  </div>
+</div>
+
+<style>
+  .settings-panel {
+    padding: 20px;
+    max-width: 400px;
+    background: #f3f3f3;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+  }
+
+  .settings-item {
+    margin-bottom: 15px;
+  }
+
+  #settings-avatar {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg,#333,#555);
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .settings-actions button {
+    margin-right: 10px;
+    margin-top: 10px;
+  }
+</style>
+
     <!-- PROFILE CARD -->
     <div class="user-card" style="margin-bottom:16px;">
       <div class="user-avatar" id="settings-avatar"></div>
