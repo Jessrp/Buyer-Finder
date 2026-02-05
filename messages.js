@@ -107,7 +107,7 @@ async function openConversation(conversationId) {
         schema: "public",
         table: "messages",
         filter: `conversation_id=eq.${conversationId}`
-      }
+      },
       (payload) => {
   const message = payload.new;
 
