@@ -136,6 +136,13 @@
       return;
     }
 
+    import { findMatchesForPost } from "./matching.js";
+
+// AFTER post is saved
+if (data) {
+  await findMatchesForPost(data);
+}
+
     closeModal();
     loadPosts();
   }
