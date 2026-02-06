@@ -153,6 +153,8 @@
 
   // ---------- LOAD POSTS ----------
 
+  window.allPosts = [];
+  
   async function loadPosts() {
     postsStatus.textContent = "Loading...";
     postsGrid.innerHTML = "";
@@ -166,6 +168,9 @@
       postsStatus.textContent = "Failed to load posts.";
       return;
     }
+
+    window.allPosts = data || [];
+    renderPosts(window.allPosts);
 
     const filtered = data.filter((p) => {
       const t = p.type === "requesting" ? "request" : "selling";
