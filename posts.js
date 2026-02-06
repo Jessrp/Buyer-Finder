@@ -142,6 +142,8 @@
 
   // ---------- LOAD POSTS ----------
 
+  window.allPosts = [];
+  
   async function loadPosts() {
     postsStatus.textContent = "Loading...";
     postsGrid.innerHTML = "";
@@ -150,6 +152,13 @@
       .from("posts")
       .select("*")
       .order("created_at", { ascending: false });
+if (error) {
+  console.error(error);
+  return;
+}
+
+window.allPosts = data || [];
+renderPosts(window.allPosts);
 
     if (error) {
       postsStatus.textContent = "Failed to load posts.";
