@@ -418,4 +418,31 @@ detailPanel.classList.add("active");
 };
   loadPosts();
 })();
+
+// --- SEARCH SETUP ---
+document.addEventListener("DOMContentLoaded", () => {
+  const searchInput = document.getElementById("searchInput");
+
+  if (searchInput) {
+    searchInput.addEventListener("input", handleSearch);
+  }
+});
+
+// --- SEARCH LOGIC ---
+function handleSearch(e) {
+  const q = e.target.value.trim().toLowerCase();
+
+  if (!q) {
+    renderPosts(window.allPosts);
+    return;
+  }
+
+  const filtered = window.allPosts.filter(post =>
+    post.title?.toLowerCase().includes(q) ||
+    post.description?.toLowerCase().includes(q) ||
+    post.type?.toLowerCase().includes(q)
+  );
+
+  renderPosts(filtered);
+}
     
