@@ -90,55 +90,66 @@
   // ---------- SAVE POST ----------
 
   async function savePost() {
-    const user = window.currentUser;
-    const profile = window.currentProfile;
-    if (!user) return alert("You must sign in.");
+  const user = window.currentUser;
+  const profile = window.currentProfile;
+  if (!user) return alert("You must sign in.");
 
-    const title = postTitle.value.trim();
-    if (!title) return alert("Title required.");
+  const title = postTitle.value.trim();
+  if (!title) return alert("Title required.");
 
-    postModalHint.textContent = "Saving...";
+  postModalHint.textContent = "Saving...";
 
-    const newImages = await uploadPostImages(postImage.files, user.id);
+  const newImages = await uploadPostImages(postImage.files, user.id);
 
-    const payload = {
-      title,
-      description: postDescription.value.trim(),
-      price: postPrice.value.trim() || null,
-      type:
-        window.activePostType === "request"
-          ? "requesting"
-          : "selling",
-      location_text: profile?.location_text ?? null,
-      lat: profile?.lat ?? null,
-      lng: profile?.lng ?? null,
-    };
+  const payload = {
+    title,
+    description: postDescription.value.trim(),
+    price: postPrice.value.trim() || null,
+    type:
+      window.activePostType === "request"
+        ? "requesting"
+        : "selling",
+    location_text: profile?.location_text ?? null,
+    lat: profile?.lat ?? null,
+    lng: profile?.lng ?? null,
+  };
 
-    if (newImages.length) {
-      payload.image_urls = newImages;
-    }
-
-    let error;
-
-    if (window.editingPostId) {
-      ({ error } = await supa
-        .from("posts")
-        .update(payload)
-        .eq("id", window.editingPostId)
-        .eq("user_id", user.id));
-    } else {
-      payload.user_id = user.id;
-      ({ error } = await supa.from("posts").insert(payload));
-    }
-
-    if (error) {
-      postModalHint.textContent = error.message;
-      return;
-    }
-
-    closeModal();
-    loadPosts();
+  if (newImages.length) {
+    payload.image_urls = newImages;
   }
+
+  let insertedData;
+  let error;
+
+  if (window.editingPostId) {
+    ({ data: insertedData, error } = await supa
+      .from("posts")
+      .update(payload)
+      .eq("id", window.editingPostId)
+      .eq("user_id", user.id)
+      .select()); // <-- get updated row back
+  } else {
+    payload.user_id = user.id;
+    ({ data: insertedData, error } = await supa
+      .from("posts")
+      .insert(payload)
+      .select()); // <-- get inserted row back
+  }
+
+  if (error) {
+    postModalHint.textContent = error.message;
+    return;
+  }
+
+  // --- STEP 2: Trigger matches ---
+  if (!window.editingPostId && window.checkForMatches) {
+    // insertedData is an array, take the first item
+    window.checkForMatches(insertedData[0]);
+  }
+
+  closeModal();
+  loadPosts();
+}
 
   // ---------- LOAD POSTS ----------
 
