@@ -94,6 +94,11 @@ async function checkUser() {
 await loadOrCreateProfile();
 renderUserCard();
 syncSettingsUI();
+
+if (window.runRetroactiveMatchCheck) {
+  window.runRetroactiveMatchCheck();
+}
+  
   if (window.requestNotificationPermission) {
   window.requestNotificationPermission();
 }
