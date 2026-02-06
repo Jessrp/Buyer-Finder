@@ -1,4 +1,13 @@
 // posts.js – posts grid, modal, detail panel, delete
+
+document.addEventListener("DOMContentLoaded", () => {
+  const searchInput = document.getElementById("searchInput");
+
+  if (searchInput) {
+    searchInput.addEventListener("input", handleSearch);
+  }
+});
+
 (function () {
   console.error("🔥 POSTS.JS LOADED 🔥");
 
