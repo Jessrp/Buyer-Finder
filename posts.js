@@ -271,5 +271,23 @@
   }
   // ==============================================
 
+  setTimeout(() => {
+  const searchInput = document.getElementById("searchinput");
+  const searchBtn = document.getElementById("search-btn");
+
+  console.log("🔍 searchInput:", searchInput);
+  console.log("🔍 searchBtn:", searchBtn);
+
+  if (searchInput) {
+    searchInput.addEventListener("input", handleSearch);
+  }
+
+  if (searchBtn) {
+    searchBtn.addEventListener("click", () => {
+      handleSearch({ target: searchInput });
+    });
+  }
+}, 0);
+
   loadPosts();
 })();
