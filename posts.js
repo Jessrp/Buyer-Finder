@@ -216,6 +216,11 @@
   /* ---------- DETAIL PANEL ---------- */
 
   async function startConversationAndSendMessage(post) {
+    if (!post) {
+  console.error("startConversationAndSendMessage called with undefined post!");
+  return;
+    }
+    
     if (!window.currentUser) {
       alert("You must sign in to message.");
       return;
@@ -268,8 +273,8 @@
     detailPanel.onclick = null;
 
     if (post.user_id !== window.currentUser?.id) {
-      detailPanel.onclick = () => startConversationAndSendMessage(post);
-    }
+  detailPanel.onclick = startConversationAndSendMessage.bind(null, post);
+}
 
     detailOverlay.classList.add("active");
     detailPanel.classList.add("active");
