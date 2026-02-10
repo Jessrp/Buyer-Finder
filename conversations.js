@@ -1,4 +1,5 @@
 // conversations.js
+console.log("✅ conversations.js LOADED");
 console.error("💬 CONVERSATIONS.JS LOADED");
 
 const supa = window.supa;
