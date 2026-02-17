@@ -138,8 +138,10 @@
     }
 
     closeModal();
-    loadPosts();
+loadPosts();
 
+// ✅ Create matches after saving a post
+window.Matching?.scanAndCreateMatchesForUser?.();
     // 🔥 Trigger matching after any successful save
     try { window.Matching?.scanAndCreateMatchesForUser?.(); } catch(e){ console.log('Matching trigger failed', e); }
   }
