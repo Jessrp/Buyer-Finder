@@ -5,8 +5,8 @@
 
   function supa() { return window.supa; }
 
-  const MATCH_THRESHOLD = 30; // keyword/price score threshold
-
+  const MATCH_THRESHOLD = 10; // lowered so real-world posts actually match
+  
   function normText(s) {
     return String(s || "")
       .toLowerCase()
