@@ -655,3 +655,33 @@ body.light #detail-overlay {
   display: flex;
   gap: 6px;
 }
+
+
+/* --- BuyerFinder alerts/matches cards polish (surgical append) --- */
+#view-notifications, #view-alerts, #view-matches { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 110px; }
+
+.bf-card {
+  margin: 10px 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 16px;
+  background: rgba(0,0,0,0.20);
+}
+
+.bf-card.unread { border-color: rgba(45,212,191,0.55); box-shadow: 0 0 0 1px rgba(45,212,191,0.15) inset; }
+
+.bf-card-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.bf-card-title { min-width: 0; }
+.bf-title-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bf-card-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: 0 0 auto; }
+.bf-time { font-size: 11px; opacity: .75; }
+
+.bf-card-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.bf-foot { margin-top: 8px; font-size: 11px; opacity: .75; }
+
+.bf-legend { margin: 12px 0; padding: 10px 12px; }
+.bf-legend-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.bf-legend-body { margin-top: 10px; }
+
+.bf-focus { outline: 2px solid rgba(45,212,191,0.85); box-shadow: 0 0 0 4px rgba(45,212,191,0.15); }
+
