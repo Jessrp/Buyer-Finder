@@ -4,7 +4,7 @@
   console.error("✨ MATCHES.JS LOADED (BF schema + threshold + actions)");
 
   // Only call something a "Match" at/above this score.
-  const MATCH_THRESHOLD = 70;
+  const MATCH_THRESHOLD = 40;
 
   // If true: hide items below threshold from the Matches tab.
   const HIDE_BELOW_THRESHOLD = true;
