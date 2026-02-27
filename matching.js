@@ -10,7 +10,7 @@
   const BF_MATCH_DEBUG = true;
 
   // Inserts stored matches at/above this score
-  const INSERT_THRESHOLD = 35;
+  const INSERT_THRESHOLD = 70;
 
   const STOP = new Set([
     "a","an","and","or","the","to","for","of","in","on","at","with","from",

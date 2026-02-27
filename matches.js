@@ -1,7 +1,7 @@
-// matches.js — renders matches + realtime listener (BuyerFinder schema + threshold + actions)
+// matches.js — renders matches + realtime listener (BuyerFinder schema)
 // Non-module script: attaches to window.Matches
 (function () {
-  console.error("✨ MATCHES.JS LOADED (BF schema + threshold + actions)");
+  console.error("✨ MATCHES.JS LOADED (BF schema + threshold + legend + actions + focus)");
 
   // Only call something a "Match" at/above this score.
   const MATCH_THRESHOLD = 70;
@@ -45,6 +45,43 @@
     return { tag: "Very weak", cls: "pill" };
   }
 
+  function legendHtml() {
+    return `
+      <div class="card bf-legend">
+        <div class="bf-legend-head">
+          <strong>Match Score Guide</strong>
+          <button class="btn small" id="toggle-score-guide">Show/Hide</button>
+        </div>
+        <div id="score-guide-body" class="bf-legend-body" style="display:none;">
+          <div class="muted" style="opacity:.8;margin-bottom:8px;">
+            Score is a rough relevance estimate (keywords + category + location + intent). Higher = closer fit.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr;gap:6px;">
+            <div><span class="pill">90–100</span> 🔥 Perfect (basically the same thing)</div>
+            <div><span class="pill">80–89</span> Strong (very likely what they want)</div>
+            <div><span class="pill">70–79</span> Match (good enough to notify)</div>
+            <div><span class="pill">55–69</span> Potential (maybe, but not guaranteed)</div>
+            <div><span class="pill">35–54</span> Weak (loose similarity)</div>
+            <div><span class="pill">0–34</span> Very weak (noise)</div>
+          </div>
+          <div class="muted" style="opacity:.75;margin-top:8px;">
+            Current threshold to be called a “Match”: <strong>${MATCH_THRESHOLD}+</strong>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function bindLegendToggle(container) {
+    const btn = container.querySelector("#toggle-score-guide");
+    const body = container.querySelector("#score-guide-body");
+    if (!btn || !body || btn.dataset.bound) return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", () => {
+      body.style.display = (body.style.display === "none") ? "block" : "none";
+    });
+  }
+
   function convKey(postId, buyerId, sellerId) {
     return `${String(postId)}|${String(buyerId)}|${String(sellerId)}`;
   }
@@ -62,9 +99,11 @@
       });
       if (error) throw error;
       if (data) return data;
-    } catch (e) {}
+    } catch (e) {
+      // fall through to direct insert
+    }
 
-    // Direct approach
+    // Direct approach: try find, then insert
     const { data: existing, error: findErr } = await client
       .from("conversations")
       .select("id")
@@ -92,17 +131,21 @@
       return;
     }
     window.activeConversationId = conversationId;
-    if (typeof window.setActiveView === "function") window.setActiveView("chat");
+    if (typeof window.showView === "function") window.showView("view-chat");
+    if (typeof window.setActiveView === "function") window.setActiveView("messages");
   }
 
   function openPostUI(postId) {
-    // ✅ FIX: actually open the specific post, not just swap tabs.
-    if (window.Posts && typeof window.Posts.openPostById === "function") {
-      return window.Posts.openPostById(postId);
+    if (window.Posts) {
+      if (typeof window.Posts.openPostById === "function") return window.Posts.openPostById(postId);
+      if (typeof window.Posts.openPost === "function") return window.Posts.openPost(postId);
     }
+
     window.__bf_pending_open_post_id = postId;
     if (typeof window.setActiveView === "function") window.setActiveView("posts");
-    alert("Switched to Posts. Tap the post if it doesn't auto-open.");
+    const postsView = document.getElementById("view-posts");
+    if (postsView) postsView.scrollIntoView({ behavior: "smooth", block: "start" });
+    alert("Switched to Posts. If the post doesn't auto-open, tap it in the list.");
   }
 
   function bindActionButtons(container) {
@@ -132,7 +175,9 @@
           btn.textContent = "Opening...";
 
           let id = convoId;
-          if (!id) id = await getOrCreateConversationId({ postId, buyerId, sellerId });
+          if (!id) {
+            id = await getOrCreateConversationId({ postId, buyerId, sellerId });
+          }
           openConversationUI(id);
         } catch (err) {
           console.error("Open/Start conversation failed:", err);
@@ -145,10 +190,37 @@
     });
   }
 
-  async function loadMatches() {
+  function coerceMeta(m) {
+    if (!m) return {};
+    if (typeof m === "object") return m;
+    if (typeof m === "string") {
+      try { return JSON.parse(m); } catch { return {}; }
+    }
+    return {};
+  }
+
+  function focusMatchInDom(matchId) {
+    const list = ensureListEl();
+    const id = String(matchId || "");
+    if (!id) return false;
+
+    // Try to find by attribute
+    const el = list.querySelector(`[data-match-id="${CSS.escape(id)}"]`) ||
+               list.querySelector(`[data-id="${CSS.escape(id)}"]`);
+    if (!el) return false;
+
+    el.classList.add("bf-focus");
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => el.classList.remove("bf-focus"), 2200);
+    return true;
+  }
+
+  async function loadMatches(opts = {}) {
     const client = supa();
     const user = window.currentUser;
     const list = ensureListEl();
+
+    const focusId = opts.focusMatchId || window.__bf_focus_match_id || null;
 
     if (!user) { list.innerHTML = "<p class='hint'>Sign in to see matches.</p>"; return; }
     if (!client) { list.innerHTML = "<p class='hint'>Supabase not ready yet.</p>"; return; }
@@ -172,13 +244,18 @@
     if (!matches.length) { list.innerHTML = "<p class='hint'>No matches yet.</p>"; return; }
 
     if (HIDE_BELOW_THRESHOLD) {
-      matches = matches.filter(m => Number(m.score) >= MATCH_THRESHOLD);
-      if (!matches.length) {
-        list.innerHTML = "<p class='hint'>No matches above the threshold yet.</p>";
-        return;
-      }
-    }
+  const focusStr = focusId ? String(focusId) : null;
 
+  matches = matches.filter(m => Number(m.score) >= MATCH_THRESHOLD);
+
+  if (!matches.length) {
+    list.innerHTML = legendHtml() + "<p class='hint'>No matches above the threshold yet.</p>";
+    bindLegendToggle(list);
+    return;
+  }
+}
+
+    // Fetch post info
     const postIds = Array.from(new Set(matches.flatMap(m => [m.buy_post_id, m.sell_post_id]).filter(Boolean).map(String)));
     let postsById = {};
     if (postIds.length) {
@@ -189,6 +266,7 @@
       if (!pErr && posts) postsById = Object.fromEntries(posts.map(p => [String(p.id), p]));
     }
 
+    // Prefetch conversations for these sell posts (so we can label "View" vs "Start")
     const sellPostIds = Array.from(new Set(matches.map(m => m.sell_post_id).filter(Boolean).map(String)));
     let convByKey = {};
     if (sellPostIds.length) {
@@ -203,16 +281,39 @@
       }
     }
 
-    list.innerHTML = matches.map(m => {
+    // Fetch user names for buyer/seller so matches are clear
+    const userIds = Array.from(new Set(matches.flatMap(m => [m.buyer_id, m.seller_id]).filter(Boolean).map(String)));
+    let profilesById = {};
+    if (userIds.length) {
+      const { data: profs, error: uErr } = await client
+        .from("profiles")
+        .select("id,username")
+        .in("id", userIds);
+      if (!uErr && profs) profilesById = Object.fromEntries(profs.map(p => [String(p.id), p]));
+    }
+
+    let html = legendHtml();
+    if (focusStr && !matches.some(m => String(m.id) === focusStr)) {
+      html += `<p class='hint' style='margin-top:8px;'>That alert points to a match that isn't above your threshold, so it's not shown here.</p>`;
+    }
+
+    html += matches.map(m => {
       const buy = postsById[String(m.buy_post_id)] || {};
       const sell = postsById[String(m.sell_post_id)] || {};
       const s = Number(m.score);
       const lbl = scoreLabel(s);
 
-      const title = `${buy.title || "Request"} ↔ ${sell.title || "Sell"}`;
-      const when = m.created_at ? fmtTime(m.created_at) : "";
+      const scoreClass = (Number.isFinite(s)
+        ? (s >= 90 ? "perfect" : s >= 80 ? "strong" : s >= MATCH_THRESHOLD ? "match" : s >= 55 ? "fair" : "weak")
+        : "unknown");
 
-      // "View Post" should take user to the OTHER post (the one they don't own)
+      const when = m.created_at ? fmtTime(m.created_at) : "";
+      const buyerName = profilesById[String(m.buyer_id)]?.username || "Buyer";
+      const sellerName = profilesById[String(m.seller_id)]?.username || "Seller";
+
+      const reqPrice = (buy.price != null && buy.price !== "") ? String(buy.price) : "";
+      const sellPrice = (sell.price != null && sell.price !== "") ? String(sell.price) : "";
+
       const myId = String(user.id);
       const buyOwner = String(buy.user_id || m.buyer_id || "");
       const sellOwner = String(sell.user_id || m.seller_id || "");
@@ -227,23 +328,20 @@
       const badgeText = (Number.isFinite(s) ? `${lbl.tag} · ${s}` : lbl.tag);
 
       return `
-        <div class="match-item" data-id="${m.id}"
-             style="padding:10px 12px;border:1px solid rgba(255,255,255,0.10);border-radius:14px;margin:10px 0;">
-          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
-            <div style="min-width:0;">
-              <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</div>
-              <div class="muted" style="opacity:.75;margin-top:2px;">
-                <div><strong>Request Price:</strong> ${buy.price ?? ""}</div>
-                <div><strong>Sell Price:</strong> ${sell.price ?? ""}</div>
-              </div>
+        <div class="match-item bf-card" data-id="${m.id}" data-match-id="${m.id}">
+          <div class="bf-card-head">
+            <div class="bf-card-title">
+              <div class="bf-title-line"><strong>Request:</strong> ${buy.title || "Request"}${reqPrice ? ` <span class="muted">·</span> <strong>Price:</strong> ${reqPrice}` : ""}</div>
+              <div class="bf-title-line"><strong>Sell:</strong> ${sell.title || "Sell"}${sellPrice ? ` <span class="muted">·</span> <strong>Price:</strong> ${sellPrice}` : ""}</div>
+              <div class="muted bf-who"><strong>Buyer:</strong> ${buyerName} <span class="muted">•</span> <strong>Seller:</strong> ${sellerName}</div>
             </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:0 0 auto;">
+            <div class="bf-card-meta">
               <span class="${lbl.cls}" title="Score ${s}">${badgeText}</span>
-              <span class="muted" style="opacity:.7;font-size:11px;">${when}</span>
+              <span class="muted bf-time">${when}</span>
             </div>
           </div>
 
-          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <div class="bf-card-actions">
             <button class="btn small" data-action="view-post" data-post-id="${viewPostId}">View Post</button>
             <button class="btn small"
               data-action="chat"
@@ -254,11 +352,27 @@
               ${existingConvoId ? "View Conversation" : "Start Conversation"}
             </button>
           </div>
+
+          <div class="muted bf-foot">Threshold: <strong>${MATCH_THRESHOLD}+</strong></div>
         </div>
       `;
     }).join("");
 
+    list.innerHTML = html;
+    bindLegendToggle(list);
     bindActionButtons(list);
+
+    if (focusStr) {
+      focusMatch(focusStr);
+      try { delete window.__bf_focus_match_id; } catch {}
+    }
+
+    // One-shot focus (from alerts click)
+    if (focusId) {
+      window.__bf_focus_match_id = null;
+      // wait a tick so DOM is painted
+      setTimeout(() => { focusMatchInDom(focusId); }, 50);
+    }
   }
 
   let matchChannel = null;
@@ -277,14 +391,23 @@
         if (!isMine) return;
 
         const s = Number(match.score);
-        if (Number.isFinite(s) && s >= MATCH_THRESHOLD) {
+        const isRealMatch = Number.isFinite(s) ? (s >= MATCH_THRESHOLD) : true;
+
+        if (isRealMatch) {
           window.showBrowserNotification?.({ title: "New Match", body: "You have a new match." });
           window.Notifications?.notify?.("New Match", "You have a new match.");
         }
+
         loadMatches();
       })
       .subscribe();
   }
 
-  window.Matches = { loadMatches, initMatchListener };
+  function focusMatch(matchId) {
+    window.__bf_focus_match_id = String(matchId || "");
+    if (window.setActiveView) window.setActiveView("matches");
+    loadMatches({ focusMatchId: window.__bf_focus_match_id });
+  }
+
+  window.Matches = { loadMatches, initMatchListener, focusMatch };
 })();

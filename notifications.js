@@ -1,104 +1,39 @@
-// notifications.js — in-app Alerts tab + browser notifications (BuyerFinder)
+// notifications.js — in-app alerts list + realtime
+// Non-module script: attaches to window.Notifications
 (function () {
-  console.error("🔔 NOTIFICATIONS.JS LOADED (alerts)");
+  console.error("🔔 NOTIFICATIONS.JS LOADED (alerts list + click-to-focus)");
 
   function supa() { return window.supa; }
-
-  let notificationsEnabled = false;
-  let alertsChannel = null;
-
-  /* ---------- BROWSER NOTIFICATIONS ---------- */
-  function init() {
-    if (!("Notification" in window)) {
-      console.warn("Notifications not supported");
-      return;
+  function ensureNavBadge(navId, badgeId) {
+    const nav = document.getElementById(navId);
+    if (!nav) return null;
+    let b = document.getElementById(badgeId);
+    if (!b) {
+      b = document.createElement("span");
+      b.id = badgeId;
+      b.className = "nav-badge";
+      b.textContent = "";
+      nav.style.position = nav.style.position || "relative";
+      nav.appendChild(b);
     }
-    if (Notification.permission === "granted") {
-      notificationsEnabled = true;
-    } else if (Notification.permission !== "denied") {
-      Notification.requestPermission().then((permission) => {
-        notificationsEnabled = permission === "granted";
-      });
-    }
+    return b;
   }
 
-  function notify(title, body) {
-    if (!notificationsEnabled) return;
-    if (document.hasFocus()) return;
-    try { new Notification(title, { body }); }
-    catch (e) { console.warn("Notification failed", e); }
-  }
 
-  /* ---------- BADGE ---------- */
-  function setBadge(count) {
-    const el = document.getElementById("nav-notifications");
-    if (!el) return;
-
-    let badge = el.querySelector(".bf-badge");
-    if (!badge) {
-      badge = document.createElement("span");
-      badge.className = "bf-badge";
-      badge.style.position = "absolute";
-      badge.style.top = "6px";
-      badge.style.right = "10px";
-      badge.style.minWidth = "18px";
-      badge.style.height = "18px";
-      badge.style.padding = "0 6px";
-      badge.style.borderRadius = "999px";
-      badge.style.fontSize = "12px";
-      badge.style.lineHeight = "18px";
-      badge.style.textAlign = "center";
-      badge.style.background = "#ff3b30";
-      badge.style.color = "#fff";
-      badge.style.display = "none";
-      badge.style.pointerEvents = "none";
-      el.style.position = "relative";
-      el.appendChild(badge);
-    }
-
-    const n = Number(count || 0);
-    if (n > 0) {
-      badge.textContent = n > 99 ? "99+" : String(n);
-      badge.style.display = "inline-block";
-    } else {
-      badge.style.display = "none";
-    }
-  }
-
-  async function refreshBadge() {
-    const client = supa();
-    const user = window.currentUser;
-    if (!client || !user) return;
-
-    const { count, error } = await client
-      .from("alerts")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("read", false);
-
-    if (!error) setBadge(count || 0);
-  }
-
-  /* ---------- UI HELPERS ---------- */
   function ensureListEl() {
-    let el = document.getElementById("notifications-list") || document.getElementById("alerts-list");
+    let el = document.getElementById("notifications-list");
     if (el) return el;
 
-    const view = document.getElementById("view-notifications");
+    const view = document.getElementById("view-notifications") || document.getElementById("view-alerts");
     if (view) {
       el = document.createElement("div");
       el.id = "notifications-list";
-      el.style.overflowY = "auto";
-      el.style.webkitOverflowScrolling = "touch";
-      el.style.maxHeight = "calc(100vh - 160px)";
       view.appendChild(el);
       return el;
     }
 
     el = document.createElement("div");
     el.id = "notifications-list";
-    el.style.overflowY = "auto";
-    el.style.webkitOverflowScrolling = "touch";
     document.body.appendChild(el);
     return el;
   }
@@ -108,16 +43,15 @@
     catch { return ""; }
   }
 
-  async function markRead(id) {
-    const client = supa();
-    const user = window.currentUser;
-    if (!client || !user || !id) return;
-
-    await client.from("alerts").update({ read: true }).eq("id", id);
-    refreshBadge();
+  function coerceMeta(m) {
+    if (!m) return {};
+    if (typeof m === "object") return m;
+    if (typeof m === "string") {
+      try { return JSON.parse(m); } catch { return {}; }
+    }
+    return {};
   }
 
-  /* ---------- LOAD ALERTS ---------- */
   async function load() {
     const client = supa();
     const user = window.currentUser;
@@ -130,99 +64,187 @@
 
     const { data: rows, error } = await client
       .from("alerts")
-      .select("id,type,title,body,ref_id,meta,read,created_at")
+      .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(200);
 
     if (error) {
       console.error("alerts load error:", error);
-      list.innerHTML = "<p class='hint'>Failed to load alerts. (Did you create the alerts table + triggers?)</p>";
+      list.innerHTML = "<p class='hint'>Failed to load alerts: " + (error.message || "unknown") + "</p>";
       return;
     }
 
     const alerts = rows || [];
-    if (!alerts.length) { list.innerHTML = "<p class='hint'>No alerts yet.</p>"; refreshBadge(); return; }
+    if (!alerts.length) { list.innerHTML = "<p class='hint'>No alerts yet.</p>"; return; }
 
     list.innerHTML = alerts.map(a => {
-      const unread = a.read ? "" : " unread";
-      const t = a.title || (a.type === "match" ? "New Match" : a.type === "message" ? "New Message" : "Alert");
-      const b = a.body || "";
+      const meta = coerceMeta(a.meta);
+      const when = a.created_at ? fmtTime(a.created_at) : "";
+      const unread = (a.read_at == null) ? "unread" : "";
+      const matchId = meta.match_id || meta.matchId || meta.match || "";
+      const convoId = meta.conversation_id || meta.conversationId || "";
+      const postId  = meta.post_id || meta.postId || "";
       return `
-        <div class="alert-item${unread}" data-id="${a.id}" data-type="${a.type}" data-ref="${a.ref_id || ""}"
-             style="padding:10px 12px;border:1px solid rgba(255,255,255,0.10);border-radius:12px;margin:10px 12px;cursor:pointer;">
-          <div class="alert-top" style="display:flex;justify-content:space-between;gap:12px;">
-            <strong>${t}</strong>
-            <span class="muted" style="opacity:.7;white-space:nowrap;">${fmtTime(a.created_at)}</span>
+        <div class="alert-item bf-card ${unread}"
+             data-alert-id="${a.id}"
+             data-type="${a.type || ""}"
+             data-match-id="${matchId}"
+             data-conversation-id="${convoId}"
+             data-post-id="${postId}">
+          <div class="bf-card-head">
+            <div class="bf-card-title">
+              <div class="bf-title-line"><strong>${a.title || a.type || "Alert"}</strong></div>
+              <div class="muted">${a.body || ""}</div>
+            </div>
+            <div class="bf-card-meta">
+              <span class="muted bf-time">${when}</span>
+            </div>
           </div>
-          <div class="muted" style="opacity:.75;margin-top:4px;">${b}</div>
         </div>
       `;
     }).join("");
 
-    list.querySelectorAll(".alert-item").forEach(el => {
-      el.addEventListener("click", async () => {
-        const id = el.dataset.id;
-        const type = el.dataset.type;
-        const ref = el.dataset.ref;
-
-        markRead(id);
-
-        if (type === "match") {
-          window.setActiveView?.("matches");
-          window.Matches?.loadMatches?.();
-          return;
-        }
-
-        if (type === "message") {
-          // Open conversation if possible
-          if (ref) {
-            window.Messages?.openConversation?.(ref);
-          } else {
-            window.Messages?.loadInbox?.();
-          }
-          return;
-        }
-
-        load();
-      });
-    });
-
+    bindClicks(list);
     refreshBadge();
   }
 
-  /* ---------- REALTIME ---------- */
+  async function markRead(alertId) {
+    const client = supa();
+    const user = window.currentUser;
+    if (!client || !user || !alertId) return;
+
+    // best-effort
+    try {
+      await client
+        .from("alerts")
+        .update({ read_at: new Date().toISOString() })
+        .eq("id", alertId)
+        .eq("user_id", user.id);
+    } catch {}
+  }
+
+  function bindClicks(container) {
+    if (container.dataset.boundClicks === "1") return;
+    container.dataset.boundClicks = "1";
+
+    container.addEventListener("click", async (e) => {
+      const item = e.target?.closest?.(".alert-item");
+      if (!item) return;
+
+      const alertId = item.dataset.alertId;
+      const type = (item.dataset.type || "").toLowerCase();
+      const matchId = item.dataset.matchId;
+      const convoId = item.dataset.conversationId;
+
+      // mark read instantly in UI
+      item.classList.remove("unread");
+      markRead(alertId);
+
+      // Route:
+      // - match alert -> jump to Matches tab and focus that match
+      // - message alert -> open conversation if available
+      if (matchId) {
+        if (window.setActiveView) window.setActiveView("matches");
+        window.__bf_focus_match_id = matchId;
+        window.Matches?.loadMatches?.({ focusMatchId: matchId });
+        return;
+      }
+
+      if (convoId) {
+        if (window.setActiveView) window.setActiveView("messages");
+        window.Messages?.openConversation?.(convoId);
+        return;
+      }
+
+      // fallback: go to matches for match-ish, else stay
+      if (type.includes("match")) {
+        if (window.setActiveView) window.setActiveView("matches");
+        window.Matches?.loadMatches?.();
+      }
+    });
+  }
+
+  let chan = null;
   function initRealtime() {
     const client = supa();
     const user = window.currentUser;
     if (!client || !user) return;
 
-    init(); // request permission early
-    refreshBadge();
+    if (chan) client.removeChannel(chan);
 
-    if (alertsChannel) client.removeChannel(alertsChannel);
-
-    alertsChannel = client
-      .channel("alerts-" + user.id)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "alerts", filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          const a = payload.new || {};
-          const title = a.title || (a.type === "match" ? "New Match" : a.type === "message" ? "New Message" : "BuyerFinder");
-          const body = a.body || "You have a new alert.";
-          notify(title, body);
-          load();
-          refreshBadge();
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "alerts", filter: `user_id=eq.${user.id}` },
-        () => refreshBadge()
-      )
+    chan = client
+      .channel("alerts-listener")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "alerts", filter: `user_id=eq.${user.id}` }, () => {
+        load();
+      })
       .subscribe();
+
+    console.log("BOOT: Notifications realtime started");
   }
 
-  window.Notifications = { init, notify, load, initRealtime, refreshBadge };
+  
+async function refreshBadge() {
+    const client = supa();
+    const user = window.currentUser;
+    const alertsBadge = ensureNavBadge("nav-notifications", "nav-alerts-badge");
+    const matchesBadge = ensureNavBadge("nav-matches", "nav-matches-badge");
+    if (!client || !user) {
+      if (alertsBadge) alertsBadge.textContent = "";
+      if (matchesBadge) matchesBadge.textContent = "";
+      return;
+    }
+
+    // Total unread alerts
+    const { count: totalUnread, error: e1 } = await client
+      .from("alerts")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("read", false);
+
+    // Unread match alerts (used for Matches badge)
+    const { count: matchUnread, error: e2 } = await client
+      .from("alerts")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("read", false)
+      .eq("type", "match");
+
+    const a = (!e1 && Number.isFinite(totalUnread) ? totalUnread : 0);
+    const mCount = (!e2 && Number.isFinite(matchUnread) ? matchUnread : 0);
+
+    if (alertsBadge) {
+      alertsBadge.textContent = a > 0 ? String(a) : "";
+      alertsBadge.style.display = a > 0 ? "inline-flex" : "none";
+    }
+    if (matchesBadge) {
+      matchesBadge.textContent = mCount > 0 ? String(mCount) : "";
+      matchesBadge.style.display = mCount > 0 ? "inline-flex" : "none";
+    }
+  }
+
+    const { data, error } = await client
+      .from("alerts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .is("read_at", null);
+
+    if (error) return;
+
+    const count = (data && data.length) ? data.length : 0;
+    if (count > 0) {
+      badge.textContent = String(count);
+      badge.classList.remove("hidden");
+    } else {
+      badge.textContent = "";
+      badge.classList.add("hidden");
+    }
+  }
+
+  function notify(title, body) {
+    // in-app only; browser notification handled elsewhere
+    console.log("NOTIFY:", title, body);
+  }
+
+  window.Notifications = { load, initRealtime, refreshBadge, notify };
 })();
