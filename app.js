@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ─── FREE TIER LIMITS ───────────────────────────────────────────
   window.BF_LIMITS = {
-    MAX_POSTS:    3,
+    MAX_POSTS:    5,
     MAX_MESSAGES: 10,
   };
 
