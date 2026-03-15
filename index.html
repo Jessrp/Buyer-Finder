@@ -290,6 +290,24 @@
           </div>
         </div>
 
+        <!-- Location -->
+        <div class="settings-row" onclick="toggleSettingsEdit('location')">
+          <div class="settings-row-icon" style="background:rgba(0,223,162,0.1);">📍</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label">Location</div>
+            <div class="settings-row-sub" id="display-location">—</div>
+          </div>
+          <span class="settings-row-arrow">›</span>
+        </div>
+        <div class="settings-edit-wrap" id="edit-location">
+          <input type="text" id="profile-location" placeholder="e.g. Austin, TX"/>
+          <div class="settings-edit-actions">
+            <button class="btn small outline" onclick="toggleSettingsEdit('location')">Cancel</button>
+            <button class="btn small" id="btn-save-location">Save</button>
+          </div>
+        </div>
+
+
       </div>
 
       <!-- APPEARANCE -->
