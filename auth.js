@@ -80,6 +80,10 @@ async function checkUser() {
   const user = data?.user || null;
   window.currentUser = user;
 
+  if (user) {
+  supa.rpc("touch_last_seen", { p_user_id: user.id }).catch(() => {});
+}
+
   if (!user) {
     window.currentProfile = null;
     renderUserCard();
