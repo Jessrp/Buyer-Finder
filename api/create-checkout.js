@@ -4,7 +4,6 @@
 const Stripe = require("stripe");
 
 module.exports = async (req, res) => {
-  // Only allow POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -27,11 +26,21 @@ module.exports = async (req, res) => {
         },
       ],
       customer_email: email || undefined,
+
+      // ── Pass userId in BOTH session and subscription metadata ──
+      // Session metadata (for checkout.session.completed event)
       metadata: {
         supabase_user_id: userId,
       },
-      success_url: "https://buyerfinder.vercel.app/?upgraded=1",
-      cancel_url:  "https://buyerfinder.vercel.app/?cancelled=1",
+      // Subscription metadata (for subscription.created/updated events)
+      subscription_data: {
+        metadata: {
+          supabase_user_id: userId,
+        },
+      },
+
+      success_url: "https://buyrfindr.com/?upgraded=1",
+      cancel_url:  "https://buyrfindr.com/?cancelled=1",
     });
 
     return res.status(200).json({ url: session.url });
