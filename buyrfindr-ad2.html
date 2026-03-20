@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BuyrFindr – Try It</title>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #f5f0e8;
+    color: #1a1a1a;
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* tape strips */
+  .tape {
+    position: absolute;
+    width: 80px; height: 22px;
+    background: rgba(255,220,80,0.7);
+    border-radius: 2px;
+    transform: rotate(-3deg);
+    z-index: 10;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 60px 24px;
+    text-align: center;
+    position: relative;
+    background: #f5f0e8;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(0,0,0,0.04) 28px),
+      repeating-linear-gradient(90deg, transparent, transparent 27px, rgba(0,0,0,0.03) 28px);
+    pointer-events: none;
+  }
+
+  .stamp {
+    display: inline-block;
+    border: 3px solid #1a1a1a;
+    padding: 6px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #1a1a1a;
+    margin-bottom: 32px;
+    position: relative;
+    z-index: 1;
+    animation: fadeUp 0.5s ease both;
+    transform: rotate(-1deg);
+  }
+
+  .stamp::before {
+    content: '';
+    position: absolute; inset: -6px;
+    border: 1px dashed rgba(0,0,0,0.2);
+  }
+
+  .logo {
+    font-family: 'Permanent Marker', cursive;
+    font-size: clamp(52px, 14vw, 110px);
+    line-height: 1;
+    color: #1a1a1a;
+    position: relative; z-index: 1;
+    animation: fadeUp 0.5s 0.1s ease both;
+    letter-spacing: -2px;
+  }
+
+  .logo .accent { color: #00b87a; }
+
+  .underline-scribble {
+    width: clamp(180px, 50vw, 400px);
+    height: 12px;
+    margin: -4px auto 0;
+    position: relative; z-index: 1;
+    animation: fadeUp 0.5s 0.15s ease both;
+  }
+
+  .hero-line1 {
+    font-family: 'Permanent Marker', cursive;
+    font-size: clamp(24px, 6vw, 48px);
+    line-height: 1.2;
+    margin-top: 36px;
+    max-width: 700px;
+    position: relative; z-index: 1;
+    animation: fadeUp 0.5s 0.2s ease both;
+    color: #1a1a1a;
+  }
+
+  .hero-line1 .highlight {
+    background: #00b87a;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    transform: rotate(-1deg);
+  }
+
+  .hero-sub {
+    font-size: clamp(15px, 3vw, 18px);
+    font-weight: 400;
+    color: #444;
+    max-width: 540px;
+    line-height: 1.8;
+    margin-top: 20px;
+    position: relative; z-index: 1;
+    animation: fadeUp 0.5s 0.3s ease both;
+  }
+
+  .hero-sub strong { color: #1a1a1a; }
+
+  .honest-note {
+    margin-top: 28px;
+    background: #fff;
+    border: 2px solid #1a1a1a;
+    border-radius: 4px;
+    padding: 16px 20px;
+    max-width: 480px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #333;
+    position: relative; z-index: 1;
+    animation: fadeUp 0.5s 0.4s ease both;
+    transform: rotate(0.5deg);
+    box-shadow: 4px 4px 0 #1a1a1a;
+  }
+
+  .honest-note::before {
+    content: '✏️ honest note:';
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 8px;
+  }
+
+  .cta-btn {
+    display: inline-block;
+    margin-top: 36px;
+    padding: 18px 48px;
+    background: #1a1a1a;
+    color: #f5f0e8;
+    font-family: 'Permanent Marker', cursive;
+    font-size: 20px;
+    letter-spacing: 1px;
+    border-radius: 4px;
+    text-decoration: none;
+    position: relative; z-index: 1;
+    animation: fadeUp 0.5s 0.5s ease both;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 4px 4px 0 #00b87a;
+  }
+
+  .cta-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 #00b87a;
+  }
+
+  .cta-sub {
+    font-size: 12px;
+    color: #888;
+    margin-top: 12px;
+    position: relative; z-index: 1;
+    animation: fadeUp 0.5s 0.6s ease both;
+    letter-spacing: 1px;
+  }
+
+  /* ── DIVIDER ── */
+  .zigzag {
+    width: 100%; height: 20px;
+    background:
+      linear-gradient(135deg, #f5f0e8 25%, transparent 25%) -10px 0,
+      linear-gradient(225deg, #f5f0e8 25%, transparent 25%) -10px 0,
+      linear-gradient(315deg, #f5f0e8 25%, transparent 25%),
+      linear-gradient(45deg,  #f5f0e8 25%, transparent 25%);
+    background-size: 20px 20px;
+    background-color: #e8e0d0;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .how {
+    background: #e8e0d0;
+    padding: 80px 24px;
+    position: relative;
+  }
+
+  .how-inner {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .section-scribble {
+    font-family: 'Permanent Marker', cursive;
+    font-size: clamp(28px, 5vw, 44px);
+    text-align: center;
+    margin-bottom: 48px;
+    color: #1a1a1a;
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+  }
+
+  .step {
+    background: #f5f0e8;
+    border: 2px solid #1a1a1a;
+    border-radius: 4px;
+    padding: 28px 24px;
+    box-shadow: 4px 4px 0 #1a1a1a;
+    position: relative;
+  }
+
+  .step-num {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 48px;
+    color: #00b87a;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+
+  .step h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .step p {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.6;
+  }
+
+  /* ── THE PITCH ── */
+  .pitch {
+    background: #1a1a1a;
+    color: #f5f0e8;
+    padding: 80px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pitch::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 20px,
+      rgba(255,255,255,0.02) 20px,
+      rgba(255,255,255,0.02) 21px
+    );
+    pointer-events: none;
+  }
+
+  .pitch-inner { max-width: 700px; margin: 0 auto; position: relative; z-index: 1; }
+
+  .pitch h2 {
+    font-family: 'Permanent Marker', cursive;
+    font-size: clamp(28px, 6vw, 52px);
+    line-height: 1.2;
+    margin-bottom: 24px;
+    color: #f5f0e8;
+  }
+
+  .pitch h2 .green { color: #00b87a; }
+
+  .pitch p {
+    font-size: clamp(15px, 2.5vw, 18px);
+    font-weight: 300;
+    color: rgba(245,240,232,0.7);
+    line-height: 1.85;
+    margin-bottom: 16px;
+  }
+
+  .pitch p strong { color: #f5f0e8; font-weight: 700; }
+
+  .pitch-cta {
+    display: inline-block;
+    margin-top: 36px;
+    padding: 18px 48px;
+    background: #00b87a;
+    color: #1a1a1a;
+    font-family: 'Permanent Marker', cursive;
+    font-size: 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 4px 4px 0 rgba(255,255,255,0.2);
+  }
+
+  .pitch-cta:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 rgba(255,255,255,0.2);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: #e8e0d0;
+    text-align: center;
+    padding: 32px 24px;
+    font-size: 12px;
+    color: #888;
+    letter-spacing: 1px;
+  }
+
+  footer a { color: #1a1a1a; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="stamp">🌱 Early Access — Just Launched</div>
+
+  <h1 class="logo"><span class="accent">Buyr</span>Findr</h1>
+
+  <svg class="underline-scribble" viewBox="0 0 400 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 8 C60 2, 120 12, 200 6 C280 0, 340 10, 398 5" stroke="#00b87a" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </svg>
+
+  <h2 class="hero-line1">
+    Post what you're looking for.<br/>
+    <span class="highlight">Let the sale find you.</span>
+  </h2>
+
+  <p class="hero-sub">
+    Tired of scrolling marketplaces and never finding what you need?<br/>
+    <strong>Just post it.</strong> Tell people what you want, what you're selling,
+    or both — and get matched with someone who can help.
+  </p>
+
+  <div class="honest-note">
+    Look, this app is brand new. It's just getting started. It only works if enough people sign up and start posting — so if this sounds useful to you at all, please give it a shot. It's free. No catch.
+  </div>
+
+  <a href="https://buyrfindr.com" class="cta-btn">Try it free →</a>
+  <p class="cta-sub">Free to join · No app download needed · buyrfindr.com</p>
+</section>
+
+<div class="zigzag"></div>
+
+<!-- HOW IT WORKS -->
+<section class="how">
+  <div class="how-inner">
+    <h2 class="section-scribble">Here's how it works 👇</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Post what you WANT</h3>
+        <p>Looking for a bike, a guitar, a lawnmower? Post it as a request. No more endless scrolling — let sellers come to you.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Post what you're SELLING</h3>
+        <p>List whatever you've got. Buyers who are actively looking for exactly that get matched to your post automatically.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Get MATCHED</h3>
+        <p>BuyrFindr pairs up buyers and sellers behind the scenes. You get notified when there's a fit. Then you just chat and deal.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="zigzag" style="transform:rotate(180deg);"></div>
+
+<!-- THE PITCH -->
+<section class="pitch">
+  <div class="pitch-inner">
+    <h2>Every other marketplace <br/>only lets you <span class="green">sell.</span></h2>
+    <p>
+      Facebook Marketplace, Craigslist, eBay — they're all the same. Sellers post, buyers search forever.
+      <strong>BuyrFindr flips it.</strong> Buyers can post too. It's a simple idea that nobody's done right yet.
+    </p>
+    <p>
+      We're not going to pretend this is perfect. It's early days. But the idea is solid —
+      and the only way to prove it works is to get real people using it.
+      <strong>That's where you come in.</strong>
+    </p>
+    <p>
+      Sign up. Post something you're looking for. Post something you're selling.
+      Tell a friend. That's genuinely all we need right now.
+    </p>
+    <a href="https://buyrfindr.com" class="pitch-cta">I'm in → buyrfindr.com</a>
+  </div>
+</section>
+
+<footer>
+  <strong style="color:#1a1a1a;">BuyrFindr</strong> &nbsp;·&nbsp; buyrfindr.com &nbsp;·&nbsp; Free to join &nbsp;·&nbsp; Still growing 🌱
+</footer>
+
+</body>
+</html>
