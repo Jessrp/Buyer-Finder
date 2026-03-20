@@ -5,7 +5,7 @@ const Stripe = require("stripe");
 const { createClient } = require("@supabase/supabase-js");
 
 // Required to read raw body for Stripe signature verification
-export const config = {
+module.exports.config = {
   api: { bodyParser: false },
 };
 
@@ -23,8 +23,8 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const stripe    = Stripe(process.env.STRIPE_SECRET_KEY);
-  const supabase  = createClient(
+  const stripe   = Stripe(process.env.STRIPE_SECRET_KEY);
+  const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
@@ -62,17 +62,17 @@ module.exports = async (req, res) => {
   switch (event.type) {
     case "customer.subscription.created":
     case "customer.subscription.updated": {
-      const isActive = ["active", "trialing"].includes(subscription.status);
+      const isActive  = ["active", "trialing"].includes(subscription.status);
       const expiresAt = isActive
         ? new Date(subscription.current_period_end * 1000).toISOString()
         : null;
 
       await supabase.from("profiles").update({
-        subscription_status:  subscription.status,
-        subscription_id:      subscription.id,
-        stripe_customer_id:   subscription.customer,
-        bfplus_expires_at:    expiresAt,
-        premium:              isActive,
+        subscription_status: subscription.status,
+        subscription_id:     subscription.id,
+        stripe_customer_id:  subscription.customer,
+        bfplus_expires_at:   expiresAt,
+        premium:             isActive,
       }).eq("id", userId);
 
       console.log(`Subscription ${event.type} for user ${userId}: ${subscription.status}`);
