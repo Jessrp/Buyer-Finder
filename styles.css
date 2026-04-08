@@ -721,3 +721,10 @@ body.light-theme .modal {
 body.light-theme .bottom-nav {
   background: rgba(240,240,245,0.95);
 }
+
+/* Keep auth buttons hidden in header — menu handles them */
+#logout-btn,
+#login-google-btn,
+#login-email-btn {
+  display: none !important;
+}
