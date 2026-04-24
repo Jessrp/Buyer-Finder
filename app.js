@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Selling / requests
   if (navSelling)
-    navSelling.addEventListener("click", () => setActivePostType("selling"));
+    navSelling.addEventListener("click", () => setActivePostType("requesting"));
   if (navRequests)
     navRequests.addEventListener("click", () => setActivePostType("request"));
 
@@ -230,5 +230,5 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Default
-  setActivePostType("selling");
+  setActivePostType("requesting");
 });
