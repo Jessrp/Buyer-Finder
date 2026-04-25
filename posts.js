@@ -304,7 +304,7 @@
       .from("posts")
       .select("*")
       .or("sold.is.null,sold.eq.false")
-      .or("frozen.is.null,frozen.eq.false")
+      .eq("frozen", false)
       .order("created_at", { ascending: false });
 
     if (error) {
