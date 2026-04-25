@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const s = type === "selling";
     if (segSelling)    segSelling.classList.toggle("active", s);
     if (segRequesting) segRequesting.classList.toggle("active", !s);
-    if (segSlider)     segSlider.classList.toggle("right", !s);
+    if (segSlider)     segSlider.classList.toggle("right", s);
   }
 
   function refreshPosts() {
