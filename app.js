@@ -70,8 +70,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const dx = e.changedTouches[0].clientX - tx;
       const dy = e.changedTouches[0].clientY - ty;
       if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-      if (dx < 0 && window.activePostType === "selling") switchPostType("requesting");
-      else if (dx > 0 && window.activePostType === "requesting") switchPostType("selling");
+      if (dx < 0 && window.activePostType === "requesting") switchPostType("requesting");
+      else if (dx > 0 && window.activePostType === "selling") switchPostType("selling");
     }, { passive: true });
   }
 
