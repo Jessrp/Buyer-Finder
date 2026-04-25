@@ -1,7 +1,7 @@
 // app.js – nav, views, search, theme, premium gating
 document.addEventListener("DOMContentLoaded", () => {
   let activeView = "posts";
-  window.activePostType = window.activePostType || "requesting";
+  window.activePostType = window.activePostType || "selling";
 
   // Views
   const viewPosts = document.getElementById("view-posts");
@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Selling / requests
   if (navSelling)
-    navSelling.addEventListener("click", () => setActivePostType("requesting"));
+    navSelling.addEventListener("click", () => setActivePostType("selling"));
   if (navRequests)
     navRequests.addEventListener("click", () => setActivePostType("request"));
 
@@ -230,5 +230,5 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Default
-  setActivePostType("requesting");
+  setActivePostType("selling");
 });
