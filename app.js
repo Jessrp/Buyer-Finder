@@ -62,6 +62,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (sw) sw.style.display = view === "posts" ? "" : "none";
   }
 
+  const postsView = document.getElementById("view-posts");
+  if (postsView) {
+    let tx = 0, ty = 0;
+    postsView.addEventListener("touchstart", e => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
+    postsView.addEventListener("touchend", e => {
+      const dx = e.changedTouches[0].clientX - tx;
+      const dy = e.changedTouches[0].clientY - ty;
+      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      if (dx < 0 && window.activePostType === "selling") switchPostType("requesting");
+      else if (dx > 0 && window.activePostType === "requesting") switchPostType("selling");
+    }, { passive: true });
+  }
+
   if (segSelling)    segSelling.addEventListener("click",    () => switchPostType("selling"));
   if (segRequesting) segRequesting.addEventListener("click", () => switchPostType("requesting"));
   if (logoHome)      logoHome.addEventListener("click",      () => switchPostType(window.activePostType));
