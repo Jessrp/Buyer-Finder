@@ -740,7 +740,16 @@
     }
   };
 
-  // Strip sign-in shortcut
+  document.getElementById("menu-share-btn").addEventListener("click", function() {
+      dropdown.classList.remove("open");
+      if (navigator.share) {
+        navigator.share({ title: "BuyrFindr", text: "Stop scrolling through listings — just post what you WANT and let sellers find you!", url: "https://buyrfindr.com" });
+      } else {
+        prompt("Copy this link:", "https://buyrfindr.com");
+      }
+    });
+
+    // Strip sign-in shortcut
   document.getElementById('strip-signin-btn').addEventListener('click', function() {
     document.getElementById('login-google-btn').click();
   });
