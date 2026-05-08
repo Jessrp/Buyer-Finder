@@ -1,569 +1,661 @@
-// posts.js – posts grid, modal, detail panel, delete, mark as sold
+// posts.js – posts grid, modal (create/edit), detail panel, search, basic matches hooks
 (function () {
-  console.log("🔥 POSTS.JS LOADED");
+  const supa = window.supa;
 
-  var supa = window.supa;
+  const postsGrid = document.getElementById("posts-grid");
+  const postsStatus = document.getElementById("posts-status");
 
-  const postsGrid        = document.getElementById("posts-grid");
-  const postsStatus      = document.getElementById("posts-status");
-  const fabAdd           = document.getElementById("fab-add");
-  const modalBackdrop    = document.getElementById("modal-backdrop");
-  const postTitle        = document.getElementById("post-title");
-  const postDescription  = document.getElementById("post-description");
-  const postPrice        = document.getElementById("post-price");
-  const postImage        = document.getElementById("post-image");
-  const btnCancelPost    = document.getElementById("btn-cancel-post");
-  const btnSavePost      = document.getElementById("btn-save-post");
-  const postModalHint    = document.getElementById("post-modal-hint");
+  const fabAdd = document.getElementById("fab-add");
+  const modalBackdrop = document.getElementById("modal-backdrop");
+  const postTitle = document.getElementById("post-title");
+  const postDescription = document.getElementById("post-description");
+  const postPrice = document.getElementById("post-price");
+  const postImage = document.getElementById("post-image");
+  const btnCancelPost = document.getElementById("btn-cancel-post");
+  const btnSavePost = document.getElementById("btn-save-post");
+  const postModalHint = document.getElementById("post-modal-hint");
 
-  const detailOverlay     = document.getElementById("detail-overlay");
-  const detailPanel       = document.getElementById("detail-panel");
-  const detailCloseBtn    = document.getElementById("detail-close-btn");
-  const detailTitle       = document.getElementById("detail-title");
-  const detailPrice       = document.getElementById("detail-price");
+  // Detail panel
+  const detailOverlay = document.getElementById("detail-overlay");
+  const detailPanel = document.getElementById("detail-panel");
+  const detailCloseBtn = document.getElementById("detail-close-btn");
+  const detailImages = document.getElementById("detail-images");
+  const detailTitle = document.getElementById("detail-title");
+  const detailPrice = document.getElementById("detail-price");
   const detailDescription = document.getElementById("detail-description");
-  const detailMeta        = document.getElementById("detail-meta");
-  const detailImages      = document.getElementById("detail-images");
-  const chatInput         = document.getElementById("chat-input");
-  const detailMessageBtn  = document.getElementById("detail-message-btn");
+  const detailMeta = document.getElementById("detail-meta");
+  const detailSellerAvatar = document.getElementById("detail-seller-avatar");
+  const detailSellerName = document.getElementById("detail-seller-name");
+  const detailSellerEmail = document.getElementById("detail-seller-email");
+  const detailLocationText = document.getElementById("detail-location-text");
+  const detailMinimapContainer = document.getElementById(
+    "detail-minimap-container"
+  );
+  const detailMessageBtn = document.getElementById("detail-message-btn");
 
-  window.activePostType = window.activePostType || "requesting";
-  window.editingPostId  = null;
-  window.allPosts       = [];
+  const matchesList = document.getElementById("matches-list");
+  const notificationsList = document.getElementById("notifications-list");
 
-  // ─── PROFILE CACHE ──────────────────────────────────────────────
-  const profileCache = {};
+  window.activePostType = window.activePostType || "selling";
 
-  async function getProfile(userId) {
-    if (!userId) return null;
-    if (profileCache[userId]) return profileCache[userId];
-    const { data } = await supa.from("profiles").select("id, username, avatar_url").eq("id", userId).maybeSingle();
-    if (data) profileCache[userId] = data;
-    return data || null;
-  }
+  let editingPostId = null;
+  let editingPostImages = []; // keep existing URLs on edit
 
-  async function prefetchProfiles(posts) {
-    const ids = [...new Set(posts.map(p => p.user_id).filter(Boolean))];
-    const uncached = ids.filter(id => !profileCache[id]);
-    if (!uncached.length) return;
-    const { data } = await supa.from("profiles").select("id, username, avatar_url").in("id", uncached);
-    (data || []).forEach(p => profileCache[p.id] = p);
-  }
+  // ---------- MODAL ----------
 
-  // ─── FREE TIER HELPERS ──────────────────────────────────────────
-  function isBFPlus() {
-    if (typeof window.isBFPlus === "function") return window.isBFPlus(window.currentProfile);
-    const profile = window.currentProfile;
-    if (!profile) return false;
-    if (profile.premium === true) return true;
-    const exp = profile.bfplus_expires_at;
-    if (!exp) return false;
-    return new Date(exp).getTime() > Date.now();
-  }
-
-  function getLimit(key) { return window.BF_LIMITS?.[key] ?? Infinity; }
-
-  async function getUserPostCount() {
-    const user = window.currentUser;
-    if (!user) return 0;
-    const { count, error } = await supa.from("posts").select("id", { count: "exact", head: true }).eq("user_id", user.id);
-    if (error) return 0;
-    return count || 0;
-  }
-
-  async function getUserMessageCount() {
-    const user = window.currentUser;
-    if (!user) return 0;
-    const { count, error } = await supa.from("messages").select("id", { count: "exact", head: true }).eq("sender_id", user.id);
-    if (error) return 0;
-    return count || 0;
-  }
-
-  // ─── FROZEN ACCOUNT BANNER ──────────────────────────────────────
-  async function checkAndShowFrozenBanner() {
-    const user    = window.currentUser;
-    const profile = window.currentProfile;
-    if (!user || !profile) return;
-    if (!profile.frozen) {
-      document.getElementById("bf-frozen-banner")?.remove();
+  function openModalForCreate() {
+    if (!window.currentUser) {
+      alert("You must sign in to add a post.");
       return;
     }
-
-    if (document.getElementById("bf-frozen-banner")) return;
-
-    const { count } = await supa
-      .from("posts")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("frozen", true)
-      .or("sold.is.null,sold.eq.false");
-
-    const frozenCount = count || 0;
-
-    const banner = document.createElement("div");
-    banner.id = "bf-frozen-banner";
-    banner.style.cssText = `
-      background: rgba(239,68,68,0.10);
-      border: 1px solid rgba(239,68,68,0.3);
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    `;
-    banner.innerHTML = `
-      <div style="display:flex;align-items:flex-start;gap:10px;">
-        <span style="font-size:22px;flex-shrink:0;">⏸️</span>
-        <div>
-          <div style="font-weight:700;font-size:14px;color:#ef4444;margin-bottom:4px;">Your posts have been paused</div>
-          <div style="font-size:13px;color:var(--muted);line-height:1.6;">
-            We paused your ${frozenCount > 0 ? `<strong>${frozenCount} post${frozenCount !== 1 ? "s" : ""}</strong>` : "posts"} because you haven't been active in a while. They're not deleted — just hidden from the feed. Tap below to bring them back.
-          </div>
-        </div>
-      </div>
-      <button id="bf-reactivate-btn" class="btn small" style="align-self:flex-start;background:var(--accent);color:#000;font-weight:700;">
-        ✅ Reactivate my posts
-      </button>
-    `;
-
-    postsGrid?.parentElement?.insertBefore(banner, postsGrid);
-
-    document.getElementById("bf-reactivate-btn")?.addEventListener("click", async () => {
-      const btn = document.getElementById("bf-reactivate-btn");
-      if (btn) { btn.disabled = true; btn.textContent = "Reactivating..."; }
-      try {
-        await supa.rpc("unfreeze_user", { p_user_id: user.id });
-        await supa.rpc("reactivate_user_posts", { p_user_id: user.id });
-        if (window.currentProfile) window.currentProfile.frozen = false;
-        banner.remove();
-        alert("✅ Done! Your posts are live again.");
-        loadPosts(window.__bf_last_search_query || "");
-      } catch (err) {
-        console.error("Reactivate error:", err);
-        alert("Something went wrong. Please try again.");
-        if (btn) { btn.disabled = false; btn.textContent = "✅ Reactivate my posts"; }
-      }
-    });
-  }
-
-  // ─── MODAL ──────────────────────────────────────────────────────
-  async function openModalForCreate() {
-    if (!window.currentUser) return alert("You must sign in to post.");
-    if (!isBFPlus()) {
-      const max   = getLimit("MAX_POSTS");
-      const count = await getUserPostCount();
-      if (count >= max) {
-        const go = confirm(`Free accounts are limited to ${max} posts.\n\nYou already have ${count} post${count !== 1 ? "s" : ""}.\n\nUpgrade to BF+ for unlimited posts?`);
-        if (go && typeof window.startUpgrade === "function") window.startUpgrade();
-        return;
-      }
-    }
-    postTitle.value = ""; postDescription.value = "";
-    postPrice.value = ""; postImage.value = "";
+    editingPostId = null;
+    editingPostImages = [];
+    postTitle.value = "";
+    postDescription.value = "";
+    postPrice.value = "";
+    if (postImage) postImage.value = "";
     postModalHint.textContent = "";
     modalBackdrop.classList.add("active");
   }
 
   function openModalForEdit(post) {
-    window.editingPostId      = post.id;
-    postTitle.value           = post.title       || "";
-    postDescription.value     = post.description || "";
-    postPrice.value           = post.price       || "";
-    postImage.value           = "";
-    postModalHint.textContent = "Editing post";
+    if (!window.currentUser || window.currentUser.id !== post.user_id) {
+      alert("You can only edit your own posts.");
+      return;
+    }
+    editingPostId = post.id;
+    editingPostImages = [];
+
+    if (post.image_urls) {
+      try {
+        const arr = JSON.parse(post.image_urls);
+        if (Array.isArray(arr)) editingPostImages = arr;
+      } catch (_) {}
+    } else if (post.image_url) {
+      editingPostImages = [post.image_url];
+    }
+
+    postTitle.value = post.title || "";
+    postDescription.value = post.description || "";
+    postPrice.value = post.price || "";
+    if (postImage) postImage.value = "";
+    postModalHint.textContent = "Editing existing post";
     modalBackdrop.classList.add("active");
   }
 
   function closeModal() {
     modalBackdrop.classList.remove("active");
-    window.editingPostId = null;
   }
 
-  // ─── IMAGE UPLOAD ───────────────────────────────────────────────
+  // ---------- IMAGE UPLOAD ----------
+
   async function uploadPostImages(files, userId) {
-    if (!files?.length) return [];
+    if (!files || !files.length) return [];
     const urls = [];
+
     for (const file of files) {
-      if (!file.type?.startsWith("image/")) continue;
-      const ext  = file.name.split(".").pop() || "jpg";
-      const path = `posts/${userId}-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supa.storage.from("post_images").upload(path, file, { upsert: true, contentType: file.type });
-      if (error) continue;
-      const { data } = supa.storage.from("post_images").getPublicUrl(path);
-      if (data?.publicUrl) urls.push(data.publicUrl);
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `posts/${userId}-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}.${ext}`;
+
+      const { error: uploadError } = await supa.storage
+        .from("post_images")
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) {
+        console.log("Upload error:", uploadError.message);
+        continue;
+      }
+
+      const { data: urlData } = supa.storage
+        .from("post_images")
+        .getPublicUrl(path);
+      if (urlData && urlData.publicUrl) {
+        urls.push(urlData.publicUrl);
+      }
     }
+
     return urls;
   }
 
-  function normalizePostType(t) {
-    if (t === "request" || t === "requesting") return "requesting";
-    return "selling";
-  }
+  // ---------- SAVE POST (CREATE / EDIT) ----------
 
-  // ─── SAVE POST ──────────────────────────────────────────────────
   async function savePost() {
-    const user    = window.currentUser;
-    const profile = window.currentProfile;
-    if (!user) return alert("You must sign in.");
-    const title = postTitle.value.trim();
-    if (!title) return alert("Title required.");
-    postModalHint.textContent = "Saving...";
-    const newImages = await uploadPostImages(postImage.files, user.id);
-    const payload = {
-      title,
-      description:   postDescription.value.trim(),
-      price:         postPrice.value.trim() || null,
-      type:          normalizePostType(window.activePostType),
-      location_text: profile?.location_text ?? null,
-      lat:           profile?.lat ?? null,
-      lng:           profile?.lng ?? null,
-    };
-    if (newImages.length) payload.image_urls = newImages;
-    let error;
-    if (window.editingPostId) {
-      ({ error } = await supa.from("posts").update(payload).eq("id", window.editingPostId).eq("user_id", user.id));
-    } else {
-      payload.user_id = user.id;
-      ({ error } = await supa.from("posts").insert(payload));
-    }
-    if (error) { postModalHint.textContent = error.message; return; }
-    closeModal();
-    loadPosts(window.__bf_last_search_query || "");
-    try { await window.Matching?.scanAndCreateMatchesForUser?.(); } catch {}
-  }
-
-  // ─── MARK AS SOLD ───────────────────────────────────────────────
-  async function markAsSold(post) {
     const user = window.currentUser;
-    if (!user || user.id !== post.user_id) return;
+    const profile = window.currentProfile;
+    if (!user) {
+      alert("You must sign in to add a post.");
+      return;
+    }
 
-    const { data: convos } = await supa
-      .from("conversations")
-      .select("buyer_id, profiles!conversations_buyer_id_fkey(username)")
-      .eq("post_id", post.id)
-      .neq("buyer_id", user.id);
+    const title = postTitle.value.trim();
+    if (!title) {
+      alert("Title is required.");
+      return;
+    }
 
-    let buyerId   = null;
-    let buyerName = null;
+    const description = postDescription.value.trim();
+    const price = postPrice.value.trim();
 
-    if (convos && convos.length > 0) {
-      const buyers  = convos.map(c => ({ id: c.buyer_id, username: c.profiles?.username || "Unknown" }));
-      const options = buyers.map((b, i) => `${i + 1}. ${b.username}`).join("\n");
-      const answer  = prompt(`Who bought "${post.title}"?\n\n${options}\n\nEnter the number, or leave blank to skip.`);
-      if (answer) {
-        const idx = parseInt(answer) - 1;
-        if (idx >= 0 && idx < buyers.length) {
-          buyerId   = buyers[idx].id;
-          buyerName = buyers[idx].username;
+    const lat =
+      profile && typeof profile.lat === "number" ? profile.lat : null;
+    const lng =
+      profile && typeof profile.lng === "number" ? profile.lng : null;
+    const locationText =
+      (profile && profile.location_text) || null;
+
+    postModalHint.textContent = "Saving post...";
+
+    const fileList = postImage?.files || [];
+    let newImageUrls = [];
+    if (fileList && fileList.length) {
+      newImageUrls = await uploadPostImages(fileList, user.id);
+    }
+
+    let finalImageUrls = editingPostImages.slice();
+    if (newImageUrls.length) {
+      finalImageUrls = finalImageUrls.concat(newImageUrls);
+    }
+
+    const payload = {
+      user_id: user.id,
+      title,
+      description,
+      price: price || null,
+      type: window.activePostType || "selling",
+      category: null,
+      condition: null,
+      location_text: locationText,
+      lat,
+      lng,
+      image_urls: finalImageUrls.length
+        ? JSON.stringify(finalImageUrls)
+        : null,
+    };
+
+    try {
+      if (editingPostId) {
+        const { error } = await supa
+          .from("posts")
+          .update(payload)
+          .eq("id", editingPostId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supa
+          .from("posts")
+          .insert(payload)
+          .select()
+          .maybeSingle();
+        if (error) throw error;
+
+        // Try to generate matches/notifications based on this new post
+        if (data) {
+          tryCreateMatchesForNewPost(data);
         }
       }
-    } else {
-      const confirm_ = confirm(`Mark "${post.title}" as sold?\n\nIt will be removed from the feed and saved to your transaction history.`);
-      if (!confirm_) return;
+
+      postModalHint.textContent = "Saved ✓";
+      setTimeout(() => {
+        closeModal();
+        loadPosts();
+      }, 400);
+    } catch (err) {
+      console.log("Insert/update error:", err.message || err);
+      postModalHint.textContent = "Error saving post: " + err.message;
     }
-
-    const { error: updateErr } = await supa
-      .from("posts")
-      .update({ sold: true, sold_at: new Date().toISOString(), buyer_id: buyerId || null })
-      .eq("id", post.id).eq("user_id", user.id);
-
-    if (updateErr) { alert("Failed to mark as sold: " + updateErr.message); return; }
-
-    await supa.from("transactions").insert({
-      post_id: post.id, seller_id: user.id, buyer_id: buyerId || null,
-      title: post.title, price: post.price || null, sold_at: new Date().toISOString(),
-    });
-
-    const soldLabel = normalizePostType(post.type) === "requesting" ? "found" : "sold";
-    alert(`✅ "${post.title}" marked as ${soldLabel}${buyerName ? ` (via ${buyerName})` : ""}!\n\nRemoved from feed and saved to your transaction history.`);
-    hideDetailPanel();
-    loadPosts(window.__bf_last_search_query || "");
   }
 
-  // ─── DELETE POST ────────────────────────────────────────────────
-  async function deletePost(post) {
-    const user = window.currentUser;
-    if (!user || user.id !== post.user_id) return;
-    const confirmed = confirm(`Delete "${post.title}"?\n\nThis permanently removes the post. There is no undo.`);
-    if (!confirmed) return;
-    const { error } = await supa.from("posts").delete().eq("id", post.id).eq("user_id", user.id);
-    if (error) { alert("Delete failed: " + error.message); return; }
-    alert("Post deleted.");
-    hideDetailPanel();
-    loadPosts(window.__bf_last_search_query || "");
-  }
+  // ---------- LOAD POSTS ----------
 
-  // ─── LOAD POSTS ─────────────────────────────────────────────────
-  async function loadPosts(query = "") {
-    window.__bf_last_search_query = query;
-    if (postsStatus) postsStatus.textContent = "Loading...";
-    if (postsGrid)   postsGrid.innerHTML = "";
+  async function loadPosts(query) {
+    if (!postsGrid || !postsStatus) return;
 
-    const { data, error } = await supa
+    postsStatus.textContent = "Loading posts...";
+    postsGrid.innerHTML = "";
+
+    let req = supa
       .from("posts")
       .select("*")
-      .or("sold.is.null,sold.eq.false")
-      .eq("frozen", false)
+      .order("is_premium", { ascending: false })
       .order("created_at", { ascending: false });
 
+    if (query && query.trim()) {
+      const q = query.trim();
+      req = req.or(
+        `title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`
+      );
+    }
+
+    let data = [];
+    let error = null;
+
+    try {
+      const res = await req;
+      data = res.data || [];
+      error = res.error || null;
+    } catch (e) {
+      error = e;
+    }
+
     if (error) {
-      if (postsStatus) postsStatus.textContent = "Failed to load posts.";
+      console.log("load posts error:", error.message || error);
+      postsStatus.textContent =
+        "Error loading posts. Check Supabase config.";
       return;
     }
 
-    window.allPosts = data || [];
-    const q      = String(query || "").trim().toLowerCase();
-    const active = normalizePostType(window.activePostType);
+    if (!data || !data.length) {
+      postsStatus.textContent = "No posts yet. Be the first to post!";
+      postsGrid.innerHTML =
+        "<p class='hint'>No posts yet in this category.</p>";
+      return;
+    }
 
-    const filtered = (data || []).filter((p) => {
-      if (normalizePostType(p.type) !== active) return false;
-      if (!q) return true;
-      const hay = [p.title, p.description, p.location_text, p.category, p.price, p.type]
-        .filter(Boolean).join(" ").toLowerCase();
-      return hay.includes(q);
+    const filtered = data.filter((p) => {
+      const t =
+        (p.type || "").toString().toLowerCase() === "request"
+          ? "request"
+          : "selling";
+      return t === window.activePostType;
     });
 
-    if (postsStatus) postsStatus.textContent = "";
-    if (!postsGrid) return;
-
-    await checkAndShowFrozenBanner();
-
     if (!filtered.length) {
-      postsGrid.innerHTML = "<p class='hint'>No posts yet.</p>";
+      postsGrid.innerHTML =
+        "<p class='hint'>No posts in this category yet.</p>";
+      postsStatus.textContent = "";
       return;
     }
 
-    await prefetchProfiles(filtered);
-    postsGrid.innerHTML = filtered.map(renderPostCard).join("");
+    postsStatus.textContent = "";
+
+    const currentUser = window.currentUser;
+
+    postsGrid.innerHTML = filtered
+      .map((p) => {
+        let priceText = p.price ? `$${p.price}` : "";
+        let primaryImage = null;
+
+        if (p.image_urls) {
+          try {
+            const arr = JSON.parse(p.image_urls);
+            if (Array.isArray(arr) && arr.length) {
+              primaryImage = arr[0];
+            }
+          } catch (e) {
+            console.log("image_urls parse error:", e);
+          }
+        } else if (p.image_url) {
+          primaryImage = p.image_url;
+        }
+
+        const metaBits = [];
+        if (p.location_text) metaBits.push(p.location_text);
+
+        const metaLine = metaBits.length
+          ? `<small class="hint">${metaBits.join(" • ")}</small>`
+          : "";
+
+        const imgHtml = primaryImage
+          ? `<img src="${primaryImage}" alt="Post image" />`
+          : "";
+
+        const showEdit =
+          currentUser && currentUser.id && p.user_id === currentUser.id;
+
+        return `
+          <article class="post" data-post-id="${p.id}">
+            ${showEdit ? `<button class="edit-btn" data-edit-id="${p.id}" title="Edit">✎</button>` : ""}
+            ${imgHtml}
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+              <h3>${p.title || "Untitled"}</h3>
+            </div>
+            <p>${p.description || ""}</p>
+            ${metaLine}
+            <small>${priceText}</small>
+          </article>
+        `;
+      })
+      .join("");
+
     attachPostHandlers(filtered);
-
-    if (window.__bf_pending_open_post_id) {
-      const pid   = String(window.__bf_pending_open_post_id);
-      const found = (data || []).find(p => String(p.id) === pid);
-      window.__bf_pending_open_post_id = null;
-      if (found) openDetailPanel(found);
-    }
-  }
-
-  // ─── RENDER POST CARD ────────────────────────────────────────────
-  function renderPostCard(p) {
-    let arr = [];
-    if (Array.isArray(p.image_urls)) arr = p.image_urls;
-    else if (typeof p.image_urls === "string") { try { arr = JSON.parse(p.image_urls); } catch {} }
-    const imgHtml = arr.length ? `<img src="${arr[0]}" loading="lazy" />` : "";
-
-    const poster     = profileCache[p.user_id];
-    const username   = poster?.username || "User";
-    const initials   = username.slice(0, 2).toUpperCase();
-    const avatarHtml = poster?.avatar_url
-      ? `<img src="${poster.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
-      : initials;
-    const isOwn = window.currentUser?.id === p.user_id;
-
-    return `
-      <article class="post" data-post-id="${p.id}">
-        ${isOwn ? `<button class="edit-btn" data-edit-id="${p.id}">✎</button>` : ""}
-        ${imgHtml}
-        <h3>${p.title}</h3>
-        <p>${p.description || ""}</p>
-        <div class="post-footer">
-          <div class="post-avatar">${avatarHtml}</div>
-          <span class="post-username">${username}</span>
-          <span class="post-price">${p.price != null && p.price !== "" ? "$" + p.price : ""}</span>
-        </div>
-      </article>
-    `;
   }
 
   function attachPostHandlers(posts) {
-    if (!postsGrid) return;
-    postsGrid.querySelectorAll(".post").forEach((card) => {
-      const id   = card.dataset.postId;
-      const post = posts.find((p) => String(p.id) === String(id));
+    const cards = postsGrid.querySelectorAll(".post[data-post-id]");
+    cards.forEach((card) => {
+      const idRaw = card.getAttribute("data-post-id");
+      const idNum = Number(idRaw);
+      const post = posts.find((p) => p.id === idNum);
       if (!post) return;
-      card.onclick = () => openDetailPanel(post);
+
+      // Card click → open detail
+      card.addEventListener("click", () => {
+        openDetailPanel(post);
+      });
+
+      // Edit button
       const editBtn = card.querySelector(".edit-btn");
       if (editBtn) {
-        editBtn.onclick = (e) => { e.stopPropagation(); openModalForEdit(post); };
+        editBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openModalForEdit(post);
+        });
       }
     });
   }
 
-  // ─── DETAIL PANEL ───────────────────────────────────────────────
-  async function openDetailPanel(post) {
-    window.activePost = post;
-    if (!post) return;
+  // ---------- DETAIL PANEL & MESSAGE ----------
 
-    if (detailTitle)       detailTitle.textContent       = post.title       || "";
-    if (detailPrice)       detailPrice.textContent       = post.price ? "$" + post.price : "";
-    if (detailDescription) detailDescription.textContent = post.description || "";
-
-    const isOwn = post.user_id === window.currentUser?.id;
-    if (detailMeta) detailMeta.textContent = isOwn ? "This is your post" : "";
-
-    const sellerAvEl    = document.getElementById("detail-seller-avatar");
-    const sellerNameEl  = document.getElementById("detail-seller-name");
-    const sellerEmailEl = document.getElementById("detail-seller-email");
-    const poster = await getProfile(post.user_id);
-    if (sellerAvEl) {
-      sellerAvEl.innerHTML = poster?.avatar_url
-        ? `<img src="${poster.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
-        : (poster?.username || "U").slice(0, 2).toUpperCase();
-    }
-    if (sellerNameEl)  sellerNameEl.textContent  = poster?.username || "Unknown";
-    if (sellerEmailEl) sellerEmailEl.textContent = "";
-
-    if (detailImages) detailImages.innerHTML = "";
-    let images = [];
-    if (Array.isArray(post.image_urls)) images = post.image_urls;
-    else if (typeof post.image_urls === "string") { try { images = JSON.parse(post.image_urls); } catch {} }
-    images.forEach(url => {
-      const img = document.createElement("img");
-      img.src = url; img.loading = "lazy";
-      detailImages?.appendChild(img);
-    });
-
-    document.getElementById("detail-sold-btn")?.remove();
-    document.getElementById("detail-delete-btn")?.remove();
-
-    if (isOwn) {
-      const soldBtn = document.createElement("button");
-      soldBtn.id        = "detail-sold-btn";
-      soldBtn.className = "btn full";
-      soldBtn.style.cssText = "margin-top:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-weight:700;";
-      soldBtn.textContent = normalizePostType(post.type) === "requesting" ? "✅ Mark as Found" : "✅ Mark as Sold";
-      soldBtn.onclick = (e) => { e.stopPropagation(); markAsSold(post); };
-
-      const delBtn = document.createElement("button");
-      delBtn.id        = "detail-delete-btn";
-      delBtn.className = "btn full danger";
-      delBtn.style.marginTop = "8px";
-      delBtn.textContent = "🗑️ Delete Post";
-      delBtn.onclick = (e) => { e.stopPropagation(); deletePost(post); };
-
-      detailPanel?.appendChild(soldBtn);
-      detailPanel?.appendChild(delBtn);
-
-      if (detailMessageBtn) detailMessageBtn.style.display = "none";
-      if (chatInput)        chatInput.style.display        = "none";
-    } else {
-      if (detailMessageBtn) {
-        detailMessageBtn.style.display = "";
-        detailMessageBtn.disabled = false;
-        detailMessageBtn.onclick = (e) => {
-          e.preventDefault(); e.stopPropagation();
-          __bfSendMessageFromDetail(post);
-        };
-      }
-      if (chatInput) chatInput.style.display = "";
-    }
-
-    if (chatInput) {
-      chatInput.onclick   = (e) => e.stopPropagation();
-      chatInput.onkeydown = (e) => e.stopPropagation();
-    }
-
-    detailOverlay?.classList.add("active");
-    detailPanel?.classList.add("active");
-  }
-
-  async function startConversationAndSendMessage(post) {
-    if (!post || !window.currentUser) return;
-    try {
-      const convo = await window.Conversations.getOrCreateConversation({
-        postId: post.id, buyerId: window.currentUser.id, sellerId: post.user_id
-      });
-      hideDetailPanel();
-      window.Messages?.loadInbox?.();
-      window.Messages?.openConversation?.(convo.id);
-    } catch (err) {
-      console.error("Conversation start failed", err);
-      alert("Could not start conversation.");
-    }
-  }
-
-  // ─── SEND MESSAGE FROM DETAIL PANEL ─────────────────────────────
-  async function __bfSendMessageFromDetail(post) {
-    if (!post) return alert("No post selected.");
-    const me       = window.currentUser?.id;
-    const sellerId = post.user_id;
-    const postId   = post.id;
-    const body     = (chatInput?.value || "").trim();
-    if (!body)   return alert("Type a message first.");
-    if (!me)     return alert("You must sign in to message.");
-    if (!postId || !sellerId) return alert("No post selected.");
-    if (me === sellerId) return alert("You can't message yourself.");
-
-    if (!isBFPlus()) {
-      const max   = getLimit("MAX_MESSAGES");
-      const count = await getUserMessageCount();
-      if (count >= max) {
-        const go = confirm(`Free accounts are limited to ${max} messages.\n\nYou've sent ${count}.\n\nUpgrade to BF+ for unlimited messaging?`);
-        if (go && typeof window.startUpgrade === "function") window.startUpgrade();
-        return;
-      }
-    }
-
-    if (!window.Conversations?.getOrCreateConversation) { alert("Messaging system not loaded."); return; }
-
-    try {
-      const convo = await window.Conversations.getOrCreateConversation({ postId, buyerId: me, sellerId });
-      const { error } = await window.supa.from("messages").insert({ conversation_id: convo.id, sender_id: me, body });
-      if (error) throw error;
-      try { await window.supa.rpc("notify_message", { p_conversation_id: convo.id, p_message_body: body }); } catch {}
-      if (chatInput) chatInput.value = "";
-      window.Messages?.loadInbox?.();
-      window.Messages?.openConversation?.(convo.id);
-      alert("Message sent ✅");
-    } catch (err) {
-      console.error("Send failed:", err);
-      alert("Message failed.");
-    }
+  function showDetailPanel() {
+    if (detailOverlay) detailOverlay.classList.add("active");
+    if (detailPanel) detailPanel.classList.add("active");
   }
 
   function hideDetailPanel() {
-    detailOverlay?.classList.remove("active");
-    detailPanel?.classList.remove("active");
-    document.getElementById("detail-sold-btn")?.remove();
-    document.getElementById("detail-delete-btn")?.remove();
+    if (detailOverlay) detailOverlay.classList.remove("active");
+    if (detailPanel) detailPanel.classList.remove("active");
   }
 
-  // ─── OPEN POST BY ID ────────────────────────────────────────────
-  async function openPostById(postId) {
-    const id = String(postId || "");
-    if (!id) return;
-    const found = (window.allPosts || []).find(p => String(p.id) === id);
-    if (found) {
-      window.activePostType = normalizePostType(found.type);
-      if (window.setActiveView) window.setActiveView("posts");
-      await loadPosts(window.__bf_last_search_query || "");
-      openDetailPanel(found);
-      return;
+  async function openDetailPanel(post) {
+    if (!detailPanel) return;
+
+    // Re-fetch full post in case data is stale
+    let fullPost = post;
+    try {
+      const { data, error } = await supa
+        .from("posts")
+        .select("*")
+        .eq("id", post.id)
+        .maybeSingle();
+      if (!error && data) fullPost = data;
+    } catch (_) {}
+
+    // Seller profile
+    let profile = null;
+    try {
+      const { data } = await supa
+        .from("profiles")
+        .select("username,email,avatar_url,lat,lng,location_text,premium")
+        .eq("id", fullPost.user_id)
+        .maybeSingle();
+      profile = data || null;
+    } catch (_) {}
+
+    // Images
+    detailImages.innerHTML = "";
+    let imgs = [];
+    if (fullPost.image_urls) {
+      try {
+        const arr = JSON.parse(fullPost.image_urls);
+        if (Array.isArray(arr) && arr.length) imgs = arr;
+      } catch (_) {}
+    } else if (fullPost.image_url) {
+      imgs = [fullPost.image_url];
     }
-    const { data, error } = await supa.from("posts").select("*").eq("id", id).maybeSingle();
-    if (error || !data) {
-      window.__bf_pending_open_post_id = id;
-      window.activePostType = "requesting";
-      if (window.setActiveView) window.setActiveView("posts");
-      await loadPosts(window.__bf_last_search_query || "");
-      return;
+    if (imgs.length) {
+      imgs.forEach((url, idx) => {
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = "Post image " + (idx + 1);
+        detailImages.appendChild(img);
+      });
     }
-    window.activePostType = normalizePostType(data.type);
-    if (window.setActiveView) window.setActiveView("posts");
-    window.__bf_pending_open_post_id = id;
-    await loadPosts(window.__bf_last_search_query || "");
+
+    // Text
+    detailTitle.textContent = fullPost.title || "Untitled";
+    detailPrice.textContent = fullPost.price ? `$${fullPost.price}` : "";
+    detailDescription.textContent = fullPost.description || "";
+
+    const metaBits = [];
+    if (fullPost.type) {
+      const t =
+        fullPost.type.toString().toLowerCase() === "request"
+          ? "Request"
+          : "Selling";
+      metaBits.push(t);
+    }
+    detailMeta.textContent = metaBits.join(" • ");
+
+    // Seller
+    detailSellerAvatar.innerHTML = "";
+    const av = document.createElement("div");
+    av.className = "user-avatar small";
+    const img = document.createElement("img");
+    if (profile && profile.avatar_url) {
+      img.src = profile.avatar_url;
+    } else {
+      img.src =
+        "data:image/svg+xml;base64," +
+        btoa(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#111827"/><text x="50%" y="55%" fill="#9ca3af" font-size="28" text-anchor="middle">BF</text></svg>'
+        );
+    }
+    av.appendChild(img);
+    detailSellerAvatar.appendChild(av);
+
+    detailSellerName.textContent = profile?.username || "Seller";
+    detailSellerEmail.textContent = profile?.email || "";
+
+    // Location / minimap
+    const locText =
+      fullPost.location_text || profile?.location_text || "";
+    detailLocationText.textContent = locText || "Location not specified.";
+
+    const viewerProfile = window.currentProfile;
+    const isViewerPremium = !!viewerProfile?.premium;
+    const lat = fullPost.lat ?? profile?.lat ?? null;
+    const lng = fullPost.lng ?? profile?.lng ?? null;
+
+    if (
+      isViewerPremium &&
+      typeof lat === "number" &&
+      typeof lng === "number" &&
+      window.BFMap &&
+      typeof window.BFMap.renderMiniMap === "function"
+    ) {
+      if (detailMinimapContainer)
+        detailMinimapContainer.style.display = "block";
+      window.BFMap.renderMiniMap(lat, lng);
+    } else {
+      if (detailMinimapContainer)
+        detailMinimapContainer.style.display = "none";
+    }
+
+    // Send message
+    if (detailMessageBtn) {
+      detailMessageBtn.onclick = () => {
+        handleSendMessage(fullPost, profile);
+      };
+    }
+
+    showDetailPanel();
   }
 
-  // ─── WIRE UI ────────────────────────────────────────────────────
-  if (detailCloseBtn) detailCloseBtn.onclick = hideDetailPanel;
-  if (detailOverlay)  detailOverlay.onclick  = hideDetailPanel;
-  if (fabAdd)         fabAdd.onclick         = openModalForCreate;
-  if (btnCancelPost)  btnCancelPost.onclick  = closeModal;
-  if (btnSavePost)    btnSavePost.onclick    = savePost;
+  if (detailCloseBtn) detailCloseBtn.addEventListener("click", hideDetailPanel);
+  if (detailOverlay)
+    detailOverlay.addEventListener("click", hideDetailPanel);
 
-  window.Posts = { loadPosts, openPostById, openDetailPanel };
+  async function handleSendMessage(post, profile) {
+    const user = window.currentUser;
+    if (!user) {
+      alert("Sign in to send a message.");
+      return;
+    }
+    if (!profile || !profile.email) {
+      alert("Seller has no visible contact info yet.");
+      return;
+    }
 
-  // Initial load is triggered by app.js — do NOT call loadPosts() here
-  // to avoid race conditions with activePostType not being set yet.
+    const body = prompt("Your message to the seller:");
+    if (!body || !body.trim()) return;
+
+    try {
+      const { error } = await supa.from("messages").insert({
+        post_id: post.id,
+        from_user: user.id,
+        to_user: post.user_id,
+        body: body.trim(),
+      });
+      if (error) throw error;
+      alert("Message saved. A real app would show full chat threads here.");
+    } catch (err) {
+      console.log("message insert error:", err.message || err);
+      alert(
+        "Message table not fully set up in Supabase yet.\nAsk me for the SQL later if you want full chat."
+      );
+    }
+  }
+
+  // ---------- MATCHES / NOTIFICATIONS (safe placeholders) ----------
+
+  async function loadMatches() {
+    if (!matchesList) return;
+    if (!window.currentUser) {
+      matchesList.innerHTML =
+        "<p class='hint'>Sign in to see automatic matches.</p>";
+      return;
+    }
+
+    try {
+      const { data, error } = await supa
+        .from("matches")
+        .select("*")
+        .eq("user_id", window.currentUser.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      if (!data || !data.length) {
+        matchesList.innerHTML =
+          "<p class='hint'>No matches yet. Keep posting and searching.</p>";
+        return;
+      }
+
+      matchesList.innerHTML = data
+        .map(
+          (m) => `
+          <div class="list-item">
+            <strong>${m.title || "Match"}</strong>
+            <small>${m.message || ""}</small>
+          </div>
+        `
+        )
+        .join("");
+    } catch (err) {
+      console.log("matches load error:", err.message || err);
+      matchesList.innerHTML =
+        "<p class='hint'>Matches table not configured yet in Supabase.</p>";
+    }
+  }
+
+  async function loadNotifications() {
+    if (!notificationsList) return;
+    if (!window.currentUser) {
+      notificationsList.innerHTML =
+        "<p class='hint'>Sign in to see notifications.</p>";
+      return;
+    }
+
+    try {
+      const { data, error } = await supa
+        .from("notifications")
+        .select("*")
+        .eq("user_id", window.currentUser.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      if (!data || !data.length) {
+        notificationsList.innerHTML =
+          "<p class='hint'>No notifications yet.</p>";
+        return;
+      }
+
+      notificationsList.innerHTML = data
+        .map(
+          (n) => `
+          <div class="list-item">
+            <strong>${n.title || n.type || "Notification"}</strong>
+            <small>${n.message || ""}</small>
+          </div>
+        `
+        )
+        .join("");
+    } catch (err) {
+      console.log("notifications load error:", err.message || err);
+      notificationsList.innerHTML =
+        "<p class='hint'>Notifications table not configured yet in Supabase.</p>";
+    }
+  }
+
+  // Called when a *new* post is created to ping searchers
+  async function tryCreateMatchesForNewPost(post) {
+    try {
+      const { data: queries, error } = await supa
+        .from("search_queries")
+        .select("*")
+        .not("user_id", "eq", post.user_id);
+      if (error) throw error;
+      if (!queries || !queries.length) return;
+
+      const titleLower = (post.title || "").toLowerCase();
+
+      const interesting = queries.filter((q) => {
+        if (!q.last_query) return false;
+        const s = q.last_query.toLowerCase();
+        return titleLower.includes(s) || s.includes(titleLower);
+      });
+
+      if (!interesting.length) return;
+
+      const notifPayload = interesting.map((q) => ({
+        user_id: q.user_id,
+        type: "match",
+        title: "New matching post",
+        message: `Someone posted "${post.title}" that may match your search "${q.last_query}".`,
+      }));
+
+      await supa.from("notifications").insert(notifPayload).catch(() => {});
+    } catch (err) {
+      console.log("match generation error (non-fatal):", err.message || err);
+    }
+  }
+
+  // ---------- SEARCH LOGGING ----------
+
+  async function recordSearchQuery(query) {
+    if (!query || !query.trim()) return;
+    if (!window.currentUser) return;
+    try {
+      await supa
+        .from("search_queries")
+        .insert({
+          user_id: window.currentUser.id,
+          last_query: query.trim(),
+        })
+        .catch(() => {});
+    } catch (_) {}
+  }
+
+  // ---------- WIRES ----------
+
+  function openModal() {
+    openModalForCreate();
+  }
+
+  if (fabAdd) fabAdd.addEventListener("click", openModal);
+  if (btnCancelPost) btnCancelPost.addEventListener("click", closeModal);
+  if (btnSavePost) btnSavePost.addEventListener("click", savePost);
+
+  // Exported API for app.js
+  window.Posts = {
+    loadPosts,
+    loadMatches,
+    loadNotifications,
+    recordSearchQuery,
+  };
+
+  // Initial load
+  loadPosts();
 })();

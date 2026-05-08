@@ -728,3 +728,47 @@ body.light-theme .bottom-nav {
 #login-email-btn {
   display: none !important;
 }
+
+/* ── CATEGORY PILLS ─────────────────────────────────────────── */
+.category-pills-wrap {
+  padding: 8px 16px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.category-pills-wrap::-webkit-scrollbar { display: none; }
+
+.category-pills {
+  display: flex;
+  gap: 8px;
+  width: max-content;
+}
+
+.cat-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surf);
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.cat-pill:active { transform: scale(0.95); }
+
+.cat-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+}
+
+.cat-emoji { font-size: 14px; line-height: 1; }
+.cat-label { line-height: 1; }
