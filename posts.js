@@ -13,6 +13,7 @@
   const postDescription = document.getElementById("post-description");
   const postPrice = document.getElementById("post-price");
   const postImage = document.getElementById("post-image");
+  const postCategory = document.getElementById("post-category");
   const btnCancelPost = document.getElementById("btn-cancel-post");
   const btnSavePost = document.getElementById("btn-save-post");
   const postModalHint = document.getElementById("post-modal-hint");
@@ -134,7 +135,7 @@
       description:   postDescription.value.trim(),
       price:         postPrice.value.trim() || null,
       type:          normalizePostType(window.activePostType),
-      category:      window.activeCategory || null,
+      category: postCategory?.value || window.activeCategory || null,
       location_text: profile?.location_text ?? null,
       lat:           profile?.lat ?? null,
       lng:           profile?.lng ?? null,
