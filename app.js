@@ -144,3 +144,28 @@ document.addEventListener("DOMContentLoaded", () => {
   setActiveView("posts");
   refreshPosts();
 });
+
+// ── MANAGE SUBSCRIPTION (Stripe portal) ─────────────────────────
+async function openCustomerPortal() {
+  const user    = window.currentUser;
+  const profile = window.currentProfile;
+  if (!user) return alert("Sign in first.");
+  const email = profile?.email || user.email;
+  if (!email) return alert("No email found on your account.");
+  try {
+    const res  = await fetch("/api/customer-portal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.url) throw new Error(json.error || "Could not open portal.");
+    window.location.href = json.url;
+  } catch (err) {
+    alert("Error: " + err.message);
+  }
+}
+window.openCustomerPortal = openCustomerPortal;
+
+const btnManage = document.getElementById("btn-manage-subscription");
+if (btnManage) btnManage.addEventListener("click", openCustomerPortal);

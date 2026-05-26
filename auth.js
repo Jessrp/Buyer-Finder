@@ -491,6 +491,8 @@ function updateSettingsUI() {
   nameEl.textContent = profile?.full_name || profile?.username || "User";
   if (emailEl)  emailEl.textContent  = profile?.email || user.email || maskPhone(user.phone) || "";
   if (planEl)   planEl.textContent   = isBFPlus(profile) ? "BF+" : "Free";
+  const manageBtn = document.getElementById("btn-manage-subscription");
+  if (manageBtn) manageBtn.style.display = isBFPlus(profile) ? "inline-block" : "none";
   if (avatarEl && profile?.avatar_url) avatarEl.style.backgroundImage = `url(${profile.avatar_url})`;
 }
 window.updateSettingsUI = updateSettingsUI;
