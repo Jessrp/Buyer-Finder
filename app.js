@@ -1,171 +1,234 @@
-// app.js
+// app.js – nav, views, search, theme, premium gating
 document.addEventListener("DOMContentLoaded", () => {
   let activeView = "posts";
-  window.activePostType = "requesting";
-  window.BF_LIMITS = { MAX_POSTS: 5, MAX_MESSAGES: 10 };
+  window.activePostType = window.activePostType || "selling";
 
-  function isBFPlus(profile) {
-    if (!profile) return false;
-    if (profile.premium === true) return true;
-    const exp = profile.bfplus_expires_at || profile.bfPlus_expires_at;
-    if (!exp) return false;
-    return new Date(exp).getTime() > Date.now();
-  }
-  window.isBFPlus = isBFPlus;
+  // Views
+  const viewPosts = document.getElementById("view-posts");
+  const viewMap = document.getElementById("view-map");
+  const viewSettings = document.getElementById("view-settings");
+  const viewMatches = document.getElementById("view-matches");
+  const viewNotifications = document.getElementById("view-notifications");
 
-  window.setActiveView = setActiveView;
-
-  const navHome          = document.getElementById("nav-home");
-  const navMap           = document.getElementById("nav-map");
-  const navSettings      = document.getElementById("nav-settings");
-  const navMatches       = document.getElementById("nav-matches");
+  // Nav
+  const navSelling = document.getElementById("nav-selling");
+  const navRequests = document.getElementById("nav-requests");
+  const navMap = document.getElementById("nav-map");
+  const navSettings = document.getElementById("nav-settings");
+  const navMatches = document.getElementById("nav-matches");
   const navNotifications = document.getElementById("nav-notifications");
-  const navMessages      = document.getElementById("nav-messages");
-  const segSelling       = document.getElementById("seg-selling");
-  const segRequesting    = document.getElementById("seg-requesting");
-  const segSlider        = document.getElementById("segment-slider");
-  const searchInput      = document.getElementById("search-input");
-  const searchBtn        = document.getElementById("search-btn");
-  const logoHome         = document.getElementById("logo-home");
 
-  function updateSegment(type) {
-    const s = type === "selling";
-    if (segSelling)    segSelling.classList.toggle("active", s);
-    if (segRequesting) segRequesting.classList.toggle("active", !s);
-    if (segSlider)     segSlider.classList.toggle("right", s);
-  }
+  // Search
+  const searchInput = document.getElementById("search-input");
+  const searchBtn = document.getElementById("search-btn");
 
-  function refreshPosts() {
-    if (window.Posts && typeof window.Posts.loadPosts === "function")
-      window.Posts.loadPosts(searchInput ? searchInput.value.trim() : "");
-  }
+  // Settings buttons
+  const btnToggleTheme = document.getElementById("btn-toggle-theme");
+  const btnUpgradePremium = document.getElementById("btn-upgrade-premium");
+  const btnDeleteAccount = document.getElementById("btn-delete-account");
+  const premiumStatusText = document.getElementById("premium-status-text");
 
-  function switchPostType(type) {
-    window.activePostType = type;
-    updateSegment(type);
-    setActiveView("posts");
-    refreshPosts();
-  }
+  // BF+ floating prompt
+  const bfPlusPrompt = document.getElementById("bfPlusPrompt");
+  const upgradeBtn = document.getElementById("upgradeBtn");
 
   function setActiveView(view) {
     activeView = view;
-    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-    const s = document.getElementById("view-" + view);
-    if (s) s.classList.add("active");
-    if (navHome)          navHome.classList.toggle("active",          view === "posts");
-    if (navMap)           navMap.classList.toggle("active",           view === "map");
-    if (navSettings)      navSettings.classList.toggle("active",      view === "settings");
-    if (navMatches)       navMatches.classList.toggle("active",       view === "matches");
-    if (navNotifications) navNotifications.classList.toggle("active", view === "notifications");
-    if (navMessages)      navMessages.classList.toggle("active",      view === "messages");
-    const sw = document.querySelector(".segment-wrap");
-    if (sw) sw.style.display = view === "posts" ? "" : "none";
+
+    if (viewPosts) viewPosts.classList.toggle("active", view === "posts");
+    if (viewMap) viewMap.classList.toggle("active", view === "map");
+    if (viewSettings)
+      viewSettings.classList.toggle("active", view === "settings");
+    if (viewMatches)
+      viewMatches.classList.toggle("active", view === "matches");
+    if (viewNotifications)
+      viewNotifications.classList.toggle("active", view === "notifications");
+
+    if (navSelling)
+      navSelling.classList.toggle(
+        "active",
+        view === "posts" && window.activePostType === "selling"
+      );
+    if (navRequests)
+      navRequests.classList.toggle(
+        "active",
+        view === "posts" && window.activePostType === "request"
+      );
+    if (navMap) navMap.classList.toggle("active", view === "map");
+    if (navSettings) navSettings.classList.toggle("active", view === "settings");
+    if (navMatches) navMatches.classList.toggle("active", view === "matches");
+    if (navNotifications)
+      navNotifications.classList.toggle("active", view === "notifications");
   }
 
-  const postsView = document.getElementById("view-posts");
-  if (postsView) {
-    let tx = 0, ty = 0;
-    postsView.addEventListener("touchstart", e => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
-    postsView.addEventListener("touchend", e => {
-      const dx = e.changedTouches[0].clientX - tx;
-      const dy = e.changedTouches[0].clientY - ty;
-      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-      if (dx < 0 && window.activePostType === "requesting") switchPostType("selling");
-      else if (dx > 0 && window.activePostType === "selling") switchPostType("requesting");
-    }, { passive: true });
+  function getSearchQuery() {
+    return searchInput ? searchInput.value.trim() : "";
   }
 
-  if (segSelling)    segSelling.addEventListener("click",    () => switchPostType("selling"));
-  if (segRequesting) segRequesting.addEventListener("click", () => switchPostType("requesting"));
-  if (logoHome)      logoHome.addEventListener("click",      () => switchPostType(window.activePostType));
-  if (navHome)       navHome.addEventListener("click",       () => switchPostType(window.activePostType));
-
-  if (searchBtn) searchBtn.addEventListener("click", refreshPosts);
-  if (searchInput) {
-    searchInput.addEventListener("keydown", e => { if (e.key === "Enter") refreshPosts(); });
-    searchInput.addEventListener("input", refreshPosts);
-  }
-
-  if (navMatches) navMatches.addEventListener("click", () => {
-    setActiveView("matches");
-    if (window.Matches && typeof window.Matches.loadMatches === "function") window.Matches.loadMatches();
-  });
-
-  if (navMessages) navMessages.addEventListener("click", () => {
-    if (!window.currentUser) { alert("Sign in to view messages."); return; }
-    setActiveView("messages");
-    if (window.Conversations && typeof window.Conversations.load === "function") window.Conversations.load();
-  });
-
-  if (navNotifications) navNotifications.addEventListener("click", () => {
-    setActiveView("notifications");
-    if (window.Notifications && typeof window.Notifications.load === "function") window.Notifications.load();
-  });
-
-  if (navMap) navMap.addEventListener("click", () => {
-    if (!window.currentUser) { alert("Sign in to use the map."); return; }
-    if (!isBFPlus(window.currentProfile)) {
-      const go = confirm("The map is a BF+ feature ($4.99/mo). Upgrade now?");
-      if (go && typeof window.startUpgrade === "function") window.startUpgrade();
-      return;
+  function refreshPosts() {
+    if (window.Posts && typeof window.Posts.loadPosts === "function") {
+      window.Posts.loadPosts(getSearchQuery());
     }
-    if (window.BFMap && typeof window.BFMap.initMap === "function") window.BFMap.initMap();
-    setActiveView("map");
-  });
-
-  if (navSettings) navSettings.addEventListener("click", () => setActiveView("settings"));
-
-  const btnUpgrade = document.getElementById("btn-upgrade-premium");
-  if (btnUpgrade) btnUpgrade.addEventListener("click", () => { if (typeof window.startUpgrade === "function") window.startUpgrade(); });
-
-  const btnTheme = document.getElementById("btn-toggle-theme");
-  if (btnTheme) btnTheme.addEventListener("click", () => document.body.classList.toggle("light-theme"));
-
-  const btnDelete = document.getElementById("btn-delete-account");
-  if (btnDelete) btnDelete.addEventListener("click", () => {
-    if (confirm("Permanently delete your account and all posts? No undo."))
-      alert("Contact support@buyrfindr.com to delete your account.");
-  });
-
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get("upgraded") === "1") {
-    window.history.replaceState({}, "", "/");
-    setTimeout(async () => {
-      if (window.Auth) await window.Auth.checkUser();
-      alert("Welcome to BF+! Map and unlimited posts unlocked.");
-    }, 2000);
-  }
-  if (urlParams.get("cancelled") === "1") {
-    window.history.replaceState({}, "", "/");
-    alert("Upgrade cancelled. You can upgrade any time from Settings.");
   }
 
-  updateSegment("requesting");
-  setActiveView("posts");
-  refreshPosts();
-});
+  function setActivePostType(type) {
+    window.activePostType = type;
+    refreshPosts();
+    setActiveView("posts");
+  }
 
-// ── MANAGE SUBSCRIPTION (Stripe portal) ─────────────────────────
-async function openCustomerPortal() {
-  const user    = window.currentUser;
-  const profile = window.currentProfile;
-  if (!user) return alert("Sign in first.");
-  const email = profile?.email || user.email;
-  if (!email) return alert("No email found on your account.");
-  try {
-    const res  = await fetch("/api/customer-portal", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+  // Selling / requests
+  if (navSelling)
+    navSelling.addEventListener("click", () => setActivePostType("selling"));
+  if (navRequests)
+    navRequests.addEventListener("click", () => setActivePostType("request"));
+
+  // Matches
+  if (navMatches)
+    navMatches.addEventListener("click", () => {
+      setActiveView("matches");
+      if (window.Posts && typeof window.Posts.loadMatches === "function") {
+        window.Posts.loadMatches();
+      }
     });
-    const json = await res.json();
-    if (!res.ok || !json.url) throw new Error(json.error || "Could not open portal.");
-    window.location.href = json.url;
-  } catch (err) {
-    alert("Error: " + err.message);
-  }
-}
-window.openCustomerPortal = openCustomerPortal;
 
-const btnManage = document.getElementById("btn-manage-subscription");
-if (btnManage) btnManage.addEventListener("click", openCustomerPortal);
+  // Notifications
+  if (navNotifications)
+    navNotifications.addEventListener("click", () => {
+      setActiveView("notifications");
+      if (
+        window.Posts &&
+        typeof window.Posts.loadNotifications === "function"
+      ) {
+        window.Posts.loadNotifications();
+      }
+    });
+
+  // Map (premium gated)
+  if (navMap)
+    navMap.addEventListener("click", () => {
+      const profile = window.currentProfile;
+      if (!window.currentUser) {
+        alert("Map is for signed-in premium users.");
+        return;
+      }
+      if (!profile || !profile.premium) {
+        alert(
+          "Map is a BF+ feature. Use the BF+ prompt at the bottom of the screen to upgrade."
+        );
+        return;
+      }
+      if (window.BFMap && typeof window.BFMap.initMap === "function") {
+        window.BFMap.initMap();
+      }
+      setActiveView("map");
+    });
+
+  // Settings
+  if (navSettings)
+    navSettings.addEventListener("click", () => setActiveView("settings"));
+
+  // Search
+  function handleSearch() {
+    refreshPosts();
+    if (
+      window.Posts &&
+      typeof window.Posts.recordSearchQuery === "function"
+    ) {
+      window.Posts.recordSearchQuery(getSearchQuery());
+    }
+  }
+
+  if (searchBtn) searchBtn.addEventListener("click", handleSearch);
+  if (searchInput) {
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleSearch();
+    });
+  }
+
+  // Theme
+  function applyTheme() {
+    const theme = localStorage.getItem("buyerfinder-theme") || "dark";
+    if (theme === "light") document.body.classList.add("light");
+    else document.body.classList.remove("light");
+  }
+  applyTheme();
+
+  if (btnToggleTheme)
+    btnToggleTheme.addEventListener("click", () => {
+      const cur = localStorage.getItem("buyerfinder-theme") || "dark";
+      const next = cur === "dark" ? "light" : "dark";
+      localStorage.setItem("buyerfinder-theme", next);
+      applyTheme();
+    });
+
+  if (btnDeleteAccount)
+    btnDeleteAccount.addEventListener("click", () => {
+      alert(
+        "Real account deletion must be done on a secure backend using the service role key.\nThis button just explains that; nothing is deleted."
+      );
+    });
+
+
+  // BF+ upgrade (Stripe checkout)
+  async function buyBFPlus() {
+    try {
+      const supa = window.supa;
+      if (!supa) {
+        alert("Supabase client not ready.");
+        return;
+      }
+
+      const { data, error } = await supa.auth.getUser();
+      if (error) {
+        console.log("auth.getUser error:", error.message);
+      }
+      const user = data?.user;
+      if (!user) {
+        alert("Please sign in to upgrade.");
+        return;
+      }
+
+      const res = await fetch(
+        "https://hcgwldsslzkppzgfhwws.supabase.co/functions/v1/create-checkout-session",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.id }),
+        }
+      );
+
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !body.url) {
+        console.log("Stripe checkout error:", body);
+        alert("Unable to start checkout. Try again in a moment.");
+        return;
+      }
+
+      window.location.href = body.url;
+    } catch (err) {
+      console.log("buyBFPlus error:", err);
+      alert("Unexpected error while starting BF+ checkout.");
+    }
+  }
+
+  if (upgradeBtn) {
+    upgradeBtn.addEventListener("click", buyBFPlus);
+  }
+  if (btnUpgradePremium) {
+    btnUpgradePremium.addEventListener("click", buyBFPlus);
+  }
+
+  // Initial load
+  if (window.Posts && typeof window.Posts.loadPosts === "function") {
+    window.Posts.loadPosts("");
+  }
+
+  // Auth boot (auth.js exposes window.Auth.checkUser)
+  if (window.Auth && typeof window.Auth.checkUser === "function") {
+    window.Auth.checkUser();
+  }
+
+  // Default
+  setActivePostType("selling");
+});
