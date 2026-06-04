@@ -772,3 +772,6 @@ body.light-theme .bottom-nav {
 
 .cat-emoji { font-size: 14px; line-height: 1; }
 .cat-label { line-height: 1; }
+
+.cat-icon { display:flex; align-items:center; line-height:1; }
+.cat-icon svg { stroke: currentColor; }
