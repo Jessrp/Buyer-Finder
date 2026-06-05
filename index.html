@@ -765,5 +765,201 @@
   });
   </script>
 
+<!-- ONBOARDING OVERLAY — shown once on first visit -->
+<div id="onboarding-overlay" class="onboarding-overlay" style="display:none;">
+  <div class="onboarding-modal">
+
+    <!-- Slide 1 -->
+    <div class="onboarding-slide active" id="ob-slide-1">
+      <div class="ob-icon">🔎</div>
+      <h2 class="ob-title">Welcome to<br><span>BuyrFindr</span></h2>
+      <p class="ob-body">Every other marketplace makes you scroll through thousands of listings hoping to find what you need.<br><br><strong>BuyrFindr flips that.</strong></p>
+      <div class="ob-dots">
+        <span class="ob-dot active"></span>
+        <span class="ob-dot"></span>
+        <span class="ob-dot"></span>
+      </div>
+      <button class="ob-btn" onclick="obNext(2)">Next →</button>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="onboarding-slide" id="ob-slide-2">
+      <div class="ob-icon-wrap">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#00dfa2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </div>
+      <h2 class="ob-title">Post what you <span>WANT</span></h2>
+      <p class="ob-body">Looking for a used bike? A KitchenAid mixer? A PS5?<br><br>Just <strong>post your request</strong> — tell the world what you're looking for and your budget. Sellers in your area will come to you.</p>
+      <div class="ob-dots">
+        <span class="ob-dot"></span>
+        <span class="ob-dot active"></span>
+        <span class="ob-dot"></span>
+      </div>
+      <button class="ob-btn" onclick="obNext(3)">Next →</button>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="onboarding-slide" id="ob-slide-3">
+      <div class="ob-icon-wrap">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#00dfa2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+      <h2 class="ob-title">Sellers find <span>YOU</span></h2>
+      <p class="ob-body">And if YOU have something someone else is looking for?<br><br><strong>Browse the Requests tab</strong> — someone nearby might want exactly what's sitting in your garage right now.</p>
+      <div class="ob-dots">
+        <span class="ob-dot"></span>
+        <span class="ob-dot"></span>
+        <span class="ob-dot active"></span>
+      </div>
+      <button class="ob-btn" onclick="obDone()">Let's go →</button>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.onboarding-modal {
+  background: var(--surf, #111118);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 360px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+}
+
+.onboarding-slide {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px 32px 32px;
+}
+
+.onboarding-slide.active {
+  display: flex;
+}
+
+.ob-icon {
+  font-size: 52px;
+  line-height: 1;
+  margin-bottom: 24px;
+}
+
+.ob-icon-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(0,223,162,0.08);
+  border: 1px solid rgba(0,223,162,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.ob-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: #eeeef5;
+  line-height: 1.2;
+  margin-bottom: 16px;
+  letter-spacing: -0.3px;
+}
+
+.ob-title span {
+  color: #00dfa2;
+}
+
+.ob-body {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+.ob-body strong {
+  color: rgba(255,255,255,0.85);
+  font-weight: 600;
+}
+
+.ob-dots {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.ob-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  transition: all 0.2s;
+}
+
+.ob-dot.active {
+  background: #00dfa2;
+  width: 18px;
+  border-radius: 3px;
+}
+
+.ob-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: #00dfa2;
+  color: #000;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.12s;
+}
+
+.ob-btn:active {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+</style>
+
+<script>
+(function() {
+  // Only show once per device
+  if (!localStorage.getItem('bf_onboarded')) {
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.style.display = 'flex';
+  }
+})();
+
+function obNext(slide) {
+  document.querySelectorAll('.onboarding-slide').forEach(s => s.classList.remove('active'));
+  document.getElementById('ob-slide-' + slide).classList.add('active');
+}
+
+function obDone() {
+  localStorage.setItem('bf_onboarded', '1');
+  const overlay = document.getElementById('onboarding-overlay');
+  if (overlay) {
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 0.3s';
+    setTimeout(() => overlay.style.display = 'none', 300);
+  }
+}
+</script>
+
 </body>
 </html>
