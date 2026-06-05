@@ -90,6 +90,7 @@ async function checkUser() {
   }
 
   await loadOrCreateProfile();
+  if (window.currentUser) trackReferral(window.currentUser.id);
   renderUserCard();
   syncSettingsUI();
 
@@ -496,3 +497,48 @@ function updateSettingsUI() {
   if (avatarEl && profile?.avatar_url) avatarEl.style.backgroundImage = `url(${profile.avatar_url})`;
 }
 window.updateSettingsUI = updateSettingsUI;
+
+// ── REFERRAL TRACKING ────────────────────────────────────────────
+async function trackReferral(newUserId) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const ref = urlParams.get("ref") || localStorage.getItem("bf_ref");
+  if (!ref) return;
+
+  try {
+    await fetch("/api/referral-notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newUserId, referralCode: ref }),
+    });
+    // Clear ref from storage after use
+    localStorage.removeItem("bf_ref");
+  } catch (err) {
+    console.warn("Referral tracking failed:", err);
+  }
+}
+
+// Store ref param in localStorage so it survives the OAuth redirect
+(function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const ref = urlParams.get("ref");
+  if (ref) localStorage.setItem("bf_ref", ref);
+})();
+
+// ── REFERRAL LINK COPY BUTTON ────────────────────────────────────
+document.addEventListener("DOMContentLoaded", function() {
+  const btn = document.getElementById("btn-copy-referral");
+  const hint = document.getElementById("referral-hint");
+  if (!btn) return;
+  btn.addEventListener("click", async function() {
+    const profile = window.currentProfile;
+    if (!profile) { alert("Sign in first."); return; }
+    if (!profile.referral_code) { alert("No referral code found."); return; }
+    const link = "https://buyrfindr.com?ref=" + profile.referral_code;
+    try {
+      await navigator.clipboard.writeText(link);
+      if (hint) hint.textContent = "✅ Copied! Share this link to earn BF+ for life.";
+    } catch(e) {
+      prompt("Copy this link:", link);
+    }
+  });
+});
