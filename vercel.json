@@ -1,7 +1,8 @@
 {
   "rewrites": [
-    { "source": "/ad", "destination": "/ad.html" },
-    { "source": "/sw.js", "destination": "/sw.js" },
-    { "source": "/((?!api|_next|icons|manifest.json|sw.js|ad.html|styles.css|.*\\.js|.*\\.css|.*\\.png|.*\\.jpg).*)", "destination": "/index.html" }
+    {
+      "source": "/((?!ad.html|sw.js|manifest.json|icons|styles.css|.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.jpeg).*)",
+      "destination": "/index.html"
+    }
   ]
 }
