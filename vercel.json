@@ -1,8 +1,7 @@
 {
-  "crons": [
-    {
-      "path": "/api/check-inactive",
-      "schedule": "0 3 * * *"
-    }
+  "rewrites": [
+    { "source": "/ad", "destination": "/ad.html" },
+    { "source": "/sw.js", "destination": "/sw.js" },
+    { "source": "/((?!api|_next|icons|manifest.json|sw.js|ad.html|styles.css|.*\\.js|.*\\.css|.*\\.png|.*\\.jpg).*)", "destination": "/index.html" }
   ]
 }
