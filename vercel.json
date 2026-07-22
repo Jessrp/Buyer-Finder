@@ -1,4 +1,5 @@
 {
+  "outputDirectory": ".",
   "rewrites": [
     {
       "source": "/((?!ad.html|sw.js|manifest.json|icons|styles.css|.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.jpeg).*)",
