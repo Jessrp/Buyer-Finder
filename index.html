@@ -4,17 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BuyrFindr</title>
-  <meta name="description" content="Post what you want. Let local sellers come to you." />
-  <meta name="theme-color" content="#e8410a" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="BuyrFindr" />
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
   <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <style>
-
 /* --- Phone OTP header fixes (mobile) --- */
 #phone-auth-wrap { min-width: 0; }
 #phone-auth-wrap input { min-width: 0; }
@@ -25,46 +17,355 @@
   #phone-auth-wrap button { flex: 0 0 auto; }
 }
 
+/* ── HAMBURGER MENU ───────────────────────────── */
+.menu-btn-wrap {
+  position: relative;
+}
+.menu-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.menu-btn-bar {
+  display: block;
+  width: 16px;
+  height: 1.5px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+.menu-btn-bar:last-child { width: 11px; }
+
+.menu-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 200px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  z-index: 200;
+}
+.menu-dropdown.open { display: block; }
+
+.menu-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+}
+.menu-dropdown-item:last-child { border-bottom: none; }
+.menu-dropdown-item:active { background: rgba(255,255,255,0.04); }
+.menu-dropdown-item.danger { color: var(--danger); }
+
+.menu-dropdown-icon {
+  width: 28px;
+  height: 28px;
+  background: var(--surf2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.menu-dropdown-item.danger .menu-dropdown-icon {
+  background: rgba(239,68,68,0.12);
+}
+
+/* ── USER STRIP ───────────────────────────────── */
+.user-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(9,9,15,0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: sticky;
+  top: 57px;
+  z-index: 19;
+}
+.user-strip-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  border: 1.5px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+  flex-shrink: 0;
+  font-family: 'DM Sans', sans-serif;
+}
+.user-strip-avatar img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.user-strip-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+}
+.user-strip-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: #c4962a;
+  background: rgba(196,150,42,0.12);
+  border: 1px solid rgba(196,150,42,0.3);
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+.user-strip-email {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+@media (max-width: 360px) {
+  .user-strip-email { display: none; }
+}
+.user-strip-signin {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  padding: 0;
+}
+
+/* ── SETTINGS PAGE ────────────────────────────── */
+.settings-section {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.settings-section-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--muted); padding: 14px 16px 6px;
+}
+.settings-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+  text-decoration: none; color: inherit;
+}
+.settings-row:first-of-type { border-top: none; }
+.settings-row:active { background: rgba(255,255,255,0.04); }
+.settings-row-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+}
+.settings-row-info { flex: 1; }
+.settings-row-label { font-size: 14px; font-weight: 600; }
+.settings-row-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.settings-row-arrow { color: var(--muted); font-size: 18px; font-weight: 300; }
+
+/* profile header */
+.settings-profile-header {
+  display: flex; flex-direction: column;
+  align-items: center; padding: 28px 16px 20px;
+  text-align: center;
+}
+.settings-avatar-wrap { position: relative; margin-bottom: 12px; }
+.settings-avatar-large {
+  width: 82px; height: 82px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 26px; font-weight: 700; color: #fff;
+  overflow: hidden; border: 3px solid var(--border);
+  cursor: pointer;
+}
+.settings-avatar-large img { width: 100%; height: 100%; object-fit: cover; }
+.settings-avatar-edit-btn {
+  position: absolute; bottom: 0; right: 0;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--accent); color: #000;
+  font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--bg); cursor: pointer;
+}
+.settings-display-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 20px; font-weight: 700; margin-bottom: 3px;
+}
+.settings-display-email { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+
+/* BF+ card */
+.bfplus-card {
+  margin: 0 0 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(123,111,255,0.12), rgba(0,223,162,0.08));
+  border: 1px solid rgba(123,111,255,0.25);
+  display: flex; align-items: center; gap: 12px;
+}
+.bfplus-card-icon { font-size: 26px; line-height: 1; }
+.bfplus-card-info { flex: 1; }
+.bfplus-card-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px; font-weight: 700; color: var(--accent);
+}
+.bfplus-card-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.bfplus-card-btn {
+  background: var(--accent); color: #000;
+  border: none; border-radius: 20px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 700;
+  padding: 7px 14px; cursor: pointer; flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.bfplus-card-btn:active { opacity: 0.8; }
+
+/* inline edit fields */
+.settings-edit-wrap {
+  display: none; padding: 0 16px 14px;
+  border-top: 1px solid var(--border);
+  flex-direction: column; gap: 8px;
+}
+.settings-edit-wrap.open { display: flex; }
+.settings-edit-wrap input {
+  width: 100%; padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--surf2); color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px; outline: none;
+  transition: border-color 0.2s;
+}
+.settings-edit-wrap input:focus { border-color: var(--accent); }
+.settings-edit-actions {
+  display: flex; gap: 8px; justify-content: flex-end;
+}
 </style>
 </head>
 <body>
 
-  <div class="debug-bar">DEBUG: BuyerFinder multi-file build (posts + search + matches)</div>
-
   <!-- HEADER -->
   <header>
-    <h1>🔎 BuyerFinder</h1>
+    <h1 id="logo-home" style="cursor:pointer;" title="Go to feed">🔎 BuyrFindr</h1>
     <div class="right">
-      <button class="btn small" id="login-google-btn">Sign in with Google</button>
-      <button class="btn small" id="login-email-btn">Sign in with Email</button>
+      <!-- These stay in the DOM for auth.js to target, but are hidden — menu exposes them -->
+      <button class="btn small" id="login-google-btn" style="display:none;">Google</button>
+      <button class="btn small" id="login-email-btn" style="display:none;">Email</button>
       <button class="btn small" id="logout-btn" style="display:none;">Sign out</button>
+      <!-- Hamburger -->
+      <div class="menu-btn-wrap">
+        <button class="menu-btn" id="menu-toggle-btn" aria-label="Open menu">
+          <span class="menu-btn-bar"></span>
+          <span class="menu-btn-bar"></span>
+          <span class="menu-btn-bar"></span>
+        </button>
+        <div class="menu-dropdown" id="menu-dropdown">
+          <button class="menu-dropdown-item" id="menu-settings-btn">
+            <div class="menu-dropdown-icon">⚙️</div>
+            Settings
+          </button>
+          <button class="menu-dropdown-item" id="menu-theme-btn">
+            <div class="menu-dropdown-icon">🌙</div>
+            Toggle Theme
+          </button>
+          <button class="menu-dropdown-item" id="menu-login-google-btn" style="display:none;">
+            <div class="menu-dropdown-icon">🔑</div>
+            Sign in with Google
+          </button>
+          <button class="menu-dropdown-item" id="menu-login-email-btn" style="display:none;">
+            <div class="menu-dropdown-icon">✉️</div>
+            Sign in with Email
+          </button>
+          <button class="menu-dropdown-item" id="menu-share-btn">
+            <div class="menu-dropdown-icon">📣</div>
+            Share BuyrFindr
+          </button>
+          <button class="menu-dropdown-item danger" id="menu-logout-btn" style="display:none;">
+            <div class="menu-dropdown-icon">🚪</div>
+            Sign out
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 
+  <!-- USER STRIP -->
+  <div class="user-strip" id="user-strip">
+    <div class="user-strip-avatar" id="strip-avatar"></div>
+    <span class="user-strip-name" id="strip-name">Guest</span>
+    <span class="user-strip-badge" id="strip-badge" style="display:none;">BF+</span>
+    <span class="user-strip-email" id="strip-email"></span>
+    <button class="user-strip-signin" id="strip-signin-btn" style="display:none;">Sign in →</button>
+  </div>
+
   <!-- SEARCH BAR -->
   <div class="search-bar">
-    <input
-      type="text"
-      id="searchinput"
-      placeholder="Search posts (title, description, category)…"
-    />
-    <button class="btn small outline" id="search-btn">Search</button>
+    <input type="text" id="search-input" placeholder="Search posts (title, description, category)…"/>
+    <button class="btn small" id="search-btn">Search</button>
+  </div>
+
+  <!-- CATEGORY PILLS -->
+  <div class="category-pills-wrap">
+    <div id="category-pills" class="category-pills"></div>
+  </div>
+
+  <!-- SEGMENTED CONTROL -->
+  <div class="segment-wrap">
+    <div class="segment-track">
+      <div class="segment-slider" id="segment-slider"></div>
+      <div class="segment-option active" id="seg-requesting">
+        <span class="seg-dot req-dot"></span> Requests
+      </div>
+      <div class="segment-option" id="seg-selling">
+        <span class="seg-dot sell-dot"></span> Selling
+      </div>
+    </div>
   </div>
 
   <main class="content">
-
-    <!-- USER CARD -->
-    <div class="user-card" id="user-card">
-      <div class="user-avatar" id="user-avatar"></div>
-      <div class="user-meta">
-        <div id="user-name">Guest</div>
-        <small id="user-email">Not signed in</small>
-        <div>
-          <span class="badge" id="user-plan">Free (guest)</span>
-        </div>
-      </div>
-      <button class="btn small outline" id="user-signin-shortcut">Sign in</button>
-    </div>
 
     <!-- POSTS VIEW -->
     <section id="view-posts" class="view active">
@@ -75,23 +376,15 @@
     <!-- MAP VIEW -->
     <section id="view-map" class="view">
       <div class="map-wrapper">
-        <h3 style="margin-top:0;">BuyerFinder Radar</h3>
-        <p class="hint" id="map-message">
-          Map shows posts near you. Use search to filter by product keywords.
-        </p>
-
+        <h3 style="margin-top:0;">BuyrFindr Radar</h3>
+        <p class="hint" id="map-message">Map shows posts near you. Use search to filter by product keywords.</p>
         <div class="field-row">
           <label>Search</label>
-          <input
-            type="text"
-            id="map-search-query"
-            placeholder="e.g. guitar, bike, lawn mower"
-          />
+          <input type="text" id="map-search-query" placeholder="e.g. guitar, bike, lawn mower"/>
           <button class="btn small" id="map-search-btn">Go</button>
         </div>
-
         <div id="map-canvas"></div>
-        <button class="btn small outline" id="map-close-btn">Close map</button>
+        <button class="btn small outline" id="map-close-btn" style="margin-top:10px;">Close map</button>
       </div>
     </section>
 
@@ -99,9 +392,8 @@
     <section id="view-matches" class="view">
       <div class="section">
         <h3>Matches</h3>
-        <p class="hint">
-          When your posts line up with what others are searching for (or vice versa),
-          they’ll show up here.
+        <p class="hint" style="margin-bottom:12px;">
+          When your posts line up with what others are searching for (or vice versa), they'll show up here.
         </p>
         <div id="matches-list" class="list"></div>
       </div>
@@ -110,77 +402,165 @@
     <!-- NOTIFICATIONS VIEW -->
     <section id="view-notifications" class="view">
       <div class="section">
-        <h3>Notifications</h3>
+        <h3>Alerts</h3>
         <div id="notifications-list" class="list"></div>
+      </div>
+    </section>
+
+    <!-- MESSAGES VIEW -->
+    <section id="view-messages" class="view">
+      <div class="section">
+        <h3>Messages</h3>
+        <p class="hint" style="margin-bottom:12px;">Your conversations with buyers and sellers.</p>
+        <div id="conversations-list" class="list"></div>
       </div>
     </section>
 
     <!-- SETTINGS VIEW -->
     <section id="view-settings" class="view">
-  <div class="section">
 
-    <h3>Settings</h3>
-
-    <!-- PROFILE CARD -->
-    <div class="user-card" style="margin-bottom:16px;">
-      <div class="user-avatar" id="settings-avatar"></div>
-      <div class="user-meta">
-        <div id="settings-name">Guest</div>
-        <small id="settings-email" class="hint">Not signed in</small>
-        <div>
+      <div class="settings-section">
+        <div class="settings-profile-header">
+          <div class="settings-avatar-wrap">
+            <div class="settings-avatar-large" id="settings-avatar">
+              <span id="settings-avatar-initials">?</span>
+            </div>
+            <div class="settings-avatar-edit-btn" id="settings-avatar-edit-btn" title="Change photo">✎</div>
+            <input type="file" id="profile-avatar-input" accept="image/*" style="display:none;"/>
+          </div>
+          <div class="settings-display-name" id="settings-name">Guest</div>
+          <div class="settings-display-email" id="settings-email">Not signed in</div>
           <span class="badge" id="settings-plan">Free</span>
         </div>
       </div>
-    </div>
 
-    <!-- ACTIONS -->
-    <div class="list">
+      <div class="bfplus-card">
+        <div class="bfplus-card-icon">⚡</div>
+        <div class="bfplus-card-info">
+          <div class="bfplus-card-title" id="bfplus-card-title">Upgrade to BF+</div>
+          <div class="bfplus-card-sub" id="bfplus-card-sub">Unlimited posts, map access &amp; more — $4.99/mo</div>
+        </div>
+        <button class="bfplus-card-btn" id="btn-upgrade-premium">Upgrade</button>
+        <button class="bfplus-card-btn" id="btn-manage-subscription" style="display:none;background:transparent;border:1px solid var(--accent);color:var(--accent);margin-left:8px;">Manage</button>
+      </div>
 
-      <button class="btn full outline" id="btn-toggle-theme">
-        Toggle light / dark theme
-      </button>
+      <div class="settings-section">
+        <div class="settings-section-title">Account</div>
 
-      <button class="btn full outline" id="btn-upgrade-premium">
-        Upgrade to BF+
-      </button>
+        <div class="settings-row" onclick="toggleSettingsEdit('username')">
+          <div class="settings-row-icon" style="background:rgba(0,223,162,0.1);">👤</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label">Username</div>
+            <div class="settings-row-sub" id="display-username">—</div>
+          </div>
+          <span class="settings-row-arrow">›</span>
+        </div>
+        <div class="settings-edit-wrap" id="edit-username">
+          <input type="text" id="profile-username" placeholder="New username"/>
+          <div class="settings-edit-actions">
+            <button class="btn small outline" onclick="toggleSettingsEdit('username')">Cancel</button>
+            <button class="btn small" id="btn-save-username">Save</button>
+          </div>
+        </div>
 
-      <button class="btn full danger" id="btn-delete-account">
-        Delete account
-      </button>
+        <div class="settings-row" onclick="toggleSettingsEdit('email')">
+          <div class="settings-row-icon" style="background:rgba(123,111,255,0.1);">✉️</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label">Email</div>
+            <div class="settings-row-sub" id="display-email">—</div>
+          </div>
+          <span class="settings-row-arrow">›</span>
+        </div>
+        <div class="settings-edit-wrap" id="edit-email">
+          <input type="text" id="profile-email" placeholder="Email address"/>
+          <div class="settings-edit-actions">
+            <button class="btn small outline" onclick="toggleSettingsEdit('email')">Cancel</button>
+            <button class="btn small" id="btn-save-email">Save</button>
+          </div>
+        </div>
 
-    </div>
+        <div class="settings-row" onclick="toggleSettingsEdit('location')">
+          <div class="settings-row-icon" style="background:rgba(0,223,162,0.1);">📍</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label">Location</div>
+            <div class="settings-row-sub" id="display-location">—</div>
+          </div>
+          <span class="settings-row-arrow">›</span>
+        </div>
+        <div class="settings-edit-wrap" id="edit-location">
+          <input type="text" id="profile-location" placeholder="e.g. Austin, TX"/>
+          <div class="settings-edit-actions">
+            <button class="btn small outline" onclick="toggleSettingsEdit('location')">Cancel</button>
+            <button class="btn small" id="btn-save-location">Save</button>
+          </div>
+        </div>
 
-    <p class="hint" style="margin-top:12px;">
-      Account deletion is permanent. There is no undo button and no mercy.
-    </p>
+      </div>
 
-  </div>
-</section>
+      <div class="settings-section">
+        <div class="settings-section-title">Appearance</div>
+        <div class="settings-row" id="btn-toggle-theme">
+          <div class="settings-row-icon" style="background:rgba(250,204,21,0.1);">🌙</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label">Toggle Light / Dark</div>
+            <div class="settings-row-sub">Switch between dark and light mode</div>
+          </div>
+          <span class="settings-row-arrow">›</span>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Transaction History</div>
+        <div id="transactions-list" style="padding:0 0 4px;">
+          <div style="padding:14px 16px;font-size:13px;color:var(--muted);">Loading...</div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Danger Zone</div>
+        <div class="settings-row" id="btn-delete-account">
+          <div class="settings-row-icon" style="background:rgba(239,68,68,0.1);">🗑️</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label" style="color:var(--danger);">Delete Account</div>
+            <div class="settings-row-sub">Permanent — there is no undo</div>
+          </div>
+          <span class="settings-row-arrow" style="color:var(--danger);">›</span>
+        </div>
+      </div>
+
+      <div style="padding:0 16px 16px;"><button class="btn small outline" id="btn-copy-referral" style="width:100%;">🔗 Copy my referral link</button><p class="hint" style="text-align:center;margin-top:8px;" id="referral-hint"></p></div>
+      <p class="hint" style="text-align:center;padding:8px 0 24px;">
+        BuyrFindr© v1.0 © BuyrFindr v1.0 &nbsp;·&nbsp; Made with ❤️nbsp;·BuyrFindr v1.0 &nbsp;·&nbsp; Made with ❤️nbsp; Made with ❤️
+      </p>
+
+    </section>
 
   </main>
-  <!-- BOTTOM NAV: now 6 items -->
+
+  <!-- BOTTOM NAV — 5 items, Settings removed (use hamburger menu instead) -->
   <div class="bottom-nav">
-    <div class="nav-item active" id="nav-selling">
-      <span>🏷</span>
-      <span class="nav-label">Sell</span>
-    </div>
-    <div class="nav-item" id="nav-requests">
-      <span>📥</span>
-      <span class="nav-label">Requests</span>
+    <div class="nav-item active" id="nav-home">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+      <span class="nav-label">Home</span>
     </div>
     <div class="nav-item" id="nav-matches">
-      <span>✨</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <span class="nav-label">Matches</span>
     </div>
+    <div class="nav-item" id="nav-messages">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <span class="nav-label">Messages</span>
+    </div>
     <div class="nav-item" id="nav-notifications">
-      <span>🔔</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
       <span class="nav-label">Alerts</span>
     </div>
     <div class="nav-item" id="nav-map">
-      <span>🗺</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
       <span class="nav-label">Map</span>
     </div>
-    <div class="nav-item" id="nav-settings">
+    <!-- Hidden anchor for settings — triggered programmatically via menu -->
+    <div class="nav-item" id="nav-settings" style="display:none;">
       <span>⚙️</span>
       <span class="nav-label">Settings</span>
     </div>
@@ -193,94 +573,68 @@
   <div class="modal-backdrop" id="modal-backdrop">
     <div class="modal">
       <h3>New post</h3>
-
       <div class="field-row">
         <label>Title</label>
         <input type="text" id="post-title" />
       </div>
-
       <div class="field-row">
         <label>Description</label>
         <textarea id="post-description"></textarea>
       </div>
-
       <div class="field-row">
         <label>Price</label>
-        <input type="text" id="post-price" />
+        <input type="text" id="post-price" placeholder="$ e.g. 25.00" />
       </div>
-
+      <div class="field-row">
+        <label>Category</label>
+        <select id="post-category"><option value="">— Pick a category —</option><option value="vehicles">🚗 Vehicles</option><option value="tech">📱 Tech</option><option value="gaming">🎮 Gaming</option><option value="tools">🔧 Tools</option><option value="furniture">🛋️ Furniture</option><option value="clothing">👕 Clothing</option><option value="sports">🏋️ Sports</option><option value="music">🎸 Music</option><option value="outdoors">🌿 Outdoors</option><option value="baby">🍼 Baby</option><option value="pets">🐾 Pets</option><option value="kitchen">🍳 Kitchen</option><option value="appliances">🏠 Appliances</option><option value="toys">🧸 Toys</option><option value="other">📦 Other</option></select>
+      </div>
       <div class="field-row">
         <label>Images</label>
         <input type="file" id="post-image" accept="image/*" multiple />
       </div>
-
       <div class="modal-actions">
         <button class="btn small outline" id="btn-cancel-post">Cancel</button>
         <button class="btn small" id="btn-save-post">Save</button>
       </div>
-
       <p class="hint" id="post-modal-hint"></p>
     </div>
   </div>
 
   <!-- DETAIL PANEL -->
   <div id="detail-overlay" class="detail-overlay"></div>
-
   <div id="detail-panel" class="detail-panel">
     <button id="detail-close-btn" class="close-btn">✕</button>
-
     <div id="detail-images" class="detail-images"></div>
-
     <h2 id="detail-title"></h2>
     <p id="detail-price" class="big-price"></p>
     <p id="detail-description"></p>
     <p id="detail-meta" class="hint"></p>
-
-    <!-- delete button is injected by JS when appropriate -->
-
     <div class="seller-row">
       <div id="detail-seller-avatar" class="user-avatar small"></div>
       <div>
-        <strong id="detail-seller-name"></strong><br />
+        <strong id="detail-seller-name"></strong><br/>
         <small id="detail-seller-email" class="hint"></small>
       </div>
     </div>
-
     <p id="detail-location-text" class="hint"></p>
-
     <div id="detail-minimap-container">
       <div id="detail-minimap"></div>
     </div>
-
-    <!-- MESSAGE INPUT (DETAIL PANEL ONLY) -->
     <textarea
       id="chat-input"
       placeholder="Write a message…"
       rows="3"
-      style="
-        width: 100%;
-        box-sizing: border-box;
-        margin-top: 12px;
-        margin-bottom: 8px;
-        padding: 8px;
-        resize: vertical;
-      "
+      style="width:100%;box-sizing:border-box;margin-top:12px;margin-bottom:8px;padding:10px;resize:vertical;border-radius:10px;border:1.5px solid var(--border);background:var(--surf2);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;"
     ></textarea>
-
-    <button id="detail-message-btn" class="btn small full">
-      Send message
-    </button>
+    <button id="detail-message-btn" class="btn small full">Send message</button>
   </div>
 
   <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
-
-
-
-<script
-    async
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvGgUxOR4Dmm0fDwMYg7IltbKfyWrmMFY">
-  </script>
+  <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvGgUxOR4Dmm0fDwMYg7IltbKfyWrmMFY"></script>
+  <script>window.VAPID_PUBLIC_KEY = "REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY";</script>
+  <script src="push.js"></script>
   <script src="auth.js"></script>
   <script src="conversations.js"></script>
   <script src="messages.js"></script>
@@ -288,16 +642,325 @@
   <script src="posts.js"></script>
   <script src="map.js"></script>
   <script src="matching.js"></script>
-    <script src="matches.js"></script>
-    <script src="app.js"></script>
+  <script src="matches.js"></script>
+  <script src="boot.alerts.js"></script>
+  <script src="app.js"></script>
+  <script src="settings.js"></script>
+
   <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js")
-          .then(r => console.log("SW registered:", r.scope))
-          .catch(e => console.error("SW error:", e));
-      });
+  // ── HAMBURGER MENU ────────────────────────────────────────
+  (function() {
+    const toggleBtn = document.getElementById('menu-toggle-btn');
+    const dropdown  = document.getElementById('menu-dropdown');
+
+    toggleBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dropdown.classList.toggle('open');
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!dropdown.contains(e.target) && e.target !== toggleBtn) {
+        dropdown.classList.remove('open');
+      }
+    });
+
+    // Settings — click the hidden nav-settings item which app.js already knows about
+    document.getElementById('menu-settings-btn').addEventListener('click', function() {
+      dropdown.classList.remove('open');
+      document.getElementById('nav-settings').click();
+    });
+
+    // Theme toggle — mirrors the settings page row
+    document.getElementById('menu-theme-btn').addEventListener('click', function() {
+      dropdown.classList.remove('open');
+      document.getElementById('btn-toggle-theme').click();
+    });
+
+    // Sign out
+    document.getElementById('menu-logout-btn').addEventListener('click', function() {
+      dropdown.classList.remove('open');
+      document.getElementById('logout-btn').click();
+    });
+
+    // Sign in (Google)
+    document.getElementById('menu-login-google-btn').addEventListener('click', function() {
+      dropdown.classList.remove('open');
+      document.getElementById('login-google-btn').click();
+    });
+
+    // Sign in (Email)
+    document.getElementById('menu-login-email-btn').addEventListener('click', function() {
+      dropdown.classList.remove('open');
+      document.getElementById('login-email-btn').click();
+    });
+
+    // ── Sync menu auth visibility with auth.js state ──────
+    // auth.js shows/hides #logout-btn and #login-*-btn — we mirror that into the menu
+    const observer = new MutationObserver(syncMenuAuthState);
+    ['logout-btn','login-google-btn','login-email-btn'].forEach(function(id) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el, { attributes: true, attributeFilter: ['style'] });
+    });
+
+    function syncMenuAuthState() {
+      const loggedIn = document.getElementById('logout-btn').style.display !== 'none';
+      document.getElementById('menu-logout-btn').style.display      = loggedIn ? '' : 'none';
+      document.getElementById('menu-login-google-btn').style.display = loggedIn ? 'none' : '';
+      document.getElementById('menu-login-email-btn').style.display  = loggedIn ? 'none' : '';
     }
+    syncMenuAuthState();
+  })();
+
+  // ── USER STRIP — populated by auth.js via window events ──
+  // auth.js should call window.updateUserStrip(user, plan) after login.
+  // If auth.js doesn't do that yet, the strip gracefully shows "Guest".
+  window.updateUserStrip = function(user, plan) {
+    const avatarEl  = document.getElementById('strip-avatar');
+    const nameEl    = document.getElementById('strip-name');
+    const badgeEl   = document.getElementById('strip-badge');
+    const emailEl   = document.getElementById('strip-email');
+    const signinBtn = document.getElementById('strip-signin-btn');
+
+    if (!user) {
+      nameEl.textContent    = 'Guest';
+      emailEl.textContent   = '';
+      badgeEl.style.display = 'none';
+      signinBtn.style.display = '';
+      avatarEl.innerHTML    = '?';
+      avatarEl.style.border = '1.5px solid var(--border)';
+      return;
+    }
+
+    signinBtn.style.display = 'none';
+    const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
+    nameEl.textContent  = username;
+    emailEl.textContent = user.email || '';
+
+    if (plan === 'premium') {
+      badgeEl.style.display = '';
+    } else {
+      badgeEl.style.display = 'none';
+    }
+
+    // Avatar: photo or initials
+    const photoUrl = user.user_metadata?.avatar_url;
+    if (photoUrl) {
+      avatarEl.innerHTML = '<img src="' + photoUrl + '" alt="avatar"/>';
+    } else {
+      avatarEl.textContent = username.charAt(0).toUpperCase();
+    }
+  };
+
+  document.getElementById("menu-share-btn").addEventListener("click", function() {
+      dropdown.classList.remove("open");
+      if (navigator.share) {
+        navigator.share({ title: "BuyrFindr", text: "Stop scrolling through listings — just post what you WANT and let sellers find you!", url: "https://buyrfindr.com" });
+      } else {
+        prompt("Copy this link:", "https://buyrfindr.com");
+      }
+    });
+
+    // Strip sign-in shortcut
+  document.getElementById('strip-signin-btn').addEventListener('click', function() {
+    document.getElementById('login-google-btn').click();
+  });
   </script>
+
+<!-- ONBOARDING OVERLAY — shown once on first visit -->
+<div id="onboarding-overlay" class="onboarding-overlay" style="display:none;">
+  <div class="onboarding-modal">
+
+    <!-- Slide 1 -->
+    <div class="onboarding-slide active" id="ob-slide-1">
+      <div class="ob-icon">🔎</div>
+      <h2 class="ob-title">Welcome to<br><span>BuyrFindr</span></h2>
+      <p class="ob-body">Every other marketplace makes you scroll through thousands of listings hoping to find what you need.<br><br><strong>BuyrFindr flips that.</strong></p>
+      <div class="ob-dots">
+        <span class="ob-dot active"></span>
+        <span class="ob-dot"></span>
+        <span class="ob-dot"></span>
+      </div>
+      <button class="ob-btn" onclick="obNext(2)">Next →</button>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="onboarding-slide" id="ob-slide-2">
+      <div class="ob-icon-wrap">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#00dfa2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </div>
+      <h2 class="ob-title">Post what you <span>WANT</span></h2>
+      <p class="ob-body">Looking for a used bike? A KitchenAid mixer? A PS5?<br><br>Just <strong>post your request</strong> — tell the world what you're looking for and your budget. Sellers in your area will come to you.</p>
+      <div class="ob-dots">
+        <span class="ob-dot"></span>
+        <span class="ob-dot active"></span>
+        <span class="ob-dot"></span>
+      </div>
+      <button class="ob-btn" onclick="obNext(3)">Next →</button>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="onboarding-slide" id="ob-slide-3">
+      <div class="ob-icon-wrap">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#00dfa2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+      <h2 class="ob-title">Sellers find <span>YOU</span></h2>
+      <p class="ob-body">And if YOU have something someone else is looking for?<br><br><strong>Browse the Requests tab</strong> — someone nearby might want exactly what's sitting in your garage right now.</p>
+      <div class="ob-dots">
+        <span class="ob-dot"></span>
+        <span class="ob-dot"></span>
+        <span class="ob-dot active"></span>
+      </div>
+      <button class="ob-btn" onclick="obDone()">Let's go →</button>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.onboarding-modal {
+  background: var(--surf, #111118);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 360px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+}
+
+.onboarding-slide {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px 32px 32px;
+}
+
+.onboarding-slide.active {
+  display: flex;
+}
+
+.ob-icon {
+  font-size: 52px;
+  line-height: 1;
+  margin-bottom: 24px;
+}
+
+.ob-icon-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(0,223,162,0.08);
+  border: 1px solid rgba(0,223,162,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.ob-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: #eeeef5;
+  line-height: 1.2;
+  margin-bottom: 16px;
+  letter-spacing: -0.3px;
+}
+
+.ob-title span {
+  color: #00dfa2;
+}
+
+.ob-body {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+.ob-body strong {
+  color: rgba(255,255,255,0.85);
+  font-weight: 600;
+}
+
+.ob-dots {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.ob-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  transition: all 0.2s;
+}
+
+.ob-dot.active {
+  background: #00dfa2;
+  width: 18px;
+  border-radius: 3px;
+}
+
+.ob-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: #00dfa2;
+  color: #000;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.12s;
+}
+
+.ob-btn:active {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+</style>
+
+<script>
+(function() {
+  // Only show once per device
+  if (!localStorage.getItem('bf_onboarded')) {
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.style.display = 'flex';
+  }
+})();
+
+function obNext(slide) {
+  document.querySelectorAll('.onboarding-slide').forEach(s => s.classList.remove('active'));
+  document.getElementById('ob-slide-' + slide).classList.add('active');
+}
+
+function obDone() {
+  localStorage.setItem('bf_onboarded', '1');
+  const overlay = document.getElementById('onboarding-overlay');
+  if (overlay) {
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 0.3s';
+    setTimeout(() => overlay.style.display = 'none', 300);
+  }
+}
+</script>
+
 </body>
 </html>

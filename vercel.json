@@ -1,9 +1,8 @@
 {
-  "outputDirectory": ".",
-  "rewrites": [
+  "crons": [
     {
-      "source": "/((?!ad.html|sw.js|manifest.json|icons|styles.css|.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.jpeg).*)",
-      "destination": "/index.html"
+      "path": "/api/check-inactive",
+      "schedule": "0 3 * * *"
     }
   ]
 }
