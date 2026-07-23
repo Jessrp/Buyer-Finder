@@ -4,5 +4,6 @@
       "path": "/api/check-inactive",
       "schedule": "0 3 * * *"
     }
-  ]
+  ],
+  "outputDirectory": "."
 }
