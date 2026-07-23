@@ -223,7 +223,7 @@
             ${p.price != null && p.price !== "" && p.price != 0
               ? `<span class="card-budget">${p.type === "requesting" ? "Up to " : ""}$${Number(p.price).toLocaleString()}</span>`
               : `<span class="card-budget" style="opacity:.5">Price open</span>`}
-            <small style="opacity:.6;font-size:11px;">${p.location_text || ""}</small>
+            ${p.location_text ? `<span class="card-location">📍 ${p.location_text}</span>` : ""}
           </div>
         </div>
       </article>
