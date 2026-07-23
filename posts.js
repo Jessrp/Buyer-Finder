@@ -214,10 +214,18 @@
     return `
       <article class="post" data-post-id="${p.id}">
         ${isOwn ? `<button class="edit-btn" data-edit-id="${p.id}">✎</button>` : ""}
-        ${img}
-        <h3>${p.title}</h3>
-        <p>${p.description || ""}</p>
-        <p>${p.price != null ? p.price : ""}</p>
+        ${img ? `<div class="post-img-wrap">${img}</div>` : `<div class="post-no-img">📦</div>`}
+        <div class="post-body">
+          <span class="post-type-pill ${p.type === "requesting" ? "request" : "selling"}">${p.type === "requesting" ? "🔍 Wanted" : "🏷️ For Sale"}</span>
+          <h3>${p.title}</h3>
+          <p>${p.description || ""}</p>
+          <div class="post-meta-row">
+            ${p.price != null && p.price !== "" && p.price != 0
+              ? `<span class="card-budget">${p.type === "requesting" ? "Up to " : ""}$${Number(p.price).toLocaleString()}</span>`
+              : `<span class="card-budget" style="opacity:.5">Price open</span>`}
+            <small style="opacity:.6;font-size:11px;">${p.location_text || ""}</small>
+          </div>
+        </div>
       </article>
     `;
   }

@@ -775,3 +775,15 @@ body.light-theme .bottom-nav {
 
 .cat-icon { display:flex; align-items:center; line-height:1; }
 .cat-icon svg { stroke: currentColor; }
+
+
+/* POST CARD DETAILS */
+.post-img-wrap { width:100%; overflow:hidden; }
+.post-img-wrap img { width:100%; display:block; }
+.post-no-img { width:100%; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; font-size:32px; background:rgba(255,255,255,0.04); }
+.post-body { padding:10px 12px 12px; }
+.post-type-pill { display:inline-flex; align-items:center; font-size:9.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; padding:3px 8px; border-radius:999px; margin-bottom:6px; }
+.post-type-pill.request { background:rgba(232,65,10,.15); color:#ff6b3d; border:1px solid rgba(232,65,10,.3); }
+.post-type-pill.selling { background:rgba(38,208,124,.12); color:#26d07c; border:1px solid rgba(38,208,124,.3); }
+.post-meta-row { display:flex; align-items:center; justify-content:space-between; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.08); }
+.card-budget { font-size:13px; font-weight:700; }
