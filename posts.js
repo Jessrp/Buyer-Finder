@@ -5,6 +5,40 @@
   var supa = window.supa;
 
   const postsGrid = document.getElementById("posts-grid");
+
+  // ── SORTING ──────────────────────────────────────────────
+  window.activeSort = window.activeSort || "newest";
+
+  function kmBetween(a, b, c, d) {
+    if ([a,b,c,d].some(v => typeof v !== "number")) return Infinity;
+    const R = 6371, toRad = x => x * Math.PI / 180;
+    const dLat = toRad(c - a), dLon = toRad(d - b);
+    const s = Math.sin(dLat/2)**2 +
+      Math.cos(toRad(a)) * Math.cos(toRad(c)) * Math.sin(dLon/2)**2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+
+  function sortPosts(list) {
+    const s = window.activeSort || "newest";
+    const arr = list.slice();
+    const num = v => (v == null || v === "" ? null : Number(v));
+    if (s === "price_low") {
+      arr.sort((a,b) => (num(a.price) ?? Infinity) - (num(b.price) ?? Infinity));
+    } else if (s === "price_high") {
+      arr.sort((a,b) => (num(b.price) ?? -Infinity) - (num(a.price) ?? -Infinity));
+    } else if (s === "distance") {
+      const me = window.currentProfile;
+      const ulat = me?.lat, ulng = me?.lng;
+      if (typeof ulat !== "number" || typeof ulng !== "number") return arr; // no location; leave as-is
+      arr.sort((a,b) =>
+        kmBetween(ulat, ulng, a.lat, a.lng) - kmBetween(ulat, ulng, b.lat, b.lng));
+    } else {
+      // newest — rely on created_at desc already applied, but enforce it
+      arr.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    return arr;
+  }
+
   const postsStatus = document.getElementById("posts-status");
 
   const fabAdd = document.getElementById("fab-add");
@@ -195,11 +229,12 @@
     if (postsStatus) postsStatus.textContent = "";
     if (!postsGrid) return;
 
-    postsGrid.innerHTML = filtered.length
-      ? filtered.map(renderPostCard).join("")
+    const sorted = sortPosts(filtered);
+    postsGrid.innerHTML = sorted.length
+      ? sorted.map(renderPostCard).join("")
       : `<p class='hint'>${window.activeMineOnly ? "You haven't posted anything yet. Tap + to create your first post!" : (cat ? "No posts in this category yet." : "No posts yet.")}</p>`;
 
-    attachPostHandlers(filtered);
+    attachPostHandlers(sorted);
 
     if (window.__bf_pending_open_post_id) {
       const pid   = String(window.__bf_pending_open_post_id);
@@ -366,6 +401,23 @@
   if (btnSavePost)    btnSavePost.onclick    = savePost;
 
   buildCategoryPills();
+
+  // Wire sort dropdown
+  const sortSelect = document.getElementById("sort-select");
+  if (sortSelect) {
+    sortSelect.addEventListener("change", () => {
+      window.activeSort = sortSelect.value;
+      if (window.activeSort === "distance" &&
+          (typeof window.currentProfile?.lat !== "number")) {
+        // Gently note that distance needs a location set
+        if (postsStatus) {
+          postsStatus.textContent = "Set your location in Settings to sort by distance.";
+          setTimeout(() => { if (postsStatus) postsStatus.textContent = ""; }, 3000);
+        }
+      }
+      loadPosts(window.__bf_last_search_query || "");
+    });
+  }
 
   window.Posts = { loadPosts, openPostById, openDetailPanel };
 

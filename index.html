@@ -373,6 +373,15 @@
 
     <!-- POSTS VIEW -->
     <section id="view-posts" class="view active">
+      <div class="sort-bar">
+        <label for="sort-select" class="sort-label">Sort</label>
+        <select id="sort-select" class="sort-select">
+          <option value="newest">Newest</option>
+          <option value="price_low">Price: Low → High</option>
+          <option value="price_high">Price: High → Low</option>
+          <option value="distance">Nearest to me</option>
+        </select>
+      </div>
       <div id="posts-status" class="hint" style="margin-bottom:6px;"></div>
       <div class="posts" id="posts-grid"></div>
     </section>
@@ -939,6 +948,17 @@
   opacity: 0.85;
   transform: scale(0.98);
 }
+
+    /* SORT BAR */
+    .sort-bar { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+    .sort-label { font-size:12px; opacity:.6; font-weight:600; letter-spacing:.03em; }
+    .sort-select {
+      flex:0 0 auto; background:rgba(255,255,255,0.06); color:inherit;
+      border:1px solid rgba(255,255,255,0.12); border-radius:8px;
+      padding:6px 10px; font-size:13px; font-family:inherit; outline:none;
+    }
+    .sort-select:focus { border-color:rgba(38,208,124,.5); }
+    body.light-theme .sort-select { background:rgba(0,0,0,0.04); border-color:rgba(0,0,0,0.12); }
 </style>
 
 <script>
