@@ -177,6 +177,10 @@
     const cat    = window.activeCategory;
 
     const filtered = (data || []).filter((p) => {
+      // "My Posts" mode: show ALL of the user's own posts regardless of type/category
+      if (window.activeMineOnly) {
+        return window.currentUser && p.user_id === window.currentUser.id;
+      }
       if (normalizePostType(p.type) !== active) return false;
       if (cat) {
         const pCat = (p.category || "").toLowerCase().trim();
@@ -193,7 +197,7 @@
 
     postsGrid.innerHTML = filtered.length
       ? filtered.map(renderPostCard).join("")
-      : `<p class='hint'>${cat ? "No posts in this category yet." : "No posts yet."}</p>`;
+      : `<p class='hint'>${window.activeMineOnly ? "You haven't posted anything yet. Tap + to create your first post!" : (cat ? "No posts in this category yet." : "No posts yet.")}</p>`;
 
     attachPostHandlers(filtered);
 

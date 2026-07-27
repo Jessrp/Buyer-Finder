@@ -41,11 +41,23 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function switchPostType(type) {
+    window.activeMineOnly = false;   // leaving "My Posts" mode
     window.activePostType = type;
     updateSegment(type);
     setActiveView("posts");
     refreshPosts();
   }
+
+  function showMyPosts() {
+    if (!window.currentUser) { alert("Sign in to view your posts."); return; }
+    window.activeMineOnly = true;
+    setActiveView("posts");
+    // hide the requesting/selling segment while in My Posts mode
+    const sw = document.querySelector(".segment-wrap");
+    if (sw) sw.style.display = "none";
+    refreshPosts();
+  }
+  window.showMyPosts = showMyPosts;
 
   function setActiveView(view) {
     activeView = view;
@@ -114,6 +126,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   if (navSettings) navSettings.addEventListener("click", () => setActiveView("settings"));
+
+  const menuMyPosts = document.getElementById("menu-myposts-btn");
+  if (menuMyPosts) menuMyPosts.addEventListener("click", () => {
+    const dd = document.getElementById("menu-dropdown");
+    if (dd) dd.classList.remove("open");
+    showMyPosts();
+  });
 
   const btnUpgrade = document.getElementById("btn-upgrade-premium");
   if (btnUpgrade) btnUpgrade.addEventListener("click", () => { if (typeof window.startUpgrade === "function") window.startUpgrade(); });
