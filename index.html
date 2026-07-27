@@ -382,6 +382,22 @@
           <option value="distance">Nearest to me</option>
         </select>
       </div>
+      <div class="budget-bar">
+        <div class="budget-chips" id="budget-chips">
+          <button class="budget-chip active" data-min="0" data-max="">Any</button>
+          <button class="budget-chip" data-min="0" data-max="50">Under $50</button>
+          <button class="budget-chip" data-min="50" data-max="200">$50–200</button>
+          <button class="budget-chip" data-min="200" data-max="1000">$200–1k</button>
+          <button class="budget-chip" data-min="1000" data-max="">$1k+</button>
+          <button class="budget-chip" id="budget-custom-chip" data-custom="1">Custom</button>
+        </div>
+        <div class="budget-custom" id="budget-custom" style="display:none;">
+          <input type="number" id="budget-min" class="budget-input" placeholder="Min $" inputmode="numeric" />
+          <span class="budget-dash">–</span>
+          <input type="number" id="budget-max" class="budget-input" placeholder="Max $" inputmode="numeric" />
+          <button class="btn small" id="budget-apply">Apply</button>
+        </div>
+      </div>
       <div id="posts-status" class="hint" style="margin-bottom:6px;"></div>
       <div class="posts" id="posts-grid"></div>
     </section>
@@ -959,6 +975,28 @@
     }
     .sort-select:focus { border-color:rgba(38,208,124,.5); }
     body.light-theme .sort-select { background:rgba(0,0,0,0.04); border-color:rgba(0,0,0,0.12); }
+
+    /* BUDGET FILTER */
+    .budget-bar { margin-bottom:10px; }
+    .budget-chips { display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .budget-chips::-webkit-scrollbar { display:none; }
+    .budget-chip {
+      flex:0 0 auto; background:rgba(255,255,255,0.06); color:inherit;
+      border:1px solid rgba(255,255,255,0.12); border-radius:999px;
+      padding:6px 13px; font-size:12.5px; font-weight:600; font-family:inherit;
+      cursor:pointer; white-space:nowrap; transition:all .15s;
+    }
+    .budget-chip.active { background:#26d07c; color:#0a0a0a; border-color:#26d07c; }
+    .budget-custom { display:flex; align-items:center; gap:8px; margin-top:8px; }
+    .budget-input {
+      width:90px; background:rgba(255,255,255,0.06); color:inherit;
+      border:1px solid rgba(255,255,255,0.12); border-radius:8px;
+      padding:7px 10px; font-size:13px; font-family:inherit; outline:none;
+    }
+    .budget-input:focus { border-color:rgba(38,208,124,.5); }
+    .budget-dash { opacity:.5; }
+    body.light-theme .budget-chip { background:rgba(0,0,0,0.04); border-color:rgba(0,0,0,0.12); }
+    body.light-theme .budget-input { background:rgba(0,0,0,0.04); border-color:rgba(0,0,0,0.12); }
 </style>
 
 <script>

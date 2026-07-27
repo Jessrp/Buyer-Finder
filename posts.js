@@ -220,6 +220,15 @@
         const pCat = (p.category || "").toLowerCase().trim();
         if (pCat !== cat) return false;
       }
+      // Budget filter (applies to both requests and listings by their price)
+      const bmin = window.activeBudgetMin;
+      const bmax = window.activeBudgetMax;
+      if ((typeof bmin === "number" && bmin > 0) || (typeof bmax === "number" && bmax > 0)) {
+        const price = p.price == null || p.price === "" ? null : Number(p.price);
+        if (price == null || Number.isNaN(price)) return false; // no price → excluded when filtering
+        if (typeof bmin === "number" && bmin > 0 && price < bmin) return false;
+        if (typeof bmax === "number" && bmax > 0 && price > bmax) return false;
+      }
       if (!q) return true;
       const hay = [p.title, p.description, p.location_text, p.category, p.price, p.type]
         .filter(Boolean).join(" ").toLowerCase();
@@ -415,6 +424,46 @@
           setTimeout(() => { if (postsStatus) postsStatus.textContent = ""; }, 3000);
         }
       }
+      loadPosts(window.__bf_last_search_query || "");
+    });
+  }
+
+  // Wire budget filter chips
+  const budgetChips  = document.getElementById("budget-chips");
+  const budgetCustom = document.getElementById("budget-custom");
+  const budgetMinEl  = document.getElementById("budget-min");
+  const budgetMaxEl  = document.getElementById("budget-max");
+  const budgetApply  = document.getElementById("budget-apply");
+
+  function setActiveChip(el) {
+    if (!budgetChips) return;
+    budgetChips.querySelectorAll(".budget-chip").forEach(c => c.classList.remove("active"));
+    if (el) el.classList.add("active");
+  }
+
+  if (budgetChips) {
+    budgetChips.querySelectorAll(".budget-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        if (chip.dataset.custom) {
+          // toggle custom inputs
+          const showing = budgetCustom && budgetCustom.style.display !== "none";
+          if (budgetCustom) budgetCustom.style.display = showing ? "none" : "flex";
+          setActiveChip(chip);
+          return;
+        }
+        if (budgetCustom) budgetCustom.style.display = "none";
+        window.activeBudgetMin = Number(chip.dataset.min) || 0;
+        window.activeBudgetMax = chip.dataset.max ? Number(chip.dataset.max) : 0;
+        setActiveChip(chip);
+        loadPosts(window.__bf_last_search_query || "");
+      });
+    });
+  }
+
+  if (budgetApply) {
+    budgetApply.addEventListener("click", () => {
+      window.activeBudgetMin = budgetMinEl && budgetMinEl.value ? Number(budgetMinEl.value) : 0;
+      window.activeBudgetMax = budgetMaxEl && budgetMaxEl.value ? Number(budgetMaxEl.value) : 0;
       loadPosts(window.__bf_last_search_query || "");
     });
   }
