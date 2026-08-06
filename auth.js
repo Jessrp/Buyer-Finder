@@ -90,7 +90,6 @@ async function checkUser() {
   }
 
   await loadOrCreateProfile();
-  if (window.currentUser) trackReferral(window.currentUser.id);
   renderUserCard();
   syncSettingsUI();
 
@@ -221,6 +220,7 @@ async function loadOrCreateProfile() {
       location_text: locationText || null,
       lat,
       lng,
+      referred_by: localStorage.getItem("bf_ref") || null,
     };
 
     const { data: inserted, error: insertErr } = await supa
