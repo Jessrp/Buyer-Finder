@@ -302,6 +302,16 @@
           return;
         }
 
+        // "system" alerts (e.g. local "someone nearby is looking" nudges) —
+        // ref_id points at the post that triggered the alert. Open it directly.
+        if (type === "system" && ref) {
+          window.setActiveView?.("posts");
+          if (window.Posts?.openPostById) {
+            window.Posts.openPostById(ref);
+          }
+          return;
+        }
+
         load();
       });
     });
