@@ -307,6 +307,10 @@
             <div class="menu-dropdown-icon">📋</div>
             My Posts
           </button>
+          <button class="menu-dropdown-item" id="menu-about-btn">
+            <div class="menu-dropdown-icon">ℹ️</div>
+            About BuyrFindr
+          </button>
           <button class="menu-dropdown-item" id="menu-settings-btn">
             <div class="menu-dropdown-icon">⚙️</div>
             Settings
@@ -442,6 +446,39 @@
         <h3>Messages</h3>
         <p class="hint" style="margin-bottom:12px;">Your conversations with buyers and sellers.</p>
         <div id="conversations-list" class="list"></div>
+      </div>
+    </section>
+
+    <!-- ABOUT VIEW -->
+    <section id="view-about" class="view">
+      <div class="settings-section">
+        <div class="settings-section-title">What is BuyrFindr?</div>
+        <div style="padding:4px 4px 16px;">
+          <p style="line-height:1.6; margin-bottom:14px;">
+            Every other marketplace makes you scroll through hundreds of listings hoping to find what you need.
+          </p>
+          <p style="line-height:1.6; margin-bottom:14px;">
+            <strong>BuyrFindr flips that.</strong> Post what you're looking for — your budget, your area — and let sellers who actually have it come to you.
+          </p>
+          <p style="line-height:1.6; margin-bottom:14px;">
+            No more digging through stale listings and sold-out posts. Just say what you want, and BuyrFindr does the rest.
+          </p>
+          <p style="line-height:1.6; opacity:.75;">
+            Built by a solo developer right here in Columbia, SC. 🇺🇸
+          </p>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Contact Us</div>
+        <a href="mailto:BuyrFindr@gmail.com?subject=BuyrFindr%20Feedback" class="settings-row" style="text-decoration:none; color:inherit;">
+          <div class="settings-row-icon" style="background:rgba(38,208,124,0.1);">✉️</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label">Questions or comments?</div>
+            <div class="settings-row-sub">Contact us: BuyrFindr@gmail.com</div>
+          </div>
+          <span class="settings-row-arrow">›</span>
+        </a>
       </div>
     </section>
 
@@ -698,6 +735,12 @@
     document.getElementById('menu-settings-btn').addEventListener('click', function() {
       dropdown.classList.remove('open');
       document.getElementById('nav-settings').click();
+    });
+
+    // About — uses the same setActiveView plumbing as everything else
+    document.getElementById('menu-about-btn').addEventListener('click', function() {
+      dropdown.classList.remove('open');
+      if (window.setActiveView) window.setActiveView('about');
     });
 
     // Theme toggle — mirrors the settings page row
