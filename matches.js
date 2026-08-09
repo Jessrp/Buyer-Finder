@@ -194,8 +194,8 @@
       const s    = Number(m.score);
       const tier = matchTier(s);
 
-      const requestTitle = buy.title  || "Request";
-      const sellTitle    = sell.title || "Listing";
+      const requestTitle = buy.title  || "(post no longer available)";
+      const sellTitle    = sell.title || "(post no longer available)";
       const scoreDisplay = Number.isFinite(s) ? `${s}%` : "";
 
       const myId      = String(user.id);
