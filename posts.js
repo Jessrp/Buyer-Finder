@@ -314,8 +314,39 @@
     if (detailPrice)       detailPrice.textContent       = post.price       || "";
     if (detailDescription) detailDescription.textContent = post.description || "";
     if (detailMeta) {
-      detailMeta.textContent = post.user_id === window.currentUser?.id
-        ? "This is your post" : "Tap to message seller";
+      const isOwnPost = post.user_id === window.currentUser?.id;
+      detailMeta.textContent = isOwnPost ? "This is your post" : "Tap to message seller";
+
+      // Fulfilled toggle — only shown to the post's owner
+      let fulfilledBtn = document.getElementById("detail-fulfilled-btn");
+      if (fulfilledBtn) fulfilledBtn.remove();
+      if (isOwnPost && detailMeta.parentElement) {
+        fulfilledBtn = document.createElement("button");
+        fulfilledBtn.id = "detail-fulfilled-btn";
+        fulfilledBtn.className = "btn small";
+        fulfilledBtn.style.marginTop = "8px";
+        fulfilledBtn.textContent = post.fulfilled ? "↩️ Mark as Active Again" : "✓ Mark as Fulfilled";
+        fulfilledBtn.onclick = async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const newVal = !post.fulfilled;
+          fulfilledBtn.disabled = true;
+          const { error } = await supa
+            .from("posts")
+            .update({ fulfilled: newVal, fulfilled_at: newVal ? new Date().toISOString() : null })
+            .eq("id", post.id)
+            .eq("user_id", window.currentUser.id);
+          fulfilledBtn.disabled = false;
+          if (error) {
+            alert("Couldn't update: " + error.message);
+            return;
+          }
+          post.fulfilled = newVal;
+          fulfilledBtn.textContent = newVal ? "↩️ Mark as Active Again" : "✓ Mark as Fulfilled";
+          loadPosts(window.__bf_last_search_query || "");
+        };
+        detailMeta.parentElement.insertBefore(fulfilledBtn, detailMeta.nextSibling);
+      }
     }
     if (detailImages) detailImages.innerHTML = "";
     let images = [];

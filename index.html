@@ -1055,6 +1055,17 @@
     .budget-dash { opacity:.5; }
     body.light-theme .budget-chip { background:rgba(0,0,0,0.04); border-color:rgba(0,0,0,0.12); }
     body.light-theme .budget-input { background:rgba(0,0,0,0.04); border-color:rgba(0,0,0,0.12); }
+
+    /* FULFILLED STATE */
+    .post-fulfilled { opacity: .55; position: relative; }
+    .post-fulfilled .post-img-wrap img { filter: grayscale(.3); }
+    .fulfilled-badge {
+      position: absolute; top: 8px; left: 8px; z-index: 2;
+      background: rgba(38,208,124,.92); color: #06210f;
+      font-size: 10.5px; font-weight: 800; letter-spacing: .04em;
+      padding: 4px 9px; border-radius: 999px;
+      text-transform: uppercase;
+    }
 </style>
 
 <script>
