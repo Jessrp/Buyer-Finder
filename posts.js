@@ -6,6 +6,23 @@
 
   const postsGrid = document.getElementById("posts-grid");
 
+  // ── BLOCKED USERS ────────────────────────────────────────
+  window.__bf_blocked_ids = window.__bf_blocked_ids || new Set();
+  window.__bf_blocked_loaded = window.__bf_blocked_loaded || false;
+
+  async function refreshBlockedList() {
+    if (!window.currentUser) { window.__bf_blocked_ids = new Set(); window.__bf_blocked_loaded = false; return; }
+    const { data, error } = await supa
+      .from("blocks")
+      .select("blocked_id")
+      .eq("blocker_id", window.currentUser.id);
+    if (error) { console.warn("Failed to load blocks:", error.message); return; }
+    window.__bf_blocked_ids = new Set((data || []).map(b => b.blocked_id));
+    window.__bf_blocked_loaded = true;
+  }
+  window.refreshBlockedList = refreshBlockedList;
+
+
   // ── SORTING ──────────────────────────────────────────────
   window.activeSort = window.activeSort || "newest";
 
@@ -191,6 +208,9 @@
   /* ---------- LOAD POSTS ---------- */
   async function loadPosts(query = "") {
     window.__bf_last_search_query = query;
+    if (window.currentUser && !window.__bf_blocked_loaded) {
+      await refreshBlockedList();
+    }
     if (postsStatus) postsStatus.textContent = "Loading...";
     if (postsGrid)   postsGrid.innerHTML = "";
 
@@ -215,6 +235,8 @@
       if (window.activeMineOnly) {
         return window.currentUser && p.user_id === window.currentUser.id;
       }
+      // Hide posts from blocked users
+      if (window.__bf_blocked_ids && window.__bf_blocked_ids.has(p.user_id)) return false;
       if (normalizePostType(p.type) !== active) return false;
       if (cat) {
         const pCat = (p.category || "").toLowerCase().trim();
@@ -346,6 +368,61 @@
           loadPosts(window.__bf_last_search_query || "");
         };
         detailMeta.parentElement.insertBefore(fulfilledBtn, detailMeta.nextSibling);
+      }
+
+      // Report / Block — only shown on OTHER people's posts
+      let reportRow = document.getElementById("detail-report-row");
+      if (reportRow) reportRow.remove();
+      if (!isOwnPost && window.currentUser && detailMeta.parentElement) {
+        reportRow = document.createElement("div");
+        reportRow.id = "detail-report-row";
+        reportRow.style.cssText = "display:flex; gap:8px; margin-top:8px;";
+
+        const reportBtn = document.createElement("button");
+        reportBtn.className = "btn small";
+        reportBtn.style.cssText = "flex:1; opacity:.7;";
+        reportBtn.textContent = "🚩 Report";
+        reportBtn.onclick = async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const reason = prompt("Why are you reporting this post? (spam, scam, inappropriate, etc.)");
+          if (!reason || !reason.trim()) return;
+          const { error } = await supa.from("reports").insert({
+            post_id: post.id,
+            reporter_id: window.currentUser.id,
+            reported_user_id: post.user_id,
+            reason: reason.trim(),
+            status: "open",
+          });
+          if (error) { alert("Couldn't submit report: " + error.message); return; }
+          alert("Thanks — this post has been reported for review.");
+        };
+
+        const blockBtn = document.createElement("button");
+        blockBtn.className = "btn small";
+        blockBtn.style.cssText = "flex:1; opacity:.7;";
+        blockBtn.textContent = "🚫 Block User";
+        blockBtn.onclick = async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!confirm("Block this user? You won't see their posts anymore.")) return;
+          const { error } = await supa.from("blocks").insert({
+            blocker_id: window.currentUser.id,
+            blocked_id: post.user_id,
+          });
+          if (error && !String(error.message).includes("duplicate")) {
+            alert("Couldn't block user: " + error.message);
+            return;
+          }
+          alert("User blocked.");
+          hideDetailPanel();
+          await refreshBlockedList();
+          loadPosts(window.__bf_last_search_query || "");
+        };
+
+        reportRow.appendChild(reportBtn);
+        reportRow.appendChild(blockBtn);
+        detailMeta.parentElement.insertBefore(reportRow, detailMeta.nextSibling);
       }
     }
     if (detailImages) detailImages.innerHTML = "";
