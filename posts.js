@@ -329,6 +329,68 @@
     }
   }
 
+  async function promptRateExchange(post) {
+    if (!window.currentUser) return;
+    const { data: convos, error } = await supa
+      .from("conversations")
+      .select("id,buyer_id,seller_id")
+      .eq("post_id", post.id);
+
+    if (error || !convos || convos.length === 0) return; // nobody to rate
+
+    // Figure out "the other person" for each conversation
+    const others = convos
+      .map(c => (c.buyer_id === window.currentUser.id ? c.seller_id : c.buyer_id))
+      .filter((v, i, arr) => v && arr.indexOf(v) === i); // unique, non-null
+
+    if (others.length === 0) return;
+
+    let targetUserId = others[0];
+    if (others.length > 1) {
+      // Multiple people messaged about this post — ask which one to rate
+      const { data: profs } = await supa.from("profiles").select("id,username").in("id", others);
+      const names = (profs || []).map(p => p.username || p.id.slice(0,8));
+      const pick = prompt(
+        "Who did you complete this exchange with?\n" +
+        names.map((n,i) => `${i+1}. ${n}`).join("\n") +
+        "\nEnter a number:"
+      );
+      const idx = parseInt(pick, 10) - 1;
+      if (isNaN(idx) || idx < 0 || idx >= others.length) return;
+      targetUserId = others[idx];
+    }
+
+    const goodOrBad = confirm("Rate this exchange 👍\n\nTap OK for thumbs up, Cancel for thumbs down.");
+    const comment = prompt("Add a quick comment (optional):") || null;
+
+    const { error: rateErr } = await supa.from("ratings").insert({
+      post_id: post.id,
+      rater_id: window.currentUser.id,
+      rated_user_id: targetUserId,
+      thumbs_up: goodOrBad,
+      comment,
+    });
+
+    if (rateErr) {
+      if (!String(rateErr.message).includes("duplicate")) {
+        console.warn("Rating failed:", rateErr.message);
+      }
+      return;
+    }
+    alert("Thanks for rating this exchange!");
+  }
+
+  async function getRatingBadgeHtml(userId) {
+    if (!userId) return "";
+    const { data } = await supa
+      .from("user_rating_summary")
+      .select("thumbs_up_count,thumbs_down_count")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!data || (data.thumbs_up_count === 0 && data.thumbs_down_count === 0)) return "";
+    return `<span style="font-size:12px; opacity:.75; margin-left:6px;">👍 ${data.thumbs_up_count} · 👎 ${data.thumbs_down_count}</span>`;
+  }
+
   function openDetailPanel(post) {
     window.activePost = post;
     if (!post) return;
@@ -338,6 +400,18 @@
     if (detailMeta) {
       const isOwnPost = post.user_id === window.currentUser?.id;
       detailMeta.textContent = isOwnPost ? "This is your post" : "Tap to message seller";
+
+      // Show the poster's rating badge (thumbs up/down tally), fetched async
+      getRatingBadgeHtml(post.user_id).then(html => {
+        let badgeEl = document.getElementById("detail-rating-badge");
+        if (badgeEl) badgeEl.remove();
+        if (html && detailMeta.parentElement) {
+          badgeEl = document.createElement("span");
+          badgeEl.id = "detail-rating-badge";
+          badgeEl.innerHTML = html;
+          detailMeta.appendChild(badgeEl);
+        }
+      });
 
       // Fulfilled toggle — only shown to the post's owner
       let fulfilledBtn = document.getElementById("detail-fulfilled-btn");
@@ -366,6 +440,9 @@
           post.fulfilled = newVal;
           fulfilledBtn.textContent = newVal ? "↩️ Mark as Active Again" : "✓ Mark as Fulfilled";
           loadPosts(window.__bf_last_search_query || "");
+
+          // Prompt to rate the exchange, but only when marking AS fulfilled (not un-marking)
+          if (newVal) await promptRateExchange(post);
         };
         detailMeta.parentElement.insertBefore(fulfilledBtn, detailMeta.nextSibling);
       }
