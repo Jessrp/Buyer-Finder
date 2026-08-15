@@ -511,6 +511,28 @@
       </div>
 
       <div class="settings-section">
+        <div class="settings-section-title">Invite Friends, Get Rewarded</div>
+        <div style="padding:4px 4px 12px;">
+          <p style="line-height:1.6; margin-bottom:12px; font-size:13px; opacity:.75;">
+            Share your code — when a friend signs up with it, you <strong>both</strong> get 30 days of BF+ free.
+          </p>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+            <div id="referral-code-display" style="flex:1; font-family:monospace; font-size:16px; font-weight:700; letter-spacing:.05em; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:10px 14px;">—</div>
+            <button class="btn small" id="btn-copy-referral">Copy</button>
+          </div>
+          <button class="btn small" id="btn-share-referral" style="width:100%;">📤 Share My Code</button>
+        </div>
+        <div style="padding:4px; border-top:1px solid rgba(255,255,255,0.08); margin-top:8px; padding-top:14px;">
+          <div style="font-size:13px; opacity:.75; margin-bottom:8px;">Have a friend's code?</div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="referral-code-input" placeholder="Enter code" style="flex:1; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:10px 14px; color:inherit; font-family:inherit;" />
+            <button class="btn small" id="btn-redeem-referral">Redeem</button>
+          </div>
+          <div id="referral-redeem-status" style="font-size:12px; margin-top:8px; opacity:.75;"></div>
+        </div>
+      </div>
+
+      <div class="settings-section">
         <div class="settings-section-title">Account</div>
 
         <div class="settings-row" onclick="toggleSettingsEdit('username')">
@@ -594,7 +616,6 @@
         </div>
       </div>
 
-      <div style="padding:0 16px 16px;"><button class="btn small outline" id="btn-copy-referral" style="width:100%;">🔗 Copy my referral link</button><p class="hint" style="text-align:center;margin-top:8px;" id="referral-hint"></p></div>
       <p class="hint" style="text-align:center;padding:8px 0 24px;">
         BuyrFindr© v1.0 © BuyrFindr v1.0 &nbsp;·&nbsp; Made with ❤️nbsp;·BuyrFindr v1.0 &nbsp;·&nbsp; Made with ❤️nbsp; Made with ❤️
       </p>
@@ -710,7 +731,7 @@
   <script src="matching.js"></script>
   <script src="matches.js"></script>
   <script src="boot.alerts.js"></script>
-  <script src="push.js"></script>
+  
   <script src="app.js"></script>
   <script src="settings.js"></script>
 
@@ -742,6 +763,97 @@
       dropdown.classList.remove('open');
       if (window.setActiveView) window.setActiveView('about');
     });
+
+    // ── REFERRALS ──────────────────────────────────────────
+    (function initReferrals() {
+      async function loadMyReferralCode() {
+        const disp = document.getElementById("referral-code-display");
+        if (!disp || !window.currentUser || !window.supa) return null;
+        const { data, error } = await window.supa
+          .from("profiles")
+          .select("referral_code")
+          .eq("id", window.currentUser.id)
+          .maybeSingle();
+        if (error || !data) return null;
+        disp.textContent = data.referral_code || "—";
+        return data.referral_code || null;
+      }
+
+      const copyBtn   = document.getElementById("btn-copy-referral");
+      const shareBtn  = document.getElementById("btn-share-referral");
+      const redeemBtn = document.getElementById("btn-redeem-referral");
+      const codeInput = document.getElementById("referral-code-input");
+      const statusEl  = document.getElementById("referral-redeem-status");
+
+      if (copyBtn) {
+        copyBtn.addEventListener("click", async () => {
+          const code = await loadMyReferralCode();
+          if (!code) { alert("Sign in to get your referral code."); return; }
+          try {
+            await navigator.clipboard.writeText(code);
+            alert("Code copied: " + code);
+          } catch {
+            prompt("Copy your code:", code);
+          }
+        });
+      }
+
+      if (shareBtn) {
+        shareBtn.addEventListener("click", async () => {
+          const code = await loadMyReferralCode();
+          if (!code) { alert("Sign in to get your referral code."); return; }
+          const shareData = {
+            title: "BuyrFindr",
+            text: `Join me on BuyrFindr — use my code ${code} when you sign up and we both get 30 days of BF+ free!`,
+            url: "https://buyrfindr.com"
+          };
+          if (navigator.share) {
+            navigator.share(shareData).catch(() => {});
+          } else if (navigator.clipboard) {
+            await navigator.clipboard.writeText(shareData.text + " " + shareData.url);
+            alert("Referral message copied to clipboard!");
+          } else {
+            prompt("Share this:", shareData.text + " " + shareData.url);
+          }
+        });
+      }
+
+      if (redeemBtn) {
+        redeemBtn.addEventListener("click", async () => {
+          const code = (codeInput?.value || "").trim();
+          if (!code) { if (statusEl) statusEl.textContent = "Enter a code first."; return; }
+          if (!window.currentUser) { if (statusEl) statusEl.textContent = "Sign in first."; return; }
+          redeemBtn.disabled = true;
+          if (statusEl) statusEl.textContent = "Redeeming...";
+          try {
+            const { data, error } = await window.supa.rpc("bf_redeem_referral", {
+              p_new_user_id: window.currentUser.id,
+              p_referral_code: code
+            });
+            redeemBtn.disabled = false;
+            if (error) { if (statusEl) statusEl.textContent = "Error: " + error.message; return; }
+            if (data && data.success) {
+              if (statusEl) statusEl.textContent = "🎉 Success! You both earned 30 days of BF+.";
+              if (codeInput) codeInput.value = "";
+            } else {
+              const reason = data?.reason || "unknown";
+              const msgs = {
+                invalid_code: "That code doesn't match any user.",
+                self_referral: "You can't redeem your own code.",
+                already_redeemed: "You've already redeemed a referral code."
+              };
+              if (statusEl) statusEl.textContent = msgs[reason] || "Couldn't redeem that code.";
+            }
+          } catch (e) {
+            redeemBtn.disabled = false;
+            if (statusEl) statusEl.textContent = "Something went wrong.";
+          }
+        });
+      }
+
+      // Populate on load if already signed in
+      if (window.currentUser) loadMyReferralCode();
+    })();
 
     // Theme toggle — mirrors the settings page row
     document.getElementById('menu-theme-btn').addEventListener('click', function() {
@@ -811,6 +923,11 @@
   // auth.js should call window.updateUserStrip(user, plan) after login.
   // If auth.js doesn't do that yet, the strip gracefully shows "Guest".
   window.updateUserStrip = function(user, plan) {
+    // Populate referral code display whenever we know who's signed in
+    const refDisplay = document.getElementById("referral-code-display");
+    if (refDisplay) {
+      refDisplay.textContent = (user && user.__referral_code) ? user.__referral_code : "—";
+    }
     const avatarEl  = document.getElementById('strip-avatar');
     const nameEl    = document.getElementById('strip-name');
     const badgeEl   = document.getElementById('strip-badge');
