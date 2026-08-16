@@ -353,7 +353,6 @@
   <div class="search-bar">
     <input type="text" id="search-input" placeholder="Search posts (title, description, category)…"/>
     <button class="btn small" id="search-btn">Search</button>
-    <button class="btn small" id="save-search-btn" title="Get notified about new matching posts" style="opacity:.75;">🔔 Save</button>
   </div>
 
   <!-- CATEGORY PILLS -->
@@ -530,13 +529,6 @@
             <button class="btn small" id="btn-redeem-referral">Redeem</button>
           </div>
           <div id="referral-redeem-status" style="font-size:12px; margin-top:8px; opacity:.75;"></div>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <div class="settings-section-title">Saved Searches</div>
-        <div id="saved-searches-list" style="padding:4px;">
-          <p class="hint" style="padding:8px 4px;">Loading...</p>
         </div>
       </div>
 
@@ -863,71 +855,7 @@
       if (window.currentUser) loadMyReferralCode();
     })();
 
-    // ── SAVED SEARCHES ─────────────────────────────────────
-    (function initSavedSearches() {
-      const saveBtn = document.getElementById("save-search-btn");
-      const searchInput = document.getElementById("search-input");
-      if (!saveBtn || !searchInput) return;
 
-      saveBtn.addEventListener("click", async () => {
-        const q = (searchInput.value || "").trim();
-        if (!q) { alert("Type something to search for first, then save it."); return; }
-        if (!window.currentUser) { alert("Sign in to save searches."); return; }
-
-        const { error } = await window.supa.from("saved_searches").insert({
-          user_id: window.currentUser.id,
-          query: q,
-        });
-
-        if (error) {
-          alert("Couldn't save search: " + error.message);
-          return;
-        }
-        alert(`Saved! We'll alert you when a new post matches "${q}".`);
-        renderSavedSearchesList();
-      });
-
-      async function renderSavedSearchesList() {
-        const list = document.getElementById("saved-searches-list");
-        if (!list || !window.currentUser) return;
-
-        const { data, error } = await window.supa
-          .from("saved_searches")
-          .select("id,query,created_at")
-          .eq("user_id", window.currentUser.id)
-          .order("created_at", { ascending: false });
-
-        if (error) { list.innerHTML = `<p class="hint">Couldn't load saved searches.</p>`; return; }
-
-        if (!data || data.length === 0) {
-          list.innerHTML = `<p class="hint" style="padding:8px 4px;">No saved searches yet. Search for something and tap 🔔 Save to get notified about new matches.</p>`;
-          return;
-        }
-
-        list.innerHTML = data.map(s => `
-          <div class="settings-row" data-search-id="${s.id}" style="cursor:default;">
-            <div class="settings-row-icon" style="background:rgba(38,208,124,0.1);">🔔</div>
-            <div class="settings-row-info">
-              <div class="settings-row-label">${s.query}</div>
-            </div>
-            <button class="btn small" data-delete-search="${s.id}" style="opacity:.7;">Remove</button>
-          </div>
-        `).join("");
-
-        list.querySelectorAll("[data-delete-search]").forEach(btn => {
-          btn.addEventListener("click", async () => {
-            const id = btn.getAttribute("data-delete-search");
-            btn.disabled = true;
-            const { error: delErr } = await window.supa.from("saved_searches").delete().eq("id", id);
-            if (delErr) { alert("Couldn't remove: " + delErr.message); btn.disabled = false; return; }
-            renderSavedSearchesList();
-          });
-        });
-      }
-
-      if (window.currentUser) renderSavedSearchesList();
-      window.renderSavedSearchesList = renderSavedSearchesList;
-    })();
 
     // Theme toggle — mirrors the settings page row
     document.getElementById('menu-theme-btn').addEventListener('click', function() {
