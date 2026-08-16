@@ -41,7 +41,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function switchPostType(type) {
-    window.activeMineOnly = false;   // leaving "My Posts" mode
+    window.activeMineOnly = false;      // leaving "My Posts" mode
+    window.activeFavoritesOnly = false; // leaving "My Favorites" mode
     window.activePostType = type;
     updateSegment(type);
     setActiveView("posts");
@@ -51,6 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function showMyPosts() {
     if (!window.currentUser) { alert("Sign in to view your posts."); return; }
     window.activeMineOnly = true;
+    window.activeFavoritesOnly = false;
     setActiveView("posts");
     // hide the requesting/selling segment while in My Posts mode
     const sw = document.querySelector(".segment-wrap");
@@ -58,6 +60,17 @@ document.addEventListener("DOMContentLoaded", () => {
     refreshPosts();
   }
   window.showMyPosts = showMyPosts;
+
+  function showMyFavorites() {
+    if (!window.currentUser) { alert("Sign in to view your favorites."); return; }
+    window.activeMineOnly = false;
+    window.activeFavoritesOnly = true;
+    setActiveView("posts");
+    const sw = document.querySelector(".segment-wrap");
+    if (sw) sw.style.display = "none";
+    refreshPosts();
+  }
+  window.showMyFavorites = showMyFavorites;
 
   function setActiveView(view) {
     activeView = view;
@@ -132,6 +145,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const dd = document.getElementById("menu-dropdown");
     if (dd) dd.classList.remove("open");
     showMyPosts();
+  });
+
+  const menuFavorites = document.getElementById("menu-favorites-btn");
+  if (menuFavorites) menuFavorites.addEventListener("click", () => {
+    const dd = document.getElementById("menu-dropdown");
+    if (dd) dd.classList.remove("open");
+    showMyFavorites();
   });
 
   const btnUpgrade = document.getElementById("btn-upgrade-premium");

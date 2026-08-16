@@ -307,6 +307,10 @@
             <div class="menu-dropdown-icon">📋</div>
             My Posts
           </button>
+          <button class="menu-dropdown-item" id="menu-favorites-btn">
+            <div class="menu-dropdown-icon">❤️</div>
+            My Favorites
+          </button>
           <button class="menu-dropdown-item" id="menu-settings-btn">
             <div class="menu-dropdown-icon">⚙️</div>
             Settings
@@ -1185,6 +1189,16 @@
       padding: 4px 9px; border-radius: 999px;
       text-transform: uppercase;
     }
+
+    /* FAVORITES */
+    .fav-btn {
+      position: absolute; top: 8px; right: 40px; z-index: 3;
+      background: rgba(0,0,0,0.45); border: none; border-radius: 50%;
+      width: 30px; height: 30px; font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; padding: 0;
+    }
+    .fav-btn.fav-active { background: rgba(0,0,0,0.55); }
 </style>
 
 <script>

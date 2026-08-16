@@ -22,6 +22,43 @@
   }
   window.refreshBlockedList = refreshBlockedList;
 
+  // ── FAVORITES ────────────────────────────────────────────
+  window.__bf_favorite_ids = window.__bf_favorite_ids || new Set();
+  window.__bf_favorites_loaded = window.__bf_favorites_loaded || false;
+
+  async function refreshFavorites() {
+    if (!window.currentUser) { window.__bf_favorite_ids = new Set(); window.__bf_favorites_loaded = false; return; }
+    const { data, error } = await supa
+      .from("favorites")
+      .select("post_id")
+      .eq("user_id", window.currentUser.id);
+    if (error) { console.warn("Failed to load favorites:", error.message); return; }
+    window.__bf_favorite_ids = new Set((data || []).map(f => f.post_id));
+    window.__bf_favorites_loaded = true;
+  }
+  window.refreshFavorites = refreshFavorites;
+
+  async function toggleFavorite(postId, btnEl) {
+    if (!window.currentUser) return;
+    const isFav = window.__bf_favorite_ids.has(postId);
+    btnEl.disabled = true;
+    if (isFav) {
+      const { error } = await supa.from("favorites")
+        .delete().eq("user_id", window.currentUser.id).eq("post_id", postId);
+      if (!error) { window.__bf_favorite_ids.delete(postId); btnEl.textContent = "🤍"; btnEl.classList.remove("fav-active"); }
+    } else {
+      const { error } = await supa.from("favorites")
+        .insert({ user_id: window.currentUser.id, post_id: postId });
+      if (!error || String(error.message).includes("duplicate")) {
+        window.__bf_favorite_ids.add(postId); btnEl.textContent = "❤️"; btnEl.classList.add("fav-active");
+      }
+    }
+    btnEl.disabled = false;
+    // If we're currently viewing the My Favorites list, refresh it live
+    if (window.activeFavoritesOnly) loadPosts(window.__bf_last_search_query || "");
+  }
+  window.toggleFavorite = toggleFavorite;
+
 
   // ── SORTING ──────────────────────────────────────────────
   window.activeSort = window.activeSort || "newest";
@@ -211,6 +248,9 @@
     if (window.currentUser && !window.__bf_blocked_loaded) {
       await refreshBlockedList();
     }
+    if (window.currentUser && !window.__bf_favorites_loaded) {
+      await refreshFavorites();
+    }
     if (postsStatus) postsStatus.textContent = "Loading...";
     if (postsGrid)   postsGrid.innerHTML = "";
 
@@ -234,6 +274,10 @@
       // "My Posts" mode: show ALL of the user's own posts regardless of type/category
       if (window.activeMineOnly) {
         return window.currentUser && p.user_id === window.currentUser.id;
+      }
+      // "My Favorites" mode: show ONLY posts the user has saved, regardless of type
+      if (window.activeFavoritesOnly) {
+        return window.__bf_favorite_ids && window.__bf_favorite_ids.has(p.id);
       }
       // Hide posts from blocked users
       if (window.__bf_blocked_ids && window.__bf_blocked_ids.has(p.user_id)) return false;
@@ -263,7 +307,7 @@
     const sorted = sortPosts(filtered);
     postsGrid.innerHTML = sorted.length
       ? sorted.map(renderPostCard).join("")
-      : `<p class='hint'>${window.activeMineOnly ? "You haven't posted anything yet. Tap + to create your first post!" : (cat ? "No posts in this category yet." : "No posts yet.")}</p>`;
+      : `<p class='hint'>${window.activeFavoritesOnly ? "No favorites yet. Tap the ❤️ on any post to save it here." : (window.activeMineOnly ? "You haven't posted anything yet. Tap + to create your first post!" : (cat ? "No posts in this category yet." : "No posts yet."))}</p>`;
 
     attachPostHandlers(sorted);
 
@@ -281,9 +325,13 @@
     else if (typeof p.image_urls === "string") { try { arr = JSON.parse(p.image_urls); } catch {} }
     const img  = arr.length ? `<img src="${arr[0]}" loading="lazy" />` : "";
     const isOwn = window.currentUser?.id === p.user_id;
+    const isFulfilled = !!p.fulfilled;
+    const isFav = window.__bf_favorite_ids && window.__bf_favorite_ids.has(p.id);
     return `
-      <article class="post" data-post-id="${p.id}">
+      <article class="post${isFulfilled ? " post-fulfilled" : ""}" data-post-id="${p.id}">
         ${isOwn ? `<button class="edit-btn" data-edit-id="${p.id}">✎</button>` : ""}
+        ${window.currentUser ? `<button class="fav-btn${isFav ? " fav-active" : ""}" data-fav-id="${p.id}" title="Save to favorites">${isFav ? "❤️" : "🤍"}</button>` : ""}
+        ${isFulfilled ? `<span class="fulfilled-badge">✓ Fulfilled</span>` : ""}
         ${img ? `<div class="post-img-wrap">${img}</div>` : `<div class="post-no-img">📦</div>`}
         <div class="post-body">
           <span class="post-type-pill ${p.type === "requesting" ? "request" : "selling"}">${p.type === "requesting" ? "🔍 Wanted" : "🏷️ For Sale"}</span>
@@ -309,6 +357,8 @@
       card.onclick = () => openDetailPanel(post);
       const editBtn = card.querySelector(".edit-btn");
       if (editBtn) editBtn.onclick = (e) => { e.stopPropagation(); openModalForEdit(post); };
+      const favBtn = card.querySelector(".fav-btn");
+      if (favBtn) favBtn.onclick = (e) => { e.stopPropagation(); toggleFavorite(post.id, favBtn); };
     });
   }
 
