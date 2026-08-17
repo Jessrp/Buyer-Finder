@@ -330,7 +330,7 @@
     return `
       <article class="post${isFulfilled ? " post-fulfilled" : ""}" data-post-id="${p.id}">
         ${isOwn ? `<button class="edit-btn" data-edit-id="${p.id}">✎</button>` : ""}
-        ${window.currentUser ? `<button class="fav-btn${isFav ? " fav-active" : ""}" data-fav-id="${p.id}" title="Save to favorites">${isFav ? "❤️" : "🤍"}</button>` : ""}
+        ${(window.currentUser && !isOwn) ? `<button class="fav-btn${isFav ? " fav-active" : ""}" data-fav-id="${p.id}" title="Save to favorites">${isFav ? "❤️" : "🤍"}</button>` : ""}
         ${isFulfilled ? `<span class="fulfilled-badge">✓ Fulfilled</span>` : ""}
         ${img ? `<div class="post-img-wrap">${img}</div>` : `<div class="post-no-img">📦</div>`}
         <div class="post-body">
