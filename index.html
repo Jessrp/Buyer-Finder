@@ -718,6 +718,7 @@
       rows="3"
       style="width:100%;box-sizing:border-box;margin-top:12px;margin-bottom:8px;padding:10px;resize:vertical;border-radius:10px;border:1.5px solid var(--border);background:var(--surf2);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;"
     ></textarea>
+    <button id="detail-view-convo-btn" class="btn small full" style="display:none; margin-bottom:8px; background:transparent; border:1.5px solid var(--accent); color:var(--accent);">💬 View Conversation</button>
     <button id="detail-message-btn" class="btn small full">Send message</button>
   </div>
 
@@ -1192,12 +1193,16 @@
 
     /* FAVORITES */
     .fav-btn {
-      position: absolute; top: 8px; right: 40px; z-index: 3;
+      position: absolute; top: 8px; right: 8px; z-index: 3;
       background: rgba(0,0,0,0.45); border: none; border-radius: 50%;
       width: 30px; height: 30px; font-size: 15px;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; padding: 0;
     }
+    /* Since the edit pencil only appears on YOUR OWN posts, and the heart only
+       appears on OTHER people's posts, they never render together — so the
+       heart can safely sit flush right instead of offset for a pencil that
+       won't be there. */
     .fav-btn.fav-active { background: rgba(0,0,0,0.55); }
 </style>
 

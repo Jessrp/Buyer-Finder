@@ -116,6 +116,7 @@
   const detailImages = document.getElementById("detail-images");
   const chatInput = document.getElementById("chat-input");
   const detailMessageBtn = document.getElementById("detail-message-btn");
+  const detailViewConvoBtn = document.getElementById("detail-view-convo-btn");
 
   window.activePostType = window.activePostType || "requesting";
   window.activeCategory = window.activeCategory || null;
@@ -447,6 +448,29 @@
     if (detailTitle)       detailTitle.textContent       = post.title       || "";
     if (detailPrice)       detailPrice.textContent       = post.price       || "";
     if (detailDescription) detailDescription.textContent = post.description || "";
+    // Populate seller info row (avatar initial + name) — was previously left blank
+    const sellerAvatarEl = document.getElementById("detail-seller-avatar");
+    const sellerNameEl   = document.getElementById("detail-seller-name");
+    const sellerEmailEl  = document.getElementById("detail-seller-email");
+    if (sellerAvatarEl || sellerNameEl) {
+      supa.from("profiles").select("username,avatar_url").eq("id", post.user_id).maybeSingle()
+        .then(({ data: seller }) => {
+          const name = seller?.username || "BuyrFindr user";
+          if (sellerNameEl) sellerNameEl.textContent = name;
+          if (sellerEmailEl) sellerEmailEl.textContent = "";
+          if (sellerAvatarEl) {
+            if (seller?.avatar_url) {
+              sellerAvatarEl.style.backgroundImage = `url(${seller.avatar_url})`;
+              sellerAvatarEl.style.backgroundSize = "cover";
+              sellerAvatarEl.textContent = "";
+            } else {
+              sellerAvatarEl.style.backgroundImage = "";
+              sellerAvatarEl.textContent = name.charAt(0).toUpperCase();
+            }
+          }
+        });
+    }
+
     if (detailMeta) {
       const isOwnPost = post.user_id === window.currentUser?.id;
       detailMeta.textContent = isOwnPost ? "This is your post" : "Tap to message seller";
@@ -561,13 +585,35 @@
       img.src = url; img.loading = "lazy";
       detailImages?.appendChild(img);
     });
-    if (detailPanel) detailPanel.onclick = null;
-    if (post.user_id !== window.currentUser?.id) {
-      if (detailPanel) detailPanel.onclick = startConversationAndSendMessage.bind(null, post);
-    }
+    if (detailPanel) detailPanel.onclick = null; // no longer fires on generic taps — was causing X (close) to trigger messaging
     if (detailMessageBtn) {
       detailMessageBtn.disabled = (post.user_id === window.currentUser?.id);
       detailMessageBtn.onclick  = (e) => { e.preventDefault(); e.stopPropagation(); __bfSendMessageFromDetail(post); };
+    }
+
+    // Show "View Conversation" only if one already exists for this post + this user
+    if (detailViewConvoBtn) {
+      detailViewConvoBtn.style.display = "none";
+      const me = window.currentUser?.id;
+      if (me && post.user_id !== me) {
+        supa.from("conversations")
+          .select("id")
+          .eq("post_id", post.id)
+          .or(`buyer_id.eq.${me},seller_id.eq.${me}`)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data?.id) {
+              detailViewConvoBtn.style.display = "block";
+              detailViewConvoBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                hideDetailPanel();
+                window.Messages?.loadInbox?.();
+                window.Messages?.openConversation?.(data.id);
+              };
+            }
+          });
+      }
     }
     if (chatInput) {
       chatInput.onclick   = (e) => e.stopPropagation();
