@@ -487,7 +487,7 @@
     </section>
 
     <!-- SETTINGS VIEW -->
-    <section id="view-settings" class="view">
+    <section id="view-settings" class="view" style="padding-bottom:90px;">
 
       <div class="settings-section">
         <div class="settings-profile-header">
@@ -771,6 +771,7 @@
 
     // ── REFERRALS ──────────────────────────────────────────
     (function initReferrals() {
+      window.loadMyReferralCode = loadMyReferralCode;
       async function loadMyReferralCode() {
         const disp = document.getElementById("referral-code-display");
         if (!disp || !window.currentUser || !window.supa) return null;
@@ -930,11 +931,10 @@
   // auth.js should call window.updateUserStrip(user, plan) after login.
   // If auth.js doesn't do that yet, the strip gracefully shows "Guest".
   window.updateUserStrip = function(user, plan) {
-    // Populate referral code display whenever we know who's signed in
-    const refDisplay = document.getElementById("referral-code-display");
-    if (refDisplay) {
-      refDisplay.textContent = (user && user.__referral_code) ? user.__referral_code : "—";
-    }
+    // Referral code display is handled by loadMyReferralCode() (see initReferrals below),
+    // which fetches the REAL code from the profiles table. We just re-trigger it here
+    // whenever the signed-in user becomes known, since this fires reliably on auth resolve.
+    if (user && window.loadMyReferralCode) window.loadMyReferralCode();
     const avatarEl  = document.getElementById('strip-avatar');
     const nameEl    = document.getElementById('strip-name');
     const badgeEl   = document.getElementById('strip-badge');
