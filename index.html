@@ -421,7 +421,10 @@
           <button class="btn small" id="map-search-btn">Go</button>
         </div>
         <div id="map-canvas"></div>
-        <button class="btn small outline" id="map-close-btn" style="margin-top:10px;">Close map</button>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button class="btn small outline" id="map-close-btn" style="flex:1;">Close map</button>
+          <button class="btn small outline" id="map-expand-btn" style="flex:1;">⤢ Expand Map</button>
+        </div>
       </div>
     </section>
 
@@ -1204,6 +1207,11 @@
        heart can safely sit flush right instead of offset for a pencil that
        won't be there. */
     .fav-btn.fav-active { background: rgba(0,0,0,0.55); }
+
+    /* MAP EXPAND (custom, in-DOM — NOT native browser fullscreen, so the
+       detail panel can still render above it when a marker is tapped) */
+    #map-canvas { height: 340px; border-radius: 12px; transition: height .25s ease; }
+    #map-canvas.map-expanded { height: 78vh; }
 </style>
 
 <script>

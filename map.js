@@ -11,6 +11,26 @@
   const mapSearchInput = document.getElementById("map-search-query");
   const mapSearchBtn   = document.getElementById("map-search-btn");
   const mapCloseBtn    = document.getElementById("map-close-btn");
+  const mapExpandBtn   = document.getElementById("map-expand-btn");
+  const mapCanvasEl    = document.getElementById("map-canvas");
+
+  // ── EXPAND MAP BUTTON (custom in-DOM expand, not native fullscreen —
+  // keeps the detail panel able to layer correctly on top when a marker
+  // is tapped, which native browser fullscreen broke) ──────────────
+  if (mapExpandBtn && mapCanvasEl) {
+    mapExpandBtn.addEventListener("click", () => {
+      const nowExpanded = mapCanvasEl.classList.toggle("map-expanded");
+      mapExpandBtn.textContent = nowExpanded ? "⤡ Shrink Map" : "⤢ Expand Map";
+      // Google Maps needs to be told its container resized, or it'll render
+      // stale/blank at the new size until manually interacted with.
+      if (window.google && window.google.maps && ensureMap) {
+        const m = ensureMap();
+        setTimeout(() => {
+          google.maps.event.trigger(m, "resize");
+        }, 260); // wait for the CSS height transition to finish
+      }
+    });
+  }
 
   // ── CLOSE MAP BUTTON ──────────────────────────────────────
   if (mapCloseBtn) {
@@ -96,6 +116,10 @@
         center: { lat: 39.8283, lng: -98.5795 },
         zoom: 4,
         disableDefaultUI: false,
+        fullscreenControl: false, // disabled: native browser fullscreen renders the map
+                                   // above our detail panel's DOM layer, so tapping a
+                                   // marker while fullscreened opened the post correctly
+                                   // but the panel was invisible behind the map.
         styles: [
           { elementType: "geometry",           stylers: [{ color: "#1a1a2e" }] },
           { elementType: "labels.text.stroke", stylers: [{ color: "#1a1a2e" }] },
