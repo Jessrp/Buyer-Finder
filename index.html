@@ -686,6 +686,10 @@
       <div class="field-row">
         <label>Images</label>
         <input type="file" id="post-image" accept="image/*" multiple />
+        <div id="suggested-images-wrap" style="margin-top:10px; display:none;">
+          <div style="font-size:12px; opacity:.7; margin-bottom:6px;">No photo? Tap one that matches:</div>
+          <div id="suggested-images-grid" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;"></div>
+        </div>
       </div>
       <div class="modal-actions">
         <button class="btn small outline" id="btn-cancel-post">Cancel</button>
@@ -1212,6 +1216,15 @@
        detail panel can still render above it when a marker is tapped) */
     #map-canvas { height: 340px; border-radius: 12px; transition: height .25s ease; }
     #map-canvas.map-expanded { height: 78vh; }
+
+    /* SUGGESTED IMAGES (image search on title typing) */
+    .suggested-img-thumb {
+      flex: 0 0 auto; width: 64px; height: 64px; border-radius: 8px;
+      object-fit: cover; cursor: pointer; border: 2px solid transparent;
+      opacity: .85; transition: all .15s;
+    }
+    .suggested-img-thumb:hover { opacity: 1; }
+    .suggested-img-thumb.selected { border-color: #26d07c; opacity: 1; }
 </style>
 
 <script>

@@ -171,6 +171,12 @@
     postPrice.value = "";
     postImage.value = "";
     postModalHint.textContent = "";
+    // Reset suggested-image state so a previous post's selections don't carry over
+    window.__bf_selected_suggested_images = [];
+    const suggWrap = document.getElementById("suggested-images-wrap");
+    const suggGrid = document.getElementById("suggested-images-grid");
+    if (suggWrap) suggWrap.style.display = "none";
+    if (suggGrid) suggGrid.innerHTML = "";
     modalBackdrop.classList.add("active");
   }
 
@@ -181,6 +187,12 @@
     postPrice.value           = post.price       || "";
     postImage.value           = "";
     postModalHint.textContent = "Editing post";
+    // Reset suggested-image state — editing shouldn't carry over a prior post's picks
+    window.__bf_selected_suggested_images = [];
+    const suggWrap = document.getElementById("suggested-images-wrap");
+    const suggGrid = document.getElementById("suggested-images-grid");
+    if (suggWrap) suggWrap.style.display = "none";
+    if (suggGrid) suggGrid.innerHTML = "";
     modalBackdrop.classList.add("active");
   }
 
@@ -210,6 +222,70 @@
     return "selling";
   }
 
+  /* ---------- SUGGESTED IMAGES (auto-search based on title) ---------- */
+  window.__bf_selected_suggested_images = window.__bf_selected_suggested_images || [];
+
+  let __bfImgSearchTimer = null;
+  async function searchSuggestedImages(query) {
+    const wrap = document.getElementById("suggested-images-wrap");
+    const grid = document.getElementById("suggested-images-grid");
+    if (!wrap || !grid) return;
+
+    if (!query || query.trim().length < 3) {
+      wrap.style.display = "none";
+      grid.innerHTML = "";
+      return;
+    }
+
+    try {
+      const { data, error } = await supa.functions.invoke("search-item-images", {
+        body: { query: query.trim() },
+      });
+      if (error || !data?.images?.length) {
+        wrap.style.display = "none";
+        grid.innerHTML = "";
+        return;
+      }
+
+      grid.innerHTML = data.images.map((img, i) => `
+        <img src="${img.thumbnail}" data-full-url="${img.url}" data-idx="${i}"
+             class="suggested-img-thumb" title="${(img.title || "").replace(/"/g, '')}" />
+      `).join("");
+
+      grid.querySelectorAll(".suggested-img-thumb").forEach(thumb => {
+        thumb.addEventListener("click", () => {
+          const url = thumb.getAttribute("data-full-url");
+          const isSelected = thumb.classList.contains("selected");
+          if (isSelected) {
+            thumb.classList.remove("selected");
+            window.__bf_selected_suggested_images = window.__bf_selected_suggested_images.filter(u => u !== url);
+          } else {
+            thumb.classList.add("selected");
+            window.__bf_selected_suggested_images.push(url);
+          }
+        });
+      });
+
+      wrap.style.display = "block";
+    } catch (e) {
+      console.warn("Image suggestion search failed:", e);
+      wrap.style.display = "none";
+    }
+  }
+
+  function wireSuggestedImageSearch() {
+    const titleInput = document.getElementById("post-title");
+    if (!titleInput || titleInput.__bfImgSearchWired) return;
+    titleInput.__bfImgSearchWired = true;
+    titleInput.addEventListener("input", () => {
+      clearTimeout(__bfImgSearchTimer);
+      __bfImgSearchTimer = setTimeout(() => {
+        searchSuggestedImages(titleInput.value);
+      }, 800); // debounce — waits for a pause in typing before searching
+    });
+  }
+  wireSuggestedImageSearch();
+
   /* ---------- SAVE POST ---------- */
   async function savePost() {
     const user    = window.currentUser;
@@ -218,7 +294,10 @@
     const title = postTitle.value.trim();
     if (!title) return alert("Title required.");
     postModalHint.textContent = "Saving...";
-    const newImages = await uploadPostImages(postImage.files, user.id);
+    const uploadedImages = await uploadPostImages(postImage.files, user.id);
+    // Merge any real uploaded photos with tap-selected suggested images (external URLs)
+    const suggestedImages = window.__bf_selected_suggested_images || [];
+    const newImages = [...uploadedImages, ...suggestedImages];
     const payload = {
       title,
       description:   postDescription.value.trim(),
