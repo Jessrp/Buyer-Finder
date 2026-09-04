@@ -284,6 +284,7 @@
   display: flex; gap: 8px; justify-content: flex-end;
 }
 </style>
+<style>#suggested-images-grid img{flex:0 0 auto;scroll-snap-align:start;}#suggested-images-grid::-webkit-scrollbar{display:none;}</style>
 </head>
 <body>
 
@@ -671,6 +672,10 @@
         <label>Title</label>
         <input type="text" id="post-title" />
       </div>
+        <div id="suggested-images-wrap" style="margin-top:10px; display:none;">
+          <div style="font-size:12px; opacity:.7; margin-bottom:6px;">No photo? Tap one that matches:</div>
+          <div id="suggested-images-grid" style="display:flex; gap:8px; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding-bottom:4px;"></div>
+        </div>
       <div class="field-row">
         <label>Description</label>
         <textarea id="post-description"></textarea>
@@ -686,10 +691,6 @@
       <div class="field-row">
         <label>Images</label>
         <input type="file" id="post-image" accept="image/*" multiple />
-        <div id="suggested-images-wrap" style="margin-top:10px; display:none;">
-          <div style="font-size:12px; opacity:.7; margin-bottom:6px;">No photo? Tap one that matches:</div>
-          <div id="suggested-images-grid" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;"></div>
-        </div>
       </div>
       <div class="modal-actions">
         <button class="btn small outline" id="btn-cancel-post">Cancel</button>
