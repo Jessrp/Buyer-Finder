@@ -208,3 +208,24 @@ window.openCustomerPortal = openCustomerPortal;
 
 const btnManage = document.getElementById("btn-manage-subscription");
 if (btnManage) btnManage.addEventListener("click", openCustomerPortal);
+
+/* -- Post type toggle inside New post modal -- */
+(function(){
+  const wrap = document.getElementById('post-type-toggle');
+  if(!wrap) return;
+  const btns = wrap.querySelectorAll('.mtt-btn');
+  function sync(){
+    const t = String(window.activePostType||'requesting').startsWith('sell') ? 'selling' : 'requesting';
+    btns.forEach(b => b.classList.toggle('active', b.dataset.type === t));
+  }
+  btns.forEach(b => b.addEventListener('click', () => {
+    const dot = b.dataset.type === 'selling' ? '.sell-dot' : '.req-dot';
+    const dotEl = document.querySelector('.segment-option ' + dot);
+    if(dotEl && dotEl.parentElement){ dotEl.parentElement.click(); }
+    else { window.activePostType = b.dataset.type; }
+    sync();
+  }));
+  const fab = document.getElementById('fab-add');
+  if(fab) fab.addEventListener('click', () => setTimeout(sync, 0));
+  sync();
+})();

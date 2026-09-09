@@ -788,3 +788,9 @@ body.light-theme .bottom-nav {
 .post-meta-row { display:flex; flex-direction:column; align-items:flex-start; gap:3px; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.08); }
 .card-location { font-size:11px; opacity:.55; }
 .card-budget { font-size:13px; font-weight:700; }
+
+/* -- New post modal type toggle -- */
+.modal-type-toggle{display:flex;gap:8px;margin:2px 0 14px;}
+.mtt-btn{flex:1;padding:10px 0;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;background:var(--surf);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .2s;}
+.mtt-btn.req.active{background:rgba(74,174,255,.15);border-color:rgba(74,174,255,.45);color:var(--text);}
+.mtt-btn.sell.active{background:rgba(255,92,92,.15);border-color:rgba(255,92,92,.45);color:var(--text);}
