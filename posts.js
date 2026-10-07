@@ -255,6 +255,7 @@
       grid.querySelectorAll(".suggested-img-thumb").forEach(thumb => {
         thumb.addEventListener("click", () => {
           const url = thumb.getAttribute("data-full-url");
+          window.__bf_suggestion_touched = true;
           const isSelected = thumb.classList.contains("selected");
           if (isSelected) {
             thumb.classList.remove("selected");
@@ -266,6 +267,14 @@
         });
       });
 
+      // bf-photo-patch: auto-pick the top suggestion so a post never goes up photo-less by accident
+      window.__bf_suggestion_touched = false;
+      window.__bf_selected_suggested_images = [];
+      const __bfFirst = grid.querySelector(".suggested-img-thumb");
+      if (__bfFirst) {
+        __bfFirst.classList.add("selected");
+        window.__bf_selected_suggested_images.push(__bfFirst.getAttribute("data-full-url"));
+      }
       wrap.style.display = "block";
     } catch (e) {
       console.warn("Image suggestion search failed:", e);
@@ -285,6 +294,53 @@
     });
   }
   wireSuggestedImageSearch();
+  /* bf-photo-patch: big "add your own photo" button (camera or gallery) */
+  (function bfWireOwnPhoto() {
+    function tryWire() {
+      const wrap = document.getElementById("suggested-images-wrap");
+      if (!wrap || document.getElementById("bf-photo-row")) return;
+      const row = document.createElement("div");
+      row.id = "bf-photo-row";
+      row.style.cssText = "margin-top:10px;";
+      row.innerHTML =
+        '<button type="button" id="bf-photo-btn" style="width:100%;padding:12px;border-radius:12px;border:1px dashed #26d07c;background:rgba(38,208,124,.08);color:#26d07c;font-weight:700;font-size:15px;">📷 Add your own photo</button>' +
+        '<div id="bf-photo-status" style="font-size:12px;opacity:.7;margin-top:6px;"></div>' +
+        '<input type="file" id="bf-photo-input" accept="image/*" multiple style="display:none;">';
+      wrap.parentNode.insertBefore(row, wrap);
+      const inp = row.querySelector("#bf-photo-input");
+      const status = row.querySelector("#bf-photo-status");
+      row.querySelector("#bf-photo-btn").addEventListener("click", () => inp.click());
+      inp.addEventListener("change", () => {
+        try {
+          const target =
+            (typeof postImage !== "undefined" && postImage) ||
+            document.querySelector("#modal-backdrop input[type=file]:not(#bf-photo-input)");
+          if (!target) return;
+          const dt = new DataTransfer();
+          Array.from(target.files || []).forEach(f => dt.items.add(f));
+          Array.from(inp.files || []).forEach(f => dt.items.add(f));
+          target.files = dt.files;
+          inp.value = "";
+          const n = target.files.length;
+          status.textContent = "✓ " + n + " photo" + (n === 1 ? "" : "s") + " added";
+        } catch (e) {
+          console.warn("Add-photo button failed:", e);
+        }
+      });
+    }
+    tryWire();
+    document.addEventListener("DOMContentLoaded", tryWire);
+    document.addEventListener("click", e => {
+      if (e.target && e.target.closest && e.target.closest("#fab-add")) {
+        setTimeout(() => {
+          tryWire();
+          const s = document.getElementById("bf-photo-status");
+          if (s) s.textContent = "";
+        }, 0);
+      }
+    });
+  })();
+
 
   /* ---------- SAVE POST ---------- */
   async function savePost() {
@@ -296,8 +352,9 @@
     postModalHint.textContent = "Saving...";
     const uploadedImages = await uploadPostImages(postImage.files, user.id);
     // Merge any real uploaded photos with tap-selected suggested images (external URLs)
-    const suggestedImages = window.__bf_selected_suggested_images || [];
+    const suggestedImages = (uploadedImages.length && !window.__bf_suggestion_touched) ? [] : (window.__bf_selected_suggested_images || []);
     const newImages = [...uploadedImages, ...suggestedImages];
+    if (!newImages.length && !window.editingPostId && !confirm("This post has no photo, and posts with photos get way more attention. Post it without one anyway?")) { postModalHint.textContent = ""; return; }
     const payload = {
       title,
       description:   postDescription.value.trim(),
@@ -399,6 +456,10 @@
     }
   }
 
+  /* bf-photo-patch: category icons for posts with no photo */
+  const BF_CAT_ICONS = {vehicles:"🚗",tech:"📱",gaming:"🎮",tools:"🔧",furniture:"🛋️",clothing:"👕",sports:"🏋️",music:"🎸",outdoors:"🌿",baby:"🍼",pets:"🐾",kitchen:"🍳",appliances:"🏠",toys:"🧸"};
+  function bfCatIcon(c) { return BF_CAT_ICONS[c] || "🛍️"; }
+
   function renderPostCard(p) {
     let arr = [];
     if (Array.isArray(p.image_urls)) arr = p.image_urls;
@@ -412,7 +473,7 @@
         ${isOwn ? `<button class="edit-btn" data-edit-id="${p.id}">✎</button>` : ""}
         ${(window.currentUser && !isOwn) ? `<button class="fav-btn${isFav ? " fav-active" : ""}" data-fav-id="${p.id}" title="Save to favorites">${isFav ? "❤️" : "🤍"}</button>` : ""}
         ${isFulfilled ? `<span class="fulfilled-badge">✓ Fulfilled</span>` : ""}
-        ${img ? `<div class="post-img-wrap">${img}</div>` : `<div class="post-no-img">📦</div>`}
+        ${img ? `<div class="post-img-wrap">${img}</div>` : `<div class="post-no-img"><div style="text-align:center"><div>${bfCatIcon(p.category)}</div><div style="font-size:11px;opacity:.55;margin-top:4px">No photo yet</div></div></div>`}
         <div class="post-body">
           <span class="post-type-pill ${p.type === "requesting" ? "request" : "selling"}">${p.type === "requesting" ? "🔍 Wanted" : "🏷️ For Sale"}</span>
           <h3>${p.title}</h3>
