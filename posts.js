@@ -294,48 +294,131 @@
     });
   }
   wireSuggestedImageSearch();
-  /* bf-photo-patch: big "add your own photo" button (camera or gallery) */
-  (function bfWireOwnPhoto() {
+  /* bf-photo-patch: photo row v3 - one row: add tile + your photos + stock photos */
+  (function bfWirePhotoRow() {
+    function fileInput() {
+      return (typeof postImage !== "undefined" && postImage) ||
+        document.querySelector("#modal-backdrop input[type=file]:not(#bf-photo-input)");
+    }
     function tryWire() {
       const wrap = document.getElementById("suggested-images-wrap");
-      if (!wrap || document.getElementById("bf-photo-row")) return;
+      const grid = document.getElementById("suggested-images-grid");
+      if (!wrap || !grid || document.getElementById("bf-photo-row")) return;
+
+      if (!document.getElementById("bf-photo-css")) {
+        const st = document.createElement("style");
+        st.id = "bf-photo-css";
+        st.textContent =
+          "#suggested-images-wrap{display:none!important;margin:0!important}" +
+          "#bf-photo-row{display:flex;gap:8px;align-items:stretch;margin-top:12px}" +
+          "#bf-photo-row #suggested-images-grid{flex:1 1 auto;min-width:0;padding-bottom:0!important}";
+        document.head.appendChild(st);
+      }
+
       const row = document.createElement("div");
       row.id = "bf-photo-row";
-      row.style.cssText = "margin-top:10px;";
-      row.innerHTML =
-        '<button type="button" id="bf-photo-btn" style="width:100%;padding:12px;border-radius:12px;border:1px dashed #26d07c;background:rgba(38,208,124,.08);color:#26d07c;font-weight:700;font-size:15px;">📷 Add your own photo</button>' +
-        '<div id="bf-photo-status" style="font-size:12px;opacity:.7;margin-top:6px;"></div>' +
-        '<input type="file" id="bf-photo-input" accept="image/*" multiple style="display:none;">';
+
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.id = "bf-photo-btn";
+      tile.style.cssText = "flex:0 0 auto;width:72px;min-height:72px;border:2px dashed #26d07c;border-radius:12px;background:rgba(38,208,124,.08);color:#26d07c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:700;font-size:12px;cursor:pointer;padding:0;";
+      tile.innerHTML = '<span style="font-size:26px;line-height:1">📷</span><span>Add photo</span>';
+
+      const own = document.createElement("div");
+      own.id = "bf-own-thumbs";
+      own.style.cssText = "display:flex;gap:8px;flex:0 0 auto;";
+
+      const inp = document.createElement("input");
+      inp.type = "file";
+      inp.id = "bf-photo-input";
+      inp.accept = "image/*";
+      inp.multiple = true;
+      inp.style.display = "none";
+
+      const cap = document.createElement("div");
+      cap.id = "bf-photo-cap";
+      cap.style.cssText = "font-size:12px;opacity:.7;margin-top:6px;";
+
       wrap.parentNode.insertBefore(row, wrap);
-      const inp = row.querySelector("#bf-photo-input");
-      const status = row.querySelector("#bf-photo-status");
-      row.querySelector("#bf-photo-btn").addEventListener("click", () => inp.click());
+      row.appendChild(tile);
+      row.appendChild(own);
+      row.appendChild(grid);
+      row.appendChild(inp);
+      row.parentNode.insertBefore(cap, row.nextSibling);
+
+      // hide the old "Images / Choose Files" row (the input itself stays, the save code still reads it)
+      const real = fileInput();
+      if (real) {
+        const fr = (real.closest && real.closest(".field-row")) || real;
+        fr.style.display = "none";
+      }
+
+      function updateCap() {
+        const r = fileInput();
+        const n = r && r.files ? r.files.length : 0;
+        const hasStock = grid.querySelector(".suggested-img-thumb");
+        cap.textContent = n
+          ? "Your photo will be used."
+          : hasStock
+            ? "Stock photo auto-picked. Tap another to swap, or add your own."
+            : "Add a photo so people can see what you mean.";
+      }
+
+      function renderOwn() {
+        const r = fileInput();
+        own.innerHTML = "";
+        const files = r ? Array.from(r.files || []) : [];
+        files.forEach((f, i) => {
+          const box = document.createElement("div");
+          box.style.cssText = "position:relative;flex:0 0 auto;width:72px;min-height:72px;border-radius:12px;overflow:hidden;border:2px solid #26d07c;";
+          const im = document.createElement("img");
+          im.src = URL.createObjectURL(f);
+          im.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
+          const x = document.createElement("button");
+          x.type = "button";
+          x.textContent = "✕";
+          x.style.cssText = "position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:12px;line-height:22px;padding:0;cursor:pointer;";
+          x.addEventListener("click", () => {
+            const dt = new DataTransfer();
+            files.forEach((g, j) => { if (j !== i) dt.items.add(g); });
+            r.files = dt.files;
+            renderOwn();
+          });
+          box.appendChild(im);
+          box.appendChild(x);
+          own.appendChild(box);
+        });
+        updateCap();
+      }
+
+      tile.addEventListener("click", () => inp.click());
       inp.addEventListener("change", () => {
         try {
-          const target =
-            (typeof postImage !== "undefined" && postImage) ||
-            document.querySelector("#modal-backdrop input[type=file]:not(#bf-photo-input)");
-          if (!target) return;
+          const r = fileInput();
+          if (!r) return;
           const dt = new DataTransfer();
-          Array.from(target.files || []).forEach(f => dt.items.add(f));
+          Array.from(r.files || []).forEach(f => dt.items.add(f));
           Array.from(inp.files || []).forEach(f => dt.items.add(f));
-          target.files = dt.files;
+          r.files = dt.files;
           inp.value = "";
-          const n = target.files.length;
-          status.textContent = "✓ " + n + " photo" + (n === 1 ? "" : "s") + " added";
+          renderOwn();
         } catch (e) {
-          console.warn("Add-photo button failed:", e);
+          console.warn("Add-photo failed:", e);
         }
       });
+      new MutationObserver(updateCap).observe(grid, { childList: true });
+      row.__bfRender = renderOwn;
+      renderOwn();
     }
+
     tryWire();
     document.addEventListener("DOMContentLoaded", tryWire);
     document.addEventListener("click", e => {
-      if (e.target && e.target.closest && e.target.closest("#fab-add")) {
+      if (e.target && e.target.closest && e.target.closest("#fab-add, .edit-btn")) {
         setTimeout(() => {
           tryWire();
-          const s = document.getElementById("bf-photo-status");
-          if (s) s.textContent = "";
+          const row = document.getElementById("bf-photo-row");
+          if (row && row.__bfRender) row.__bfRender();
         }, 0);
       }
     });
