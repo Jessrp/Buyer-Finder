@@ -96,7 +96,7 @@
       ))];
 
       const { data: profiles } = await client
-        .from("profiles")
+        .from("public_profiles")
         .select("id, username, avatar_url, last_seen")
         .in("id", otherIds);
 

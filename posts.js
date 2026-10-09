@@ -622,7 +622,7 @@
     let targetUserId = others[0];
     if (others.length > 1) {
       // Multiple people messaged about this post — ask which one to rate
-      const { data: profs } = await supa.from("profiles").select("id,username").in("id", others);
+      const { data: profs } = await supa.from("public_profiles").select("id,username").in("id", others);
       const names = (profs || []).map(p => p.username || p.id.slice(0,8));
       const pick = prompt(
         "Who did you complete this exchange with?\n" +
@@ -676,7 +676,7 @@
     const sellerNameEl   = document.getElementById("detail-seller-name");
     const sellerEmailEl  = document.getElementById("detail-seller-email");
     if (sellerAvatarEl || sellerNameEl) {
-      supa.from("profiles").select("username,avatar_url").eq("id", post.user_id).maybeSingle()
+      supa.from("public_profiles").select("username,avatar_url").eq("id", post.user_id).maybeSingle()
         .then(({ data: seller }) => {
           const name = seller?.username || "BuyrFindr user";
           if (sellerNameEl) sellerNameEl.textContent = name;

@@ -228,7 +228,7 @@
       c.buyer_id === user.id ? c.seller_id : c.buyer_id
     ))];
     const { data: profiles } = await client
-      .from("profiles")
+      .from("public_profiles")
       .select("id, username, avatar_url, last_seen")
       .in("id", otherIds);
 
@@ -396,7 +396,7 @@
     if (convo) {
       const otherId = convo.buyer_id === user.id ? convo.seller_id : convo.buyer_id;
       const { data: profile } = await client
-        .from("profiles")
+        .from("public_profiles")
         .select("username, last_seen")
         .eq("id", otherId)
         .single();

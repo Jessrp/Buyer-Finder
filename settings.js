@@ -194,7 +194,7 @@
 
     // Fetch profiles for buyers/sellers
     const ids = [...new Set(data.flatMap(t => [t.seller_id, t.buyer_id]).filter(Boolean))];
-    const { data: profiles } = await client.from('profiles').select('id, username').in('id', ids);
+    const { data: profiles } = await client.from('public_profiles').select('id, username').in('id', ids);
     const pMap = {};
     (profiles || []).forEach(p => pMap[p.id] = p.username);
 
