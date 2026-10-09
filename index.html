@@ -964,9 +964,9 @@
     }
 
     signinBtn.style.display = 'none';
-    const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
+    const username = user.user_metadata?.username || 'User';
     nameEl.textContent  = username;
-    emailEl.textContent = user.email || '';
+    emailEl.textContent = '';
 
     if (plan === 'premium') {
       badgeEl.style.display = '';

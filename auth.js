@@ -190,6 +190,54 @@ async function geocodeLocation(locationText) {
   });
 }
 
+// ── DISPLAY NAME (forced, never the email) ───────────────────────
+function nameIsUnset(profile, user) {
+  const u = String((profile && profile.username) || "").trim();
+  if (!u) return true;
+  const prefix = user && user.email ? String(user.email).split("@")[0].slice(0, 20).toLowerCase() : "";
+  if (prefix && u.toLowerCase() === prefix) return true;
+  if (/^user\d{0,6}$/i.test(u)) return true;
+  if (u.includes("@")) return true;
+  return false;
+}
+
+function askForDisplayName(intro) {
+  return new Promise((resolve) => {
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(5,5,10,.92);display:flex;align-items:center;justify-content:center;padding:20px;";
+    const card = document.createElement("div");
+    card.style.cssText = "width:100%;max-width:360px;background:#12121a;border:1px solid #2a2a3a;border-radius:18px;padding:22px;color:#fff;font-family:'DM Sans',sans-serif;";
+    const h = document.createElement("div");
+    h.textContent = "What should we call you?";
+    h.style.cssText = "font-size:20px;font-weight:700;margin-bottom:8px;";
+    const p = document.createElement("div");
+    p.textContent = intro || "Pick a display name. This is what other users see instead of your email.";
+    p.style.cssText = "font-size:14px;color:#9ca3af;margin-bottom:14px;line-height:1.4;";
+    const input = document.createElement("input");
+    input.type = "text"; input.maxLength = 30; input.placeholder = "Display name";
+    input.autocomplete = "nickname";
+    input.style.cssText = "width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid #2a2a3a;background:#0b0b12;color:#fff;font-size:16px;margin-bottom:8px;";
+    const err = document.createElement("div");
+    err.style.cssText = "color:#f87171;font-size:13px;min-height:18px;margin-bottom:8px;";
+    const btn = document.createElement("button");
+    btn.textContent = "Continue";
+    btn.style.cssText = "width:100%;padding:13px;border:0;border-radius:12px;background:#00d9a0;color:#04130e;font-size:16px;font-weight:700;";
+    const submit = () => {
+      const v = input.value.trim().replace(/\s+/g, " ");
+      if (v.length < 2) { err.textContent = "At least 2 characters."; return; }
+      if (v.includes("@")) { err.textContent = "No email addresses please."; return; }
+      wrap.remove();
+      resolve(v.slice(0, 30));
+    };
+    btn.addEventListener("click", submit);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
+    card.append(h, p, input, err, btn);
+    wrap.appendChild(card);
+    document.body.appendChild(wrap);
+    setTimeout(() => input.focus(), 50);
+  });
+}
+
 async function loadOrCreateProfile() {
   const user = window.currentUser;
   if (!user) return;
@@ -199,10 +247,7 @@ async function loadOrCreateProfile() {
 
   if (!data) {
     // ── NEW USER ─────────────────────────────────────────────────
-    const base =
-      (user.email && user.email.includes("@") ? user.email.split("@")[0] : "") ||
-      (user.phone ? ("user" + String(user.phone).replace(/\D/g, "").slice(-6)) : "user");
-    const username = String(base).slice(0, 20);
+    const username = await askForDisplayName();
 
     // Ask for location at signup
     const locationText = (prompt(
@@ -231,6 +276,14 @@ async function loadOrCreateProfile() {
 
   } else {
     window.currentProfile = data;
+
+    // ── EXISTING USER — force a real display name if they only have the email-derived one
+    if (nameIsUnset(data, user)) {
+      const newName = await askForDisplayName("Quick one: pick a display name. Other users will see this instead of your email.");
+      const { error: nameErr } = await supa.from("profiles").update({ username: newName }).eq("id", user.id);
+      if (nameErr) alert("Couldn't save your name: " + nameErr.message);
+      else window.currentProfile.username = newName;
+    }
 
     // ── EXISTING USER — nudge once if no location set ────────────
     if (!data.location_text) {
@@ -309,7 +362,7 @@ function renderUserCard() {
   if (typeof window.updateUserStrip === "function") {
     window.updateUserStrip(
       {
-        email: user.email || maskPhone(user.phone) || "",
+        email: "",
         user_metadata: {
           username:   profile?.username   || null,
           avatar_url: profile?.avatar_url || null,
@@ -361,6 +414,7 @@ async function saveUsername() {
   if (!user) return alert("Sign in first.");
   const newName = profileUsername?.value.trim();
   if (!newName) return;
+  if (newName.length < 2 || newName.includes("@")) return alert("Name must be 2+ characters and can't contain @.");
   const { error } = await supa.from("profiles").update({ username: newName }).eq("id", user.id);
   if (error) alert(error.message);
   else {
@@ -390,9 +444,17 @@ async function uploadAvatar() {
   if (!user) return alert("Sign in first.");
   const file = profileAvatarInput?.files?.[0];
   if (!file) return alert("Choose a file first.");
-  const ext  = file.name.split(".").pop() || "jpg";
+  let body = file, ext = (file.name.split(".").pop() || "jpg").toLowerCase(), ctype = file.type || undefined;
+  try {
+    const bmp = await createImageBitmap(file);
+    const side = Math.min(bmp.width, bmp.height), size = Math.min(400, side);
+    const cv = document.createElement("canvas"); cv.width = cv.height = size;
+    cv.getContext("2d").drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, size, size);
+    const blob = await new Promise((r) => cv.toBlob(r, "image/jpeg", 0.85));
+    if (blob) { body = blob; ext = "jpg"; ctype = "image/jpeg"; }
+  } catch (e) { console.log("avatar resize skipped", e); }
   const path = `avatars/${user.id}-${Date.now()}.${ext}`;
-  const { error } = await supa.storage.from("post_images").upload(path, file, { upsert: true });
+  const { error } = await supa.storage.from("post_images").upload(path, body, { upsert: true, contentType: ctype });
   if (error) { alert("Upload failed: " + error.message); return; }
   const { data: urlData } = supa.storage.from("post_images").getPublicUrl(path);
   const publicUrl = urlData.publicUrl;
@@ -454,20 +516,22 @@ function bindAvatarTap() {
   if (ua) ua.style.cursor = "pointer";
   const sa = document.getElementById("settings-avatar");
   if (sa) sa.style.cursor = "pointer";
+  const st = document.getElementById("strip-avatar");
+  if (st) st.style.cursor = "pointer";
   document.addEventListener("click", async (e) => {
-    const target = e.target?.closest?.("#user-avatar, #user-avatar *, #settings-avatar, #settings-avatar *");
+    const target = e.target?.closest?.("#user-avatar, #user-avatar *, #settings-avatar, #settings-avatar *, #strip-avatar, #strip-avatar *");
     if (!target) return;
     if (!window.currentUser) { alert("Sign in to set your avatar."); return; }
     const input    = ensureAvatarPickerInput();
     const isRealInput = input.id === "profile-avatar-input";
     const onChange = async () => {
-      input.removeEventListener("change", onChange);
       const file = input.files?.[0];
       if (!file) return;
       if (!isRealInput) { try { profileAvatarInput = input; } catch {} }
       await uploadAvatar();
     };
-    input.addEventListener("change", onChange);
+    input.value = "";
+    input.onchange = onChange;
     input.click();
   }, true);
 }
