@@ -201,6 +201,22 @@ function nameIsUnset(profile, user) {
   return false;
 }
 
+const RESERVED_NAME_RE = /buyrfindr|buyerfindr|support|admin|official|moderator|staff/i;
+
+async function validateDisplayName(name, userId) {
+  if (name.length < 2) return "At least 2 characters.";
+  if (name.includes("@")) return "No email addresses please.";
+  if (RESERVED_NAME_RE.test(name)) return "That name is reserved. Pick another.";
+  try {
+    const safe = name.replace(/[\\%_]/g, (c) => "\\" + c);
+    let q = supa.from("public_profiles").select("id").ilike("username", safe).limit(1);
+    if (userId) q = q.neq("id", userId);
+    const { data, error } = await q;
+    if (!error && data && data.length) return "That name is taken. Try another.";
+  } catch (e) { console.log("name check skipped", e); }
+  return null;
+}
+
 function askForDisplayName(intro) {
   return new Promise((resolve) => {
     const wrap = document.createElement("div");
@@ -222,12 +238,16 @@ function askForDisplayName(intro) {
     const btn = document.createElement("button");
     btn.textContent = "Continue";
     btn.style.cssText = "width:100%;padding:13px;border:0;border-radius:12px;background:#00d9a0;color:#04130e;font-size:16px;font-weight:700;";
-    const submit = () => {
-      const v = input.value.trim().replace(/\s+/g, " ");
-      if (v.length < 2) { err.textContent = "At least 2 characters."; return; }
-      if (v.includes("@")) { err.textContent = "No email addresses please."; return; }
+    let busy = false;
+    const submit = async () => {
+      if (busy) return;
+      const v = input.value.trim().replace(/\s+/g, " ").slice(0, 30);
+      busy = true; btn.disabled = true; err.textContent = "";
+      const problem = await validateDisplayName(v, window.currentUser && window.currentUser.id);
+      busy = false; btn.disabled = false;
+      if (problem) { err.textContent = problem; return; }
       wrap.remove();
-      resolve(v.slice(0, 30));
+      resolve(v);
     };
     btn.addEventListener("click", submit);
     input.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
@@ -268,8 +288,13 @@ async function loadOrCreateProfile() {
       referred_by: localStorage.getItem("bf_ref") || null,
     };
 
-    const { data: inserted, error: insertErr } = await supa
+    let { data: inserted, error: insertErr } = await supa
       .from("profiles").insert(insertPayload).select().maybeSingle();
+    if (insertErr && insertErr.code === "23505") {
+      insertPayload.username = (username.slice(0, 26) + " " + Math.floor(100 + Math.random() * 900));
+      ({ data: inserted, error: insertErr } = await supa
+        .from("profiles").insert(insertPayload).select().maybeSingle());
+    }
 
     if (!insertErr && inserted) window.currentProfile = inserted;
     else window.currentProfile = insertPayload;
@@ -279,10 +304,13 @@ async function loadOrCreateProfile() {
 
     // ── EXISTING USER — force a real display name if they only have the email-derived one
     if (nameIsUnset(data, user)) {
-      const newName = await askForDisplayName("Quick one: pick a display name. Other users will see this instead of your email.");
-      const { error: nameErr } = await supa.from("profiles").update({ username: newName }).eq("id", user.id);
-      if (nameErr) alert("Couldn't save your name: " + nameErr.message);
-      else window.currentProfile.username = newName;
+      let intro = "Quick one: pick a display name. Other users will see this instead of your email.";
+      while (true) {
+        const newName = await askForDisplayName(intro);
+        const { error: nameErr } = await supa.from("profiles").update({ username: newName }).eq("id", user.id);
+        if (!nameErr) { window.currentProfile.username = newName; break; }
+        intro = nameErr.code === "23505" ? "That name was just taken. Pick another." : "Couldn't save that name (" + nameErr.message + "). Try again.";
+      }
     }
 
     // ── EXISTING USER — nudge once if no location set ────────────
@@ -414,9 +442,10 @@ async function saveUsername() {
   if (!user) return alert("Sign in first.");
   const newName = profileUsername?.value.trim();
   if (!newName) return;
-  if (newName.length < 2 || newName.includes("@")) return alert("Name must be 2+ characters and can't contain @.");
+  const problem = (newName === (window.currentProfile && window.currentProfile.username)) ? null : await validateDisplayName(newName, user.id);
+  if (problem) return alert(problem);
   const { error } = await supa.from("profiles").update({ username: newName }).eq("id", user.id);
-  if (error) alert(error.message);
+  if (error) alert(error.code === "23505" ? "That name is taken. Try another." : error.message);
   else {
     if (window.currentProfile) window.currentProfile.username = newName;
     renderUserCard();
