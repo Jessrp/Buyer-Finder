@@ -104,6 +104,7 @@
   const postCategory = document.getElementById("post-category");
   const btnCancelPost = document.getElementById("btn-cancel-post");
   const btnSavePost = document.getElementById("btn-save-post");
+  const btnDeletePost = document.getElementById("btn-delete-post");
   const postModalHint = document.getElementById("post-modal-hint");
 
   const detailOverlay = document.getElementById("detail-overlay");
@@ -166,6 +167,7 @@
   /* ---------- MODAL ---------- */
   function openModalForCreate() {
     if (!window.currentUser) return alert("You must sign in.");
+    if (btnDeletePost) btnDeletePost.style.display = "none";
     postTitle.value = "";
     postDescription.value = "";
     postPrice.value = "";
@@ -182,6 +184,7 @@
 
   function openModalForEdit(post) {
     window.editingPostId      = post.id;
+    if (btnDeletePost) btnDeletePost.style.display = "";
     postTitle.value           = post.title       || "";
     postDescription.value     = post.description || "";
     postPrice.value           = post.price       || "";
@@ -199,6 +202,25 @@
   function closeModal() {
     modalBackdrop.classList.remove("active");
     window.editingPostId = null;
+    if (btnDeletePost) btnDeletePost.style.display = "none";
+  }
+
+  async function deleteEditingPost() {
+    const id = window.editingPostId;
+    if (!id || !window.currentUser) return;
+    if (!confirm("Delete this post for good?\n\nAny matches and chats tied to it will be removed too. This can't be undone.")) return;
+    if (btnDeletePost) btnDeletePost.disabled = true;
+    const { error } = await supa.rpc("bf_delete_own_post", { p_post_id: id });
+    if (btnDeletePost) btnDeletePost.disabled = false;
+    if (error) {
+      const msg = String(error.message || "");
+      if (msg.includes("has_ratings")) alert("This exchange was already rated, so it can't be deleted. Mark it as Fulfilled instead.");
+      else if (msg.includes("not_owner")) alert("You can only delete your own posts.");
+      else alert("Couldn't delete: " + msg);
+      return;
+    }
+    closeModal();
+    loadPosts(window.__bf_last_search_query || "");
   }
 
   /* ---------- IMAGE UPLOAD ---------- */
@@ -912,6 +934,7 @@
   if (fabAdd)         fabAdd.onclick         = openModalForCreate;
   if (btnCancelPost)  btnCancelPost.onclick  = closeModal;
   if (btnSavePost)    btnSavePost.onclick    = savePost;
+  if (btnDeletePost)  btnDeletePost.onclick  = deleteEditingPost;
 
   buildCategoryPills();
 

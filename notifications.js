@@ -352,6 +352,15 @@
       .subscribe();
   }
 
-  window.Notifications = { init, notify, load, initRealtime, refreshBadge };
+  function stop() {
+    const client = supa();
+    if (alertsChannel && client) { try { client.removeChannel(alertsChannel); } catch (e) {} }
+    alertsChannel = null;
+    const el = document.getElementById("notifications-list") || document.getElementById("alerts-list");
+    if (el) el.innerHTML = "<p class='hint'>Sign in to see alerts.</p>";
+    setBadge(0);
+  }
+
+  window.Notifications = { init, notify, load, initRealtime, refreshBadge, stop };
 })();
         
