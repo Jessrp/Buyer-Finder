@@ -805,3 +805,14 @@ body.light-theme .bottom-nav {
   overflow-x: hidden;
   width: 100%;
 }
+
+/* Fix message bubble overflow */
+.chat-bubble {
+  max-width: 80%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.chat-messages {
+  overflow-x: hidden;
+  width: 100%;
+}
