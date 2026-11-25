@@ -794,3 +794,14 @@ body.light-theme .bottom-nav {
 .mtt-btn{flex:1;padding:10px 0;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;background:var(--surf);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .2s;}
 .mtt-btn.req.active{background:rgba(74,174,255,.15);border-color:rgba(74,174,255,.45);color:var(--text);}
 .mtt-btn.sell.active{background:rgba(255,92,92,.15);border-color:rgba(255,92,92,.45);color:var(--text);}
+
+/* Fix message bubbles getting cut off */
+.chat-bubble {
+  max-width: 80%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.chat-messages {
+  overflow-x: hidden;
+  width: 100%;
+}
