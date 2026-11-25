@@ -19,6 +19,8 @@
       overlay.style.zIndex = "9999";
       overlay.style.display = "none";
       overlay.style.padding = "16px";
+      overlay.style.boxSizing = "border-box";
+      overlay.style.display = "none";
       overlay.style.touchAction = "pan-y";
       overlay.addEventListener("click", (e) => { if (e.target === overlay) hide(); });
       document.body.appendChild(overlay);
@@ -28,9 +30,9 @@
     if (!panel) {
       panel = document.createElement("div");
       panel.id = "bf-chat-panel";
-      panel.style.maxWidth = "720px";
+      panel.style.maxWidth = "100%";
       panel.style.height = "85vh";
-      panel.style.margin = "0 auto";
+      panel.style.width = "100%";
       panel.style.background = "var(--card, #111)";
       panel.style.borderRadius = "16px";
       panel.style.overflow = "hidden";
