@@ -305,6 +305,8 @@
     bubble.style.maxWidth = "80%";
     bubble.style.wordBreak = "break-word";
     bubble.style.overflowWrap = "break-word";
+    bubble.style.wordBreak = "break-word";
+    bubble.style.overflowWrap = "break-word";
     bubble.style.wordBreak = "break-all";
     bubble.style.overflowWrap = "break-word";
     bubble.style.wordBreak = "break-all";
