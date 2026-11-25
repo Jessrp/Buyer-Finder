@@ -14,7 +14,10 @@
       overlay = document.createElement("div");
       overlay.id = "bf-chat-overlay";
       overlay.style.position = "fixed";
-      overlay.style.inset = "0";
+      overlay.style.left = "0";
+      overlay.style.top = "0";
+      overlay.style.width = "100vw";
+      overlay.style.height = "100vh";
       overlay.style.background = "rgba(0,0,0,0.55)";
       overlay.style.zIndex = "9999";
       overlay.style.display = "none";
