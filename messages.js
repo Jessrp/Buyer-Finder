@@ -152,7 +152,7 @@
     }
   }
 
-  function show() { ensureUI(); document.getElementById("bf-chat-overlay").style.display = "block"; }
+  function show() { ensureUI(); const o = document.getElementById("bf-chat-overlay"); o.style.display = "flex"; o.style.alignItems = "center"; o.style.justifyContent = "center"; }
   function hide() { const o = document.getElementById("bf-chat-overlay"); if (o) o.style.display = "none"; }
 
   function switchToChat() {
@@ -304,6 +304,10 @@
 
     const bubble = document.createElement("div");
     bubble.style.maxWidth = "80%";
+    bubble.style.wordBreak = "break-all";
+    bubble.style.overflowWrap = "break-word";
+    bubble.style.wordBreak = "break-all";
+    bubble.style.overflowWrap = "break-word";
     bubble.style.padding = "10px 12px";
     bubble.style.borderRadius = "14px";
     bubble.style.background = mine ? "rgba(0,223,162,0.18)" : "rgba(255,255,255,0.08)";
