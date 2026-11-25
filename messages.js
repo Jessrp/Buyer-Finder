@@ -153,7 +153,6 @@
   }
 
   function show() { ensureUI(); const o = document.getElementById("bf-chat-overlay"); o.style.display = "flex"; o.style.alignItems = "center"; o.style.justifyContent = "center"; }
-  function hide() { const o = document.getElementById("bf-chat-overlay"); if (o) o.style.display = "none"; }
 
   function switchToChat() {
     ensureUI();
