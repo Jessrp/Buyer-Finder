@@ -39,7 +39,7 @@
     if (!body) {
       body = document.createElement("div");
       body.id = "bf-chat-body";
-      body.style.cssText = "flex:1;overflow:hidden;display:flex;min-height:0;";
+      body.style.cssText = "flex:1;overflow:hidden;display:flex;min-height:0;width:100%;max-width:100%;";
       panel.appendChild(body);
     }
 
@@ -55,7 +55,7 @@
     if (!chatWrap) {
       chatWrap = document.createElement("div");
       chatWrap.id = "bf-chat-wrap";
-      chatWrap.style.cssText = "display:none;flex:1;flex-direction:column;min-height:0;width:100%;";
+      chatWrap.style.cssText = "display:none;width:100%;flex:1;flex-direction:column;min-height:0;overflow:hidden;";
       body.appendChild(chatWrap);
     }
 
