@@ -242,7 +242,7 @@
     wrap.style.cssText = "display:flex;flex-direction:column;align-items:" + (mine ? "flex-end" : "flex-start") + ";";
 
     var bubble = document.createElement("div");
-    bubble.style.cssText = "max-width:80%;padding:10px 12px;border-radius:14px;background:" + (mine ? "rgba(0,223,162,0.18)" : "rgba(255,255,255,0.08)") + ";color:inherit;word-break:break-word;overflow-wrap:break-word;white-space:pre-wrap;";
+    bubble.style.cssText = "max-width:80%;padding:10px 12px;border-radius:14px;background:" + (mine ? "rgba(0,223,162,0.18)" : "rgba(255,255,255,0.08)") + ";color:inherit;word-break:break-all;overflow-wrap:anywhere;white-space:pre-wrap;";
     bubble.textContent = msg.body || "";
 
     var stamp = document.createElement("div");
