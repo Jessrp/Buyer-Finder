@@ -72,7 +72,7 @@
       composer = document.createElement("div");
       composer.id = "bf-chat-composer";
       composer.style.cssText = "display:flex;gap:8px;padding:10px 12px;border-top:1px solid rgba(255,255,255,0.08);flex-shrink:0;";
-      composer.innerHTML = '<input id="chat-text" placeholder="Type a message…" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;min-width:0;" /><button id="chat-send-btn" class="btn small">Send</button>';
+      composer.innerHTML = '<input id="chat-text" placeholder="Type a message…" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;min-width:0;width:0;" /><button id="chat-send-btn" class="btn small">Send</button>';
       chatWrap.appendChild(composer);
     }
 
